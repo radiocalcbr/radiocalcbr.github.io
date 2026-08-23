@@ -94,7 +94,6 @@ function imprimirEtiquetaA4() {
     
     const loteFrasco = document.getElementById('loteFrasco')?.value || '_________';
     const validadeFrasco = document.getElementById('validadeFrasco')?.value || '';
-    const volumeFrasco = document.getElementById('volumeFrasco')?.value || '5.0';
     const horaMarcacao = document.getElementById('horaMarcacaoKit')?.value || '--:--';
     const horaLimiteUso = document.getElementById('horaLimiteUso')?.value || '--:--';
     
@@ -107,68 +106,144 @@ function imprimirEtiquetaA4() {
     const agora = new Date();
     const dataAtual = agora.toLocaleDateString('pt-BR');
     
+    // ====== ETIQUETA TÉRMICA 50mm x 25mm ======
     const previewHTML = `
-        <div style="font-family:'Arial',sans-serif;width:100%;max-width:180mm;min-height:120mm;padding:12mm;border:2px solid #1a237e;border-radius:10px;background:linear-gradient(135deg,#ffffff 0%,#f7fbff 100%);color:#000;margin:0 auto;display:flex;flex-direction:column;gap:4mm;box-sizing:border-box;position:relative;">
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:bold;color:#1a237e;">
-                <span>[R]</span>
-                <span>${radiofarmacoNome.substring(0, 18)}</span>
-                <span style="color:${cor};">${atividadeTotal} mCi</span>
+        <div style="
+            font-family: 'Arial', sans-serif;
+            width: 50mm;
+            height: 25mm;
+            padding: 1.5mm 2mm;
+            background: #ffffff;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+            font-size: 7px;
+            line-height: 1.2;
+            border: 0.5px solid #ccc;
+        ">
+            <!-- Linha 1: Radiofármaco + Atividade -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-weight: bold; color: #1a237e;">
+                <span>${radiofarmacoNome.substring(0, 12)}</span>
+                <span style="color: ${cor};">${atividadeTotal}mCi</span>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;">
+            
+            <!-- Linha 2: Isótopo + Data + Hora -->
+            <div style="display: flex; justify-content: space-between; font-size: 6.5px; color: #555;">
                 <span>${nomeIsotopo}</span>
                 <span>${dataAtual}</span>
                 <span>${horaMarcacao}</span>
             </div>
-            <div style="border-top:2px solid #1a237e;margin:2mm 0;"></div>
-            <div style="display:flex;justify-content:center;font-size:18px;font-weight:bold;background:#fff3e0;padding:3mm 0;border-radius:6px;border:1px solid #ff6f00;color:#d32f2f;">
-                ⏰ USAR ATÉ: ${horaLimiteUso}
+            
+            <!-- Linha 3: USAR ATÉ (destaque) -->
+            <div style="
+                display: flex;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: bold;
+                background: #fff3e0;
+                border: 0.5px solid #ff6f00;
+                border-radius: 2px;
+                color: #d32f2f;
+                padding: 0.5mm 0;
+                margin: 0.5mm 0;
+            ">
+                ⏰ ${horaLimiteUso}
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;">
+            
+            <!-- Linha 4: Lote + Validade -->
+            <div style="display: flex; justify-content: space-between; font-size: 6px; color: #666;">
                 <span>Lote: ${loteFrasco}</span>
-                <span>Vol: ${volumeFrasco} mL</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;">
                 <span>Val.: ${validadeFormatada}</span>
-                <span>Use EPI</span>
-            </div>
-            <div style="border-top:1px dashed #999;margin:2mm 0;"></div>
-            <div style="font-size:11px;color:#444;line-height:1.4;">
-                <strong>Verificar antes do uso</strong><br>
-                Radiofármaco preparado para administração segura e rastreável.
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#666;border-top:1px solid #ddd;padding-top:3mm;margin-top:auto;">
-                <span style="font-weight:bold;">Responsável: ________________</span>
-                <span style="font-weight:bold;color:#1a237e;">[R] RADIOCALC</span>
             </div>
         </div>
     `;
 
-    const win = window.open('', '_blank', 'width=480,height=650');
+    const win = window.open('', '_blank', 'width=300,height=200');
     if (!win) {
         alert('⚠️ Por favor, permita pop-ups para imprimir a etiqueta.');
         return;
     }
 
     win.document.write(`
-        <html><head><title>Etiqueta A4</title>
-        <style>*{margin:0;padding:0;box-sizing:border-box;}@page{size:A4;margin:12mm;}body{font-family:Arial,sans-serif;background:#f0f0f0;padding:20px;display:flex;flex-direction:column;align-items:center;}h2{color:#1a237e;margin-bottom:10px;}.preview{background:#fff;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-bottom:15px;width:100%;max-width:210mm;}.preview-label{font-size:10px;color:#666;text-align:center;margin-top:8px;}.dados-resumo{background:#e3f2fd;border:1px solid #1a237e;border-radius:6px;padding:10px 16px;font-size:11px;color:#1a237e;max-width:450px;margin:10px 0;text-align:center;width:100%;}.dados-resumo strong{color:#d32f2f;}.btn-group{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;}.btn-print{background:#1a237e;color:#fff;border:none;border-radius:6px;padding:12px 24px;font-size:12pt;cursor:pointer;}.btn-print:hover{background:#0d1442;}.btn-close{background:#d32f2f;color:#fff;border:none;border-radius:6px;padding:12px 24px;font-size:12pt;cursor:pointer;}.btn-close:hover{background:#a02020;}.info{background:#e8f5e9;border:1px solid #2e7d32;border-radius:6px;padding:10px 16px;font-size:11px;color:#1b5e20;max-width:450px;margin:10px 0;text-align:center;width:100%;}@media print{.no-print{display:none !important;}body{background:#fff;padding:0;}.preview{box-shadow:none;border:1px solid #ddd;width:100%;}}
-        </style></head>
+        <html><head><title>Etiqueta Térmica 50x25</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page { 
+                size: 50mm 25mm;
+                margin: 0mm;
+            }
+            body { 
+                background: #f0f0f0; 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                justify-content: center;
+                min-height: 100vh;
+                padding: 10px;
+            }
+            .preview { 
+                background: #fff; 
+                padding: 2mm; 
+                border-radius: 2px; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+                margin-bottom: 10px; 
+                width: 50mm;
+            }
+            .btn-group { 
+                display: flex; 
+                gap: 8px; 
+                flex-wrap: wrap; 
+                justify-content: center; 
+            }
+            .btn-print { 
+                background: #1a237e; 
+                color: #fff; 
+                border: none; 
+                border-radius: 4px; 
+                padding: 8px 16px; 
+                font-size: 10pt; 
+                cursor: pointer; 
+            }
+            .btn-print:hover { background: #0d1442; }
+            .btn-close { 
+                background: #d32f2f; 
+                color: #fff; 
+                border: none; 
+                border-radius: 4px; 
+                padding: 8px 16px; 
+                font-size: 10pt; 
+                cursor: pointer; 
+            }
+            .btn-close:hover { background: #a02020; }
+            .info {
+                font-size: 9px;
+                color: #666;
+                margin: 6px 0;
+                text-align: center;
+            }
+            @media print {
+                .no-print { display: none !important; }
+                body { background: #fff; padding: 0; min-height: auto; }
+                .preview { 
+                    box-shadow: none; 
+                    border: none; 
+                    padding: 0mm;
+                    margin: 0;
+                    width: 50mm;
+                }
+                .preview > div { border: none !important; }
+            }
+        </style>
+        </head>
         <body>
-            <h2>📄 Etiqueta A4</h2>
-            <div class="dados-resumo">
-                📋 <strong>${radiofarmacoNome}</strong> · 
-                ${atividadeTotal} mCi · 
-                Lote: <strong>${loteFrasco}</strong> · 
-                Val.: <strong>${validadeFormatada}</strong> · 
-                USAR ATE: <strong>${horaLimiteUso}</strong>
-            </div>
             <div class="preview">
-                <div style="display:flex;justify-content:center;">${previewHTML}</div>
-                <div class="preview-label">Pré-visualização para impressão em folha A4</div>
+                ${previewHTML}
             </div>
-            <div class="info">✍️ A linha "Responsável: ______" é para <strong>preencher à mão</strong> após a impressão.</div>
+            <div class="info no-print">📏 Etiqueta 50mm x 25mm</div>
             <div class="btn-group no-print">
-                <button class="btn-print" onclick="window.print()">🖨️ Imprimir Etiqueta</button>
+                <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
                 <button class="btn-close" onclick="window.close()">✕ Fechar</button>
             </div>
         </body></html>
