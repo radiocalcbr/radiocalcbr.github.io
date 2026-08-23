@@ -106,13 +106,13 @@ function imprimirEtiquetaA4() {
     const agora = new Date();
     const dataAtual = agora.toLocaleDateString('pt-BR');
     
-    // ====== ETIQUETA TÉRMICA 50mm x 25mm - VERSÃO OTIMIZADA ======
+    // ====== ETIQUETA TÉRMICA 50mm x 25mm COM RESPONSÁVEL ======
     const previewHTML = `
         <div style="
             font-family: 'Arial', sans-serif;
             width: 50mm;
             height: 25mm;
-            padding: 1mm 1.5mm;
+            padding: 0.8mm 1.5mm;
             background: #ffffff;
             color: #000;
             display: flex;
@@ -123,13 +123,13 @@ function imprimirEtiquetaA4() {
             overflow: hidden;
         ">
             <!-- Linha 1: Radiofármaco + Atividade -->
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 8px; font-weight: bold; color: #1a237e;">
-                <span style="font-size: 7px;">${radiofarmacoNome.substring(0, 10)}</span>
-                <span style="color: ${cor}; font-size: 8px;">${atividadeTotal}mCi</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: bold; color: #1a237e;">
+                <span style="font-size: 6.5px;">${radiofarmacoNome.substring(0, 10)}</span>
+                <span style="color: ${cor}; font-size: 7.5px;">${atividadeTotal}mCi</span>
             </div>
             
             <!-- Linha 2: Isótopo + Data + Hora -->
-            <div style="display: flex; justify-content: space-between; font-size: 5.5px; color: #555; margin-top: 0.5px;">
+            <div style="display: flex; justify-content: space-between; font-size: 5px; color: #555; margin-top: 0.5px;">
                 <span>${nomeIsotopo}</span>
                 <span>${dataAtual}</span>
                 <span>${horaMarcacao}</span>
@@ -139,27 +139,40 @@ function imprimirEtiquetaA4() {
             <div style="
                 display: flex;
                 justify-content: center;
-                font-size: 9px;
+                font-size: 8px;
                 font-weight: bold;
                 background: #fff3e0;
                 border: 0.5px solid #ff6f00;
                 border-radius: 2px;
                 color: #d32f2f;
-                padding: 0.3mm 0;
-                margin: 0.5mm 0;
+                padding: 0.2mm 0;
+                margin: 0.3mm 0;
             ">
-                ⏰${horaLimiteUso}
+                ⏰ USAR ATÉ: ${horaLimiteUso}
             </div>
             
             <!-- Linha 4: Lote + Validade -->
-            <div style="display: flex; justify-content: space-between; font-size: 5px; color: #666;">
+            <div style="display: flex; justify-content: space-between; font-size: 4.5px; color: #666;">
                 <span>L:${loteFrasco}</span>
                 <span>V:${validadeFormatada}</span>
+            </div>
+            
+            <!-- Linha 5: Responsável (nova) -->
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                font-size: 4.5px;
+                color: #444;
+                border-top: 0.5px dashed #ccc;
+                padding-top: 0.3mm;
+                margin-top: 0.3mm;
+            ">
+                <span>Responsável: _____________________</span>
             </div>
         </div>
     `;
 
-    const win = window.open('', '_blank', 'width=300,height=200');
+    const win = window.open('', '_blank', 'width=300,height=220');
     if (!win) {
         alert('⚠️ Por favor, permita pop-ups para imprimir a etiqueta.');
         return;
