@@ -417,47 +417,258 @@ function obterDadosEtiqueta() {
 }
 
 /**
- * Função principal de impressão Zebra
+ * Função principal de impressão Zebra - com preview
  */
 async function imprimirEtiquetaZebra() {
-    const btnZebra = document.getElementById('btnZebra');
-    const textoOriginal = btnZebra ? btnZebra.textContent : '🏷️ Imprimir Zebra';
     try {
-        if (btnZebra) {
-            btnZebra.disabled = true;
-            btnZebra.textContent = '⏳ Processando...';
-            btnZebra.style.opacity = '0.7';
+        // 1. Obtém os dados
+        const dados = obterDadosEtiqueta();
+        
+        // 2. Verifica se há dados válidos
+        if (!dados.radiofarmaco || dados.radiofarmaco === '---') {
+            alert('⚠️ Preencha os dados da marcação primeiro!');
+            return;
         }
+        
+        // 3. Mostra o preview da etiqueta
+        mostrarPreviewEtiqueta(dados);
+        
+    } catch (error) {
+        console.error('❌ Erro:', error);
+        alert('Erro ao gerar prévia: ' + error.message);
+    }
+}
+
+/**
+ * Mostra o preview da etiqueta com opção de imprimir
+ */
+function mostrarPreviewEtiqueta(dados) {
+    // Remove preview anterior se existir
+    fecharPreviewEtiqueta();
+    
+    // Cria o container do preview
+    const previewContainer = document.createElement('div');
+    previewContainer.id = 'previewEtiqueta';
+    previewContainer.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border: 2px solid #00d2ff;
+        border-radius: 16px;
+        padding: 30px 35px;
+        z-index: 100000;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0,210,255,0.1);
+        max-width: 550px;
+        width: 92%;
+        font-family: 'Courier New', monospace;
+        color: #fff;
+    `;
+    
+    previewContainer.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid rgba(0,210,255,0.3); padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">🏷️</span>
+                <h3 style="margin: 0; color: #ffd700; font-size: 1.1rem;">CONFIRMAR IMPRESSÃO</h3>
+            </div>
+            <button onclick="fecharPreviewEtiqueta()" style="
+                background: rgba(255,107,107,0.15);
+                border: 1px solid rgba(255,107,107,0.3);
+                color: #ff6b6b;
+                padding: 6px 14px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 0.85rem;
+                transition: 0.3s;
+            " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                ✕ Cancelar
+            </button>
+        </div>
+        
+        <!-- Simulação da Etiqueta -->
+        <div style="
+            background: #000;
+            padding: 20px 25px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 13px;
+            line-height: 1.9;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+        ">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px 15px;">
+                <span style="color: #ffd700; font-weight: bold;">RADIOFÁRMACO:</span>
+                <span style="color: #00d2ff;">${dados.radiofarmaco}</span>
+                
+                <span style="color: #ffd700; font-weight: bold;">ATIVIDADE TOTAL:</span>
+                <span style="color: #00d2ff;">${dados.atividade} mCi</span>
+                
+                <span style="color: #ffd700; font-weight: bold;">VOLUME:</span>
+                <span style="color: #00d2ff;">${dados.volume} mL</span>
+                
+                <span style="color: #ffd700; font-weight: bold;">LOTE:</span>
+                <span style="color: #00d2ff;">${dados.lote}</span>
+                
+                <span style="color: #ffd700; font-weight: bold;">VALIDADE:</span>
+                <span style="color: #00d2ff;">${dados.validade}</span>
+                
+                <span style="color: #ffd700; font-weight: bold;">HORÁRIO KIT:</span>
+                <span style="color: #00d2ff;">${dados.horaKit}</span>
+                
+                <span style="color: #ffd700; font-weight: bold;">LIMITE USO:</span>
+                <span style="color: #00d2ff;">${dados.horaLimite}</span>
+                
+                <span style="color: #ffd700; font-weight: bold;">RESPONSÁVEL:</span>
+                <span style="color: #00d2ff; font-size: 0.9rem;">${dados.responsavel}</span>
+            </div>
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #333; text-align: center; color: #555; font-size: 10px; letter-spacing: 2px;">
+                RADIOCALC BR • ${new Date().toLocaleDateString('pt-BR')}
+            </div>
+        </div>
+        
+        <!-- Botões -->
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button onclick="fecharPreviewEtiqueta()" style="
+                background: rgba(255,255,255,0.05);
+                border: 1px solid #444;
+                color: #888;
+                padding: 10px 25px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: 0.3s;
+            " onmouseover="this.style.borderColor='#666';this.style.color='#fff'" onmouseout="this.style.borderColor='#444';this.style.color='#888'">
+                ✕ Cancelar
+            </button>
+            <button onclick="enviarParaImpressora()" style="
+                background: linear-gradient(135deg, #00d2ff, #0098c4);
+                border: none;
+                color: #fff;
+                padding: 10px 30px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                🖨️ Imprimir Agora
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(previewContainer);
+    
+    // Overlay de fundo
+    const overlay = document.createElement('div');
+    overlay.id = 'overlayPreview';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.75);
+        z-index: 99999;
+        backdrop-filter: blur(4px);
+    `;
+    overlay.onclick = fecharPreviewEtiqueta;
+    document.body.appendChild(overlay);
+}
+
+/**
+ * Envia a etiqueta para a impressora
+ */
+async function enviarParaImpressora() {
+    const btn = document.querySelector('#previewEtiqueta button:last-child');
+    const textoOriginal = btn ? btn.textContent : '🖨️ Imprimir';
+    
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Enviando...';
+            btn.style.opacity = '0.7';
+        }
+        
+        const dados = obterDadosEtiqueta();
         console.log('🖨️ Iniciando impressão Zebra...');
+        
         const impressora = await detectarImpressoraZebra();
         console.log('✅ Impressora encontrada:', impressora.name);
-        const dados = obterDadosEtiqueta();
-        console.log('📋 Dados da etiqueta:', dados);
+        
         const zpl = gerarZPLEtiqueta(dados);
         console.log('📄 ZPL gerado:', zpl);
+        
         await impressora.send(zpl);
         console.log('✅ Etiqueta enviada para impressão com sucesso!');
+        
+        fecharPreviewEtiqueta();
         mostrarFeedbackSucesso('Etiqueta enviada para impressora Zebra!');
+        
     } catch (error) {
-        console.error('❌ Erro na impressão Zebra:', error);
+        console.error('❌ Erro na impressão:', error);
         let mensagem = 'Erro ao imprimir: ';
-        if (error.message.includes('BrowserPrint não está instalado')) {
-            mensagem += 'O Browser Print da Zebra não está instalado. ';
+        
+        if (error.message.includes('BrowserPrint')) {
+            mensagem += 'Plugin Browser Print da Zebra não está instalado. Baixe em: https://www.zebra.com/browser-print';
         } else if (error.message.includes('Nenhuma impressora Zebra encontrada')) {
-            mensagem += 'Nenhuma impressora Zebra encontrada. ';
-            mensagem += 'Verifique se a impressora está conectada e ligada.';
-            alert('⚠️ ' + mensagem);
+            mensagem += 'Nenhuma impressora Zebra encontrada. Verifique se está conectada e ligada.';
         } else {
             mensagem += error.message || 'Erro desconhecido.';
-            alert('⚠️ ' + mensagem);
         }
+        
+        alert('⚠️ ' + mensagem);
     } finally {
-        if (btnZebra) {
-            btnZebra.disabled = false;
-            btnZebra.textContent = textoOriginal;
-            btnZebra.style.opacity = '1';
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+            btn.style.opacity = '1';
         }
     }
+}
+
+/**
+ * Fecha o preview da etiqueta
+ */
+function fecharPreviewEtiqueta() {
+    const preview = document.getElementById('previewEtiqueta');
+    const overlay = document.getElementById('overlayPreview');
+    if (preview) preview.remove();
+    if (overlay) overlay.remove();
+}
+
+/**
+ * Função auxiliar para mostrar feedback de sucesso
+ */
+function mostrarFeedbackSucesso(mensagem) {
+    const feedback = document.createElement('div');
+    feedback.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        background: rgba(0, 210, 64, 0.95);
+        color: #fff;
+        padding: 16px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 99999;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        border-left: 4px solid #00ff64;
+        max-width: 350px;
+        font-size: 0.95rem;
+        animation: slideIn 0.3s ease;
+    `;
+    feedback.textContent = '✅ ' + mensagem;
+    document.body.appendChild(feedback);
+    
+    setTimeout(() => {
+        feedback.style.opacity = '0';
+        feedback.style.transition = 'opacity 0.3s';
+        setTimeout(() => feedback.remove(), 300);
+    }, 5000);
 }
 
 /**
@@ -512,18 +723,20 @@ async function verificarStatusImpressoraZebra() {
         statusSpan.textContent = '⏳ Verificando...';
         statusSpan.style.color = '#ffd700';
         
+        // SEMPRE HABILITA O BOTÃO - permitindo o preview mesmo sem impressora
+        btnZebra.disabled = false;
+        btnZebra.style.opacity = '1';
+        
+        // Verifica se o BrowserPrint existe
         if (typeof BrowserPrint === 'undefined') {
-            // Browser Print NÃO instalado
-            statusSpan.textContent = '❌ Browser Print não instalado';
-            statusSpan.style.color = '#ff6b6b';
+            statusSpan.textContent = '⚠️ Browser Print não detectado';
+            statusSpan.style.color = '#ffd700';
             
-            // MOSTRA a mensagem informativa
             if (mensagemInfo) {
                 mensagemInfo.style.display = 'block';
             }
             
-            btnZebra.disabled = true;
-            btnZebra.style.opacity = '0.5';
+            // Botão fica habilitado mesmo assim (para preview)
             return;
         }
         
@@ -554,15 +767,17 @@ async function verificarStatusImpressoraZebra() {
         } else {
             statusSpan.textContent = '⚠️ Nenhuma Zebra encontrada';
             statusSpan.style.color = '#ffd700';
-            btnZebra.disabled = true;
-            btnZebra.style.opacity = '0.5';
+            // MANTÉM HABILITADO - preview funciona mesmo sem impressora
+            btnZebra.disabled = false;
+            btnZebra.style.opacity = '1';
         }
     } catch (error) {
         console.error('❌ Erro ao verificar impressora:', error);
-        statusSpan.textContent = '❌ Erro na verificação';
-        statusSpan.style.color = '#ff6b6b';
-        btnZebra.disabled = true;
-        btnZebra.style.opacity = '0.5';
+        statusSpan.textContent = '⚠️ Erro na verificação';
+        statusSpan.style.color = '#ffd700';
+        // MANTÉM HABILITADO
+        btnZebra.disabled = false;
+        btnZebra.style.opacity = '1';
     }
 }
 
