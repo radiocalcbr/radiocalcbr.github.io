@@ -84,184 +84,6 @@ function calcularMarcacao() {
     }
 }
 
-function imprimirEtiquetaA4() {
-    const radiofarmaco = document.getElementById('radiofarmacoMestre');
-    const radiofarmacoNome = radiofarmaco.options[radiofarmaco.selectedIndex]?.text || '---';
-    const atividadeTotal = document.getElementById('atividadeMarcacaoMestre').value || '---';
-    const isotopo = isotopoAtual || 'tc';
-    const nomeIsotopo = NOME_ISOTOPO[isotopo] || 'Tc-99m';
-    const cor = COR_ISOTOPO[isotopo] || '#000';
-    
-    const loteFrasco = document.getElementById('loteFrasco')?.value || '_________';
-    const validadeFrasco = document.getElementById('validadeFrasco')?.value || '';
-    const horaMarcacao = document.getElementById('horaMarcacaoKit')?.value || '--:--';
-    const horaLimiteUso = document.getElementById('horaLimiteUso')?.value || '--:--';
-    
-    let validadeFormatada = validadeFrasco;
-    if (validadeFrasco) {
-        const partes = validadeFrasco.split('-');
-        validadeFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-    }
-    
-    const agora = new Date();
-    const dataAtual = agora.toLocaleDateString('pt-BR');
-    
-    // ====== ETIQUETA TÉRMICA 50mm x 25mm COM RESPONSÁVEL ======
-    const previewHTML = `
-        <div style="
-            font-family: 'Arial', sans-serif;
-            width: 50mm;
-            height: 25mm;
-            padding: 0.8mm 1.5mm;
-            background: #ffffff;
-            color: #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            box-sizing: border-box;
-            border: 0.5px solid #ccc;
-            overflow: hidden;
-        ">
-            <!-- Linha 1: Radiofármaco + Atividade -->
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: bold; color: #1a237e;">
-                <span style="font-size: 6.5px;">${radiofarmacoNome.substring(0, 10)}</span>
-                <span style="color: ${cor}; font-size: 7.5px;">${atividadeTotal}mCi</span>
-            </div>
-            
-            <!-- Linha 2: Isótopo + Data + Hora -->
-            <div style="display: flex; justify-content: space-between; font-size: 5px; color: #555; margin-top: 0.5px;">
-                <span>${nomeIsotopo}</span>
-                <span>${dataAtual}</span>
-                <span>${horaMarcacao}</span>
-            </div>
-            
-            <!-- Linha 3: USAR ATÉ (destaque) -->
-            <div style="
-                display: flex;
-                justify-content: center;
-                font-size: 8px;
-                font-weight: bold;
-                background: #fff3e0;
-                border: 0.5px solid #ff6f00;
-                border-radius: 2px;
-                color: #d32f2f;
-                padding: 0.2mm 0;
-                margin: 0.3mm 0;
-            ">
-                ⏰ USAR ATÉ: ${horaLimiteUso}
-            </div>
-            
-            <!-- Linha 4: Lote + Validade -->
-            <div style="display: flex; justify-content: space-between; font-size: 4.5px; color: #666;">
-                <span>L:${loteFrasco}</span>
-                <span>V:${validadeFormatada}</span>
-            </div>
-            
-            <!-- Linha 5: Responsável (nova) -->
-            <div style="
-                display: flex;
-                justify-content: space-between;
-                font-size: 4.5px;
-                color: #444;
-                border-top: 0.5px dashed #ccc;
-                padding-top: 0.3mm;
-                margin-top: 0.3mm;
-            ">
-                <span>Responsável: _____________________</span>
-            </div>
-        </div>
-    `;
-
-    const win = window.open('', '_blank', 'width=300,height=220');
-    if (!win) {
-        alert('⚠️ Por favor, permita pop-ups para imprimir a etiqueta.');
-        return;
-    }
-
-    win.document.write(`
-        <html><head><title>Etiqueta Térmica 50x25</title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            @page { 
-                size: 50mm 25mm;
-                margin: 0mm;
-            }
-            body { 
-                background: #f0f0f0; 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                justify-content: center;
-                min-height: 100vh;
-                padding: 10px;
-            }
-            .preview { 
-                background: #fff; 
-                padding: 1mm; 
-                border-radius: 2px; 
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
-                margin-bottom: 10px; 
-                width: 50mm;
-            }
-            .btn-group { 
-                display: flex; 
-                gap: 8px; 
-                flex-wrap: wrap; 
-                justify-content: center; 
-            }
-            .btn-print { 
-                background: #1a237e; 
-                color: #fff; 
-                border: none; 
-                border-radius: 4px; 
-                padding: 8px 16px; 
-                font-size: 10pt; 
-                cursor: pointer; 
-            }
-            .btn-print:hover { background: #0d1442; }
-            .btn-close { 
-                background: #d32f2f; 
-                color: #fff; 
-                border: none; 
-                border-radius: 4px; 
-                padding: 8px 16px; 
-                font-size: 10pt; 
-                cursor: pointer; 
-            }
-            .btn-close:hover { background: #a02020; }
-            .info {
-                font-size: 9px;
-                color: #666;
-                margin: 6px 0;
-                text-align: center;
-            }
-            @media print {
-                .no-print { display: none !important; }
-                body { background: #fff; padding: 0; min-height: auto; }
-                .preview { 
-                    box-shadow: none; 
-                    border: none; 
-                    padding: 0mm;
-                    margin: 0;
-                    width: 50mm;
-                }
-                .preview > div { border: none !important; }
-            }
-        </style>
-        </head>
-        <body>
-            <div class="preview">
-                ${previewHTML}
-            </div>
-            <div class="info no-print">📏 Etiqueta 50mm x 25mm</div>
-            <div class="btn-group no-print">
-                <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
-                <button class="btn-close" onclick="window.close()">✕ Fechar</button>
-            </div>
-        </body></html>
-    `);
-    win.document.close();
-}
 
 function aplicarPlanejamento() {
     const ativFinal = document.getElementById('planAtividadeFinal').textContent;
@@ -462,4 +284,296 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         atualizarCamposEficiencia();
     }, 100);
+});
+// ==========================================
+// IMPRESSÃO ZEBRA COM BROWSER PRINT
+// ==========================================
+
+/**
+ * Detecta automaticamente a impressora Zebra padrão
+ * @returns {Promise<Object>} Impressora Zebra encontrada
+ */
+async function detectarImpressoraZebra() {
+    try {
+        if (typeof BrowserPrint === 'undefined') {
+            throw new Error('BrowserPrint não está instalado ou não foi carregado.');
+        }
+        console.log('🔍 Iniciando detecção de impressoras Zebra...');
+        const devices = await BrowserPrint.getLocalDevices();
+        const zebraPrinters = devices.filter(device => 
+            device.deviceType === 'printer' && 
+            (device.connectionType === 'BLUETOOTH' || device.connectionType === 'USB' || device.connectionType === 'NETWORK')
+        );
+        console.log(`📋 Encontradas ${zebraPrinters.length} impressoras Zebra:`, zebraPrinters);
+        if (zebraPrinters.length === 0) {
+            throw new Error('Nenhuma impressora Zebra encontrada.');
+        }
+        let defaultPrinter = zebraPrinters.find(p => p.isDefault) || zebraPrinters[0];
+        console.log('✅ Impressora Zebra selecionada:', defaultPrinter.name);
+        return defaultPrinter;
+    } catch (error) {
+        console.error('❌ Erro ao detectar impressora Zebra:', error);
+        throw error;
+    }
+}
+
+/**
+ * Gera o comando ZPL para a etiqueta
+ */
+function gerarZPLEtiqueta(dados) {
+    const ZPL = `^XA
+^CF0,22
+^FO10,10^FDRADIOFÁRMACO: ${dados.radiofarmaco || '---'}^FS
+^CF0,22
+^FO10,45^FDATIVIDADE TOTAL: ${dados.atividade || '0'} mCi^FS
+^CF0,22
+^FO380,45^FDVOLUME: ${dados.volume || '0'} mL^FS
+^CF0,22
+^FO10,80^FDLOTE: ${dados.lote || '_________'}^FS
+^CF0,22
+^FO380,80^FDVALIDADE: ${dados.validade || '--/--/----'}^FS
+^CF0,22
+^FO10,115^FDHORÁRIO KIT: ${dados.horaKit || '--:--'}^FS
+^CF0,22
+^FO380,115^FDLIMITE USO: ${dados.horaLimite || '--:--'}^FS
+^CF0,22
+^FO10,150^FDRESPONSÁVEL: ${dados.responsavel || '_____________'}^FS
+^XZ`;
+    return ZPL;
+}
+
+/**
+ * Obtém os dados atuais da etiqueta do sistema
+ */
+function obterDadosEtiqueta() {
+    try {
+        // 1. Radiofármaco
+        const radiofarmacoSelect = document.getElementById('radiofarmacoMestre');
+        const radiofarmaco = radiofarmacoSelect ? 
+            radiofarmacoSelect.options[radiofarmacoSelect.selectedIndex]?.text || '---' : '---';
+        
+        // 2. Horário de Marcação
+        const horaMarcacao = document.getElementById('horarioMarcacaoMestre')?.value || '';
+        let horaMarcacaoFormatada = '--:--';
+        if (horaMarcacao) {
+            const data = new Date(horaMarcacao);
+            horaMarcacaoFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // 3. Atividade Total
+        const atividade = document.getElementById('atividadeMarcacaoMestre')?.value || '0';
+        
+        // 4. Lote
+        const lote = document.getElementById('loteFrasco')?.value || '_________';
+        
+        // 5. Validade
+        const validadeFrasco = document.getElementById('validadeFrasco')?.value || '';
+        let validadeFormatada = '--/--/----';
+        if (validadeFrasco) {
+            const partes = validadeFrasco.split('-');
+            validadeFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        
+        // 6. Volume
+        const volume = document.getElementById('volumeFrasco')?.value || '0';
+        
+        // 7. Horário do Kit
+        const horaKit = document.getElementById('horaMarcacaoKit')?.value || '--:--';
+        
+        // 8. Horário Limite de Uso
+        const horaLimiteUso = document.getElementById('horaLimiteUso')?.value || '--:--';
+        
+        // 9. Responsável (usuário logado)
+        let responsavel = document.getElementById('nomeUsuarioLogado')?.textContent || '';
+        if (responsavel === 'Carregando...' || !responsavel) {
+            responsavel = '_____________';
+        }
+        
+        return {
+            radiofarmaco: radiofarmaco,
+            horaMarcacao: horaMarcacaoFormatada,
+            atividade: parseFloat(atividade).toFixed(1),
+            lote: lote,
+            validade: validadeFormatada,
+            volume: parseFloat(volume).toFixed(1),
+            horaKit: horaKit,
+            horaLimite: horaLimiteUso,
+            responsavel: responsavel
+        };
+    } catch (error) {
+        console.error('❌ Erro ao obter dados da etiqueta:', error);
+        return {
+            radiofarmaco: '---',
+            horaMarcacao: '--:--',
+            atividade: '0',
+            lote: '_________',
+            validade: '--/--/----',
+            volume: '0',
+            horaKit: '--:--',
+            horaLimite: '--:--',
+            responsavel: '_____________'
+        };
+    }
+}
+
+/**
+ * Função principal de impressão Zebra
+ */
+async function imprimirEtiquetaZebra() {
+    const btnZebra = document.getElementById('btnZebra');
+    const textoOriginal = btnZebra ? btnZebra.textContent : '🏷️ Imprimir Zebra';
+    try {
+        if (btnZebra) {
+            btnZebra.disabled = true;
+            btnZebra.textContent = '⏳ Processando...';
+            btnZebra.style.opacity = '0.7';
+        }
+        console.log('🖨️ Iniciando impressão Zebra...');
+        const impressora = await detectarImpressoraZebra();
+        console.log('✅ Impressora encontrada:', impressora.name);
+        const dados = obterDadosEtiqueta();
+        console.log('📋 Dados da etiqueta:', dados);
+        const zpl = gerarZPLEtiqueta(dados);
+        console.log('📄 ZPL gerado:', zpl);
+        await impressora.send(zpl);
+        console.log('✅ Etiqueta enviada para impressão com sucesso!');
+        mostrarFeedbackSucesso('Etiqueta enviada para impressora Zebra!');
+    } catch (error) {
+        console.error('❌ Erro na impressão Zebra:', error);
+        let mensagem = 'Erro ao imprimir: ';
+        if (error.message.includes('BrowserPrint não está instalado')) {
+            mensagem += 'O Browser Print da Zebra não está instalado. ';
+        } else if (error.message.includes('Nenhuma impressora Zebra encontrada')) {
+            mensagem += 'Nenhuma impressora Zebra encontrada. ';
+            mensagem += 'Verifique se a impressora está conectada e ligada.';
+            alert('⚠️ ' + mensagem);
+        } else {
+            mensagem += error.message || 'Erro desconhecido.';
+            alert('⚠️ ' + mensagem);
+        }
+    } finally {
+        if (btnZebra) {
+            btnZebra.disabled = false;
+            btnZebra.textContent = textoOriginal;
+            btnZebra.style.opacity = '1';
+        }
+    }
+}
+
+/**
+ * Mostra um feedback visual de sucesso
+ */
+function mostrarFeedbackSucesso(mensagem) {
+    let feedbackContainer = document.getElementById('feedbackZebra');
+    if (!feedbackContainer) {
+        feedbackContainer = document.createElement('div');
+        feedbackContainer.id = 'feedbackZebra';
+        feedbackContainer.style.cssText = `
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: rgba(0, 210, 64, 0.95);
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            z-index: 99999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-left: 4px solid #00ff64;
+            max-width: 350px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        `;
+        document.body.appendChild(feedbackContainer);
+    }
+    feedbackContainer.textContent = '✅ ' + mensagem;
+    feedbackContainer.style.display = 'block';
+    feedbackContainer.style.opacity = '1';
+    setTimeout(() => {
+        feedbackContainer.style.opacity = '0';
+        setTimeout(() => {
+            feedbackContainer.style.display = 'none';
+        }, 300);
+    }, 5000);
+}
+
+
+ /**
+ * Verifica o status da impressora Zebra e atualiza a interface
+ */
+async function verificarStatusImpressoraZebra() {
+    const btnZebra = document.getElementById('btnZebra');
+    const statusSpan = document.getElementById('statusZebra');
+    const mensagemInfo = document.getElementById('mensagemZebraInfo');
+    
+    if (!btnZebra || !statusSpan) return;
+    
+    try {
+        statusSpan.textContent = '⏳ Verificando...';
+        statusSpan.style.color = '#ffd700';
+        
+        if (typeof BrowserPrint === 'undefined') {
+            // Browser Print NÃO instalado
+            statusSpan.textContent = '❌ Browser Print não instalado';
+            statusSpan.style.color = '#ff6b6b';
+            
+            // MOSTRA a mensagem informativa
+            if (mensagemInfo) {
+                mensagemInfo.style.display = 'block';
+            }
+            
+            btnZebra.disabled = true;
+            btnZebra.style.opacity = '0.5';
+            return;
+        }
+        
+        // Browser Print instalado - ESCONDE a mensagem
+        if (mensagemInfo) {
+            mensagemInfo.style.display = 'none';
+        }
+        
+        // Verifica impressoras Zebra
+        const devices = await BrowserPrint.getLocalDevices();
+        const zebraPrinters = devices.filter(d => 
+            d.deviceType === 'printer' && 
+            (d.connectionType === 'BLUETOOTH' || d.connectionType === 'USB' || d.connectionType === 'NETWORK')
+        );
+        
+        if (zebraPrinters.length > 0) {
+            const printerName = zebraPrinters[0].name;
+            const statusIcon = zebraPrinters[0].isDefault ? '⭐' : '🖨️';
+            statusSpan.textContent = `${statusIcon} ${printerName}`;
+            statusSpan.style.color = '#00ff64';
+            btnZebra.disabled = false;
+            btnZebra.style.opacity = '1';
+            
+            if (zebraPrinters.length > 1) {
+                const extra = zebraPrinters.length - 1;
+                statusSpan.textContent += ` +${extra} outra${extra > 1 ? 's' : ''}`;
+            }
+        } else {
+            statusSpan.textContent = '⚠️ Nenhuma Zebra encontrada';
+            statusSpan.style.color = '#ffd700';
+            btnZebra.disabled = true;
+            btnZebra.style.opacity = '0.5';
+        }
+    } catch (error) {
+        console.error('❌ Erro ao verificar impressora:', error);
+        statusSpan.textContent = '❌ Erro na verificação';
+        statusSpan.style.color = '#ff6b6b';
+        btnZebra.disabled = true;
+        btnZebra.style.opacity = '0.5';
+    }
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        if (typeof BrowserPrint !== 'undefined') {
+            console.log('✅ Browser Print da Zebra detectado!');
+            setTimeout(verificarStatusImpressoraZebra, 500);
+        } else {
+            console.log('ℹ️ Browser Print da Zebra não detectado.');
+        }
+    }, 1500);
 });
