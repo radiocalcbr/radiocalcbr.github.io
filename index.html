@@ -461,23 +461,38 @@
                     </div>
                 </div>
 
-                <div class="grid-3">
-                    <div class="input-group">
-                        <label data-translate="plan_horario_marcacao">Horário da Marcação</label>
-                        <input type="datetime-local" id="planHorarioMarcacao">
-                        <small data-translate="plan_horario_marcacao_small">Momento em que o kit será marcado</small>
-                    </div>
-                    <div class="input-group">
-                        <label data-translate="plan_horario_primeira">Horário da 1ª Injeção</label>
-                        <input type="datetime-local" id="planHorarioPrimeira">
-                        <small data-translate="plan_horario_primeira_small">Momento da primeira administração</small>
-                    </div>
-                    <div class="input-group">
-                        <label data-translate="plan_horario_ultimo">Horário da Última Injeção</label>
-                        <input type="datetime-local" id="planHorarioUltimo">
-                        <small data-translate="plan_horario_ultimo_small">Momento da última administração</small>
-                    </div>
-                </div>
+             <div class="grid-3">
+    <div class="input-group">
+        <label data-translate="plan_horario_marcacao">Horário da Marcação</label>
+        <input type="datetime-local" id="planHorarioMarcacao">
+        <small data-translate="plan_horario_marcacao_small">Momento em que o kit será marcado</small>
+    </div>
+    <div class="input-group">
+        <label data-translate="plan_horario_primeira">Horário da 1ª Injeção</label>
+        <input type="datetime-local" id="planHorarioPrimeira">
+        <small data-translate="plan_horario_primeira_small">Momento da primeira administração</small>
+    </div>
+    <div class="input-group">
+        <label data-translate="plan_horario_ultimo">Horário da Última Injeção</label>
+        <input type="datetime-local" id="planHorarioUltimo">
+        <small data-translate="plan_horario_ultimo_small">Momento da última administração</small>
+    </div>
+</div>
+<!-- ===== ALERTA DE INTERVALO DE DATAS ===== -->
+<div id="alertaIntervalo" style="
+    margin: 15px 0;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: rgba(0, 255, 100, 0.05);
+    border: 2px solid rgba(0, 255, 100, 0.2);
+    color: #00ff64;
+    text-align: center;
+    transition: 0.3s;
+">
+    ✅ Intervalo adequado
+</div>
 
                 <div class="grid-2">
                     <div class="input-group">
@@ -563,7 +578,7 @@
             <!-- Botões de ação -->
             <div class="grid-2" style="margin-top: 10px;">
                 <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                    <button class="btn-primary" onclick="calcularPlanejamento()" style="margin-top: 0; flex: 1; min-width: 120px;" data-translate="plan_btn_calcular">🎯 Calcular Atividade do Kit</button>
+                    <button class="btn-primary" onclick="calcularPlanejamentoComValidacao()" style="margin-top: 0; flex: 1; min-width: 120px;" data-translate="plan_btn_calcular">🎯 Calcular Atividade do Kit</button>
                     <button class="btn-success" onclick="aplicarPlanejamento()" style="flex: 1; padding: 14px; min-width: 120px;" data-translate="plan_btn_aplicar">⚡ Aplicar à Marcação</button>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
