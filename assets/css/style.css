@@ -394,4 +394,31 @@
             .logo-icon .stethoscope { font-size: 1rem; }
             .logo-badge { font-size: 0.4rem; padding: 1px 6px; }
         }
+        /* ===== VALIDAÇÃO DE DATAS ===== */
+.data-alerta {
+    border-color: #ff6b6b !important;
+    background: rgba(255, 107, 107, 0.1) !important;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.2);
+}
+
+.data-ok {
+    border-color: #00ff64 !important;
+    background: rgba(0, 255, 100, 0.05) !important;
+}
+
+.data-aviso {
+    border-color: #ffd700 !important;
+    background: rgba(255, 215, 0, 0.05) !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+}
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
     </style>
