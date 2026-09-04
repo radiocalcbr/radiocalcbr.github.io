@@ -422,3 +422,30 @@
     animation: shake 0.4s ease-in-out;
 }
     </style>
+/* ===== ANIMAÇÃO DO TOAST ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== ESTILO PARA LINHAS FILTRADAS ===== */
+.linha-filtrada {
+    background: rgba(0, 210, 255, 0.03) !important;
+}
+
+.linha-filtrada td {
+    color: #888 !important;
+    font-style: italic;
+}
+
+/* ===== DESTAQUE DO FILTRO ATIVO ===== */
+.filtro-ativo {
+    border-color: #00d2ff !important;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.1);
+}
