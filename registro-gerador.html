@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioCalc - Registro de Gerador Mo-99/Tc-99m</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90' fill='%23ffd700'%3ER%3C/text%3E%3C/svg%3E">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    
+    <style>
+        body { 
+            padding: 20px; 
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header-pagina {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 2px solid rgba(155,89,182,0.2);
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .btn-voltar {
+            background: rgba(155,89,182,0.15);
+            border: 1px solid rgba(155,89,182,0.3);
+            color: #9b59b6;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .btn-voltar:hover {
+            background: rgba(155,89,182,0.25);
+        }
+        
+        .titulo-pagina { 
+            color: #9b59b6; 
+        }
+        .titulo-pagina span { 
+            font-size: 0.8rem; 
+            color: #888; 
+            font-weight: normal; 
+        }
+
+        .badge-info {
+            display: inline-block;
+            background: rgba(0,210,255,0.1);
+            color: #00d2ff;
+            font-size: 0.55rem;
+            padding: 2px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,210,255,0.15);
+        }
+
+        .paginacao-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn-pagina {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(155,89,182,0.2);
+            background: rgba(255,255,255,0.03);
+            color: #888;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .btn-pagina:hover {
+            background: rgba(155,89,182,0.1);
+            border-color: rgba(155,89,182,0.4);
+            color: #fff;
+        }
+
+        .btn-pagina.ativo {
+            background: rgba(155,89,182,0.2);
+            border-color: #9b59b6;
+            color: #9b59b6;
+        }
+
+        .btn-pagina.nova-pagina {
+            background: rgba(0,210,255,0.1);
+            border-color: rgba(0,210,255,0.3);
+            color: #00d2ff;
+        }
+
+        .btn-pagina.nova-pagina:hover {
+            background: rgba(0,210,255,0.2);
+        }
+
+        .info-pagina {
+            color: #666;
+            font-size: 0.8rem;
+            padding: 5px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .table-gerador-wrapper {
+            max-height: 550px;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(155,89,182,0.15);
+        }
+
+        .table-gerador-wrapper::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .table-gerador-wrapper::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+        }
+        .table-gerador-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(155,89,182,0.3);
+            border-radius: 8px;
+        }
+        .table-gerador-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(155,89,182,0.5);
+        }
+
+        #tabelaGeradores {
+            min-width: 1450px;
+            font-size: 0.7rem;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #tabelaGeradores thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #tabelaGeradores th {
+            background: rgba(155, 89, 182, 0.25);
+            color: #ffd700;
+            font-size: 0.6rem;
+            padding: 8px 4px;
+            text-align: center;
+            border-bottom: 2px solid rgba(155, 89, 182, 0.3);
+            white-space: nowrap;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        #tabelaGeradores td {
+            padding: 4px 3px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #tabelaGeradores td .input-gerador {
+            width: 100%;
+            padding: 5px 6px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 0.65rem;
+            min-width: 60px;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        #tabelaGeradores td .input-gerador:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.1);
+        }
+
+        #tabelaGeradores td .input-gerador[type="date"] {
+            min-width: 100px;
+        }
+
+        #tabelaGeradores td .input-gerador[type="text"] {
+            min-width: 80px;
+        }
+
+        #tabelaGeradores td select.input-gerador {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 12px;
+            padding-right: 24px;
+            cursor: pointer;
+        }
+
+        #tabelaGeradores td select.input-gerador option {
+            background-color: #2a2a3e;
+            color: #fff;
+        }
+
+        #tabelaGeradores .num-linha {
+            color: #ffd700;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        #tabelaGeradores tr:hover {
+            background: rgba(155, 89, 182, 0.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-aguardando {
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .status-pronto {
+            background: rgba(0, 255, 100, 0.15);
+            color: #00ff64;
+            border: 1px solid rgba(0, 255, 100, 0.3);
+        }
+
+        .status-transito {
+            background: rgba(255, 159, 67, 0.15);
+            color: #ff9f43;
+            border: 1px solid rgba(255, 159, 67, 0.3);
+        }
+
+        .status-devolvido {
+            background: rgba(255, 107, 107, 0.15);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-salvar-gerador {
+            padding: 10px 25px;
+            background: linear-gradient(90deg, #9b59b6, #8e44ad);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-salvar-gerador:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-excel-gerador {
+            padding: 10px 25px;
+            background: rgba(0, 210, 255, 0.15);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            border-radius: 8px;
+            color: #00d2ff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-excel-gerador:hover {
+            background: rgba(0, 210, 255, 0.25);
+        }
+
+        .btn-acao-linha {
+            background: rgba(255,107,107,0.15);
+            border: 1px solid rgba(255,107,107,0.2);
+            color: #ff6b6b;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            transition: 0.3s;
+        }
+        .btn-acao-linha:hover {
+            background: rgba(255,107,107,0.3);
+        }
+
+        .alerta-pagina-completa {
+            background: rgba(0,255,100,0.08);
+            border: 2px solid rgba(0,255,100,0.2);
+            border-radius: 10px;
+            padding: 12px 20px;
+            text-align: center;
+            margin: 10px 0;
+            color: #00ff64;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .feedback-flash {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            z-index: 9999;
+            animation: fadeInUp 0.5s ease;
+            max-width: 450px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+
+        .feedback-flash.success {
+            background: rgba(0, 255, 100, 0.15);
+            border: 2px solid rgba(0, 255, 100, 0.3);
+            color: #00ff64;
+        }
+
+        .feedback-flash.error {
+            background: rgba(255, 107, 107, 0.15);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+
+        .feedback-flash.info {
+            background: rgba(0, 210, 255, 0.15);
+            border: 2px solid rgba(0, 210, 255, 0.3);
+            color: #00d2ff;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-pagina {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .paginacao-container {
+                gap: 5px;
+            }
+            .btn-pagina {
+                padding: 5px 10px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" style="max-width: 100%; margin: 0 auto; padding: 0 10px;">
+    
+    <!-- ===== HEADER ===== -->
+    <div class="header-pagina">
+        <div>
+            <h1 class="titulo-pagina">
+                <span style="color: #ffd700;">⚛️⬇️</span>
+                Registro de Gerador Mo-99/Tc-99m
+                <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                    (Ciclo de vida do gerador)
+                </span>
+            </h1>
+            <p style="color: #888; font-size: 0.85rem; margin-top: 4px;">
+                Gerencie o ciclo de vida do gerador Mo-99/Tc-99m.
+                <span class="badge-info" id="infoTotalLinhas">📋 Página 1 · 18 linhas</span>
+            </p>
+        </div>
+        <button class="btn-voltar" onclick="voltarParaPrincipal()">⬅ Voltar ao RadioCalc</button>
+    </div>
+
+    <!-- ===== FILTRO POR PERÍODO - GERADOR ===== -->
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(155,89,182,0.2); border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <span style="color: #ffd700; font-weight: 600; font-size: 0.9rem;">🔍 Filtrar por período:</span>
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+            <input type="date" id="filtroDataInicioGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+            <input type="date" id="filtroDataFimGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+        </div>
+        
+        <button onclick="aplicarFiltroGerador()" style="padding: 6px 20px; background: linear-gradient(90deg, #9b59b6, #8e44ad); border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            🔍 Filtrar
+        </button>
+        
+        <button onclick="limparFiltroGerador()" style="padding: 6px 16px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px; color: #888; cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+            ✕ Limpar
+        </button>
+        
+        <span id="infoFiltroGerador" style="color: #666; font-size: 0.75rem; margin-left: auto;">
+            Mostrando todos os registros
+        </span>
+    </div>
+
+    <!-- ===== ALERTA DE PÁGINA COMPLETA ===== -->
+    <div class="alerta-pagina-completa" id="alertaPaginaCompleta">
+        ✅ Todas as 18 linhas desta página foram preenchidas! 
+        <strong>Clique em "📄 + Nova Página" para continuar.</strong>
+    </div>
+
+    <!-- ===== CARD PRINCIPAL ===== -->
+    <div class="card" style="padding: 20px;">
+        
+        <!-- ===== PAGINAÇÃO ===== -->
+        <div class="paginacao-container" id="paginacaoContainer">
+            <!-- Botões gerados pelo JavaScript -->
+        </div>
+
+        <!-- ===== TABELA DE GERADORES ===== -->
+        <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>📋</span>
+            Registro de Geradores Mo-99/Tc-99m
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtual">
+                (Página 1)
+            </span>
+        </h4>
+
+        <div class="table-gerador-wrapper">
+            <table id="tabelaGeradores">
+                <thead>
+                    <tr>
+                        <th style="min-width: 35px; width: 35px;">#</th>
+                        <th style="min-width: 110px;">📅 Data Recebimento</th>
+                        <th style="min-width: 120px;">⚛️ Data Calibração</th>
+                        <th style="min-width: 100px;">📦 Lote</th>
+                        <th style="min-width: 100px;">📅 Validade</th>
+                        <th style="min-width: 110px;">📅 Data Devolução</th>
+                        <th style="min-width: 130px;">👤 Responsável Recebimento</th>
+                        <th style="min-width: 130px;">📌 Status</th>
+                        <th style="min-width: 130px;">👤 Responsável Liberação</th>
+                        <th style="min-width: 130px;">👤 Responsável Devolução</th>
+                        <th style="min-width: 40px; width: 40px;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaGeradores">
+                    <!-- As 18 linhas serão geradas pelo JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== RESUMO E CONTADORES ===== -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 15px; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <span style="color: #aaa;">Total: <strong id="totalGeradores" style="color: #ffd700;">0</strong></span>
+                <span style="color: #aaa;">Ativos: <strong id="ativosGeradores" style="color: #00ff64;">0</strong></span>
+                <span style="color: #aaa;">Devolvidos: <strong id="devolvidosGeradores" style="color: #ff6b6b;">0</strong></span>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-excel-gerador" onclick="exportarExcelGeradores()" style="padding: 6px 16px; font-size: 0.8rem;">
+                    📊 Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== BOTÕES DE AÇÃO ===== -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button class="btn-salvar-gerador" onclick="salvarTabelaGeradores()">
+                💾 Salvar Registro
+            </button>
+            <button class="btn-excel-gerador" onclick="exportarExcelGeradores()">
+                📊 Exportar Excel
+            </button>
+        </div>
+
+        <!-- ===== HISTÓRICO DE REGISTROS SALVOS ===== -->
+        <div style="margin-top: 25px; border-top: 1px solid rgba(155,89,182,0.15); padding-top: 20px;">
+            <h5 style="color: #aaa; margin-bottom: 10px;">📋 Registros Salvos</h5>
+            <div id="historicoGeradoresContainer" style="max-height: 200px; overflow-y: auto;">
+                <div style="color: #666; font-size: 0.8rem; text-align: center; padding: 20px;">
+                    Nenhum registro salvo ainda.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer style="text-align: center; padding: 20px 0; color: #555; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 30px;">
+        ⚛️ RadioCalc &bull; Registro de Gerador Mo-99/Tc-99m &bull; v1.0
+    </footer>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script>
+// ==========================================
+// ⚛️⬇️ TABELA DE GERADORES - COM PAGINAÇÃO
+// ==========================================
+
+let paginaAtual = 0;
+let totalPaginas = 1;
+const LINHAS_POR_PAGINA = 18;
+
+// ===== DADOS DE TODAS AS PÁGINAS =====
+let dadosPaginas = {
+    0: [] // Página 0 = 18 linhas
+};
+
+// ===== STATUS OPTIONS =====
+const STATUS_OPTIONS = [
+    { value: 'aguardando', label: '🔵 Aguardando decaimento', class: 'status-aguardando' },
+    { value: 'pronto', label: '🟡 Pronto para liberação', class: 'status-pronto' },
+    { value: 'transito', label: '🟠 Em trânsito', class: 'status-transito' },
+    { value: 'devolvido', label: '✅ Devolvido', class: 'status-devolvido' }
+];
+
+// ==========================================
+// FUNÇÃO ORIGINAL RENDERIZAR
+// ==========================================
+
+function renderizarPaginaOriginal(pagina) {
+    const tbody = document.getElementById('corpoTabelaGeradores');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const dados = dadosPaginas[pagina] || [];
+    const inicio = pagina * LINHAS_POR_PAGINA;
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        const numLinha = inicio + i + 1;
+        const dado = dados[i] || {};
+        
+        const tr = document.createElement('tr');
+        tr.dataset.index = i;
+        tr.dataset.pagina = pagina;
+        tr.dataset.numLinha = numLinha;
+        
+        let statusOptions = '';
+        STATUS_OPTIONS.forEach(opt => {
+            const selected = dado.status === opt.value ? 'selected' : '';
+            statusOptions += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+        });
+        
+        tr.innerHTML = `
+            <td class="num-linha">${numLinha}</td>
+            <td><input type="date" id="ger_dataRec_${pagina}_${i}" class="input-gerador" value="${dado.dataRecebimento || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="datetime-local" id="ger_dataCal_${pagina}_${i}" class="input-gerador" value="${dado.dataCalibracao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="ger_lote_${pagina}_${i}" placeholder="Ex: G12345678" class="input-gerador" value="${dado.lote || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="ger_validade_${pagina}_${i}" class="input-gerador" value="${dado.validade || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="ger_dataDev_${pagina}_${i}" class="input-gerador" value="${dado.dataDevolucao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="ger_respRec_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelRecebimento || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <select id="ger_status_${pagina}_${i}" class="input-gerador" onchange="salvarDadosLinha(${pagina}, ${i}); atualizarContadores();">
+                    ${statusOptions}
+                </select>
+            </td>
+            <td><input type="text" id="ger_respLib_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelLiberacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="ger_respDev_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelDevolucao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <button class="btn-acao-linha" onclick="limparLinhaGerador(${pagina}, ${i})" title="Limpar linha">✕</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+// ==========================================
+// FUNÇÃO RENDERIZAR COM FILTRO
+// ==========================================
+
+let filtroAtivoGerador = false;
+let filtroDataInicioGerador = null;
+let filtroDataFimGerador = null;
+
+function deveExibirLinhaNoFiltroGerador(dado) {
+    if (!filtroAtivoGerador) return true;
+    if (!filtroDataInicioGerador && !filtroDataFimGerador) return true;
+    
+    let dataLinha = null;
+    if (dado.dataRecebimento) {
+        dataLinha = new Date(dado.dataRecebimento);
+    }
+    
+    if (!dataLinha || isNaN(dataLinha.getTime())) {
+        if (dado.dataCalibracao) {
+            dataLinha = new Date(dado.dataCalibracao);
+        }
+    }
+    
+    if (!dataLinha || isNaN(dataLinha.getTime())) {
+        if (dado.validade) {
+            dataLinha = new Date(dado.validade);
+        } else if (dado.dataDevolucao) {
+            dataLinha = new Date(dado.dataDevolucao);
+        }
+    }
+    
+    if (!dataLinha || isNaN(dataLinha.getTime())) {
+        return true;
+    }
+    
+    if (filtroDataInicioGerador && dataLinha < filtroDataInicioGerador) {
+        return false;
+    }
+    
+    if (filtroDataFimGerador) {
+        const dataFim = new Date(filtroDataFimGerador);
+        dataFim.setHours(23, 59, 59, 999);
+        if (dataLinha > dataFim) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function renderizarPaginaComFiltroGerador(pagina) {
+    const tbody = document.getElementById('corpoTabelaGeradores');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const dados = dadosPaginas[pagina] || [];
+    const inicio = pagina * LINHAS_POR_PAGINA;
+    let linhasVisiveis = 0;
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        const numLinha = inicio + i + 1;
+        const dado = dados[i] || {};
+        
+        const deveExibir = deveExibirLinhaNoFiltroGerador(dado);
+        
+        if (!deveExibir) {
+            const tr = document.createElement('tr');
+            tr.dataset.index = i;
+            tr.dataset.pagina = pagina;
+            tr.dataset.numLinha = numLinha;
+            tr.style.display = 'none';
+            tr.innerHTML = `
+                <td class="num-linha">${numLinha}</td>
+                <td colspan="10" style="text-align: center; color: #555; font-size: 0.7rem; padding: 10px;">
+                    🔒 Registro fora do período selecionado
+                </td>
+            `;
+            tbody.appendChild(tr);
+            continue;
+        }
+        
+        linhasVisiveis++;
+        
+        let statusOptions = '';
+        STATUS_OPTIONS.forEach(opt => {
+            const selected = dado.status === opt.value ? 'selected' : '';
+            statusOptions += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+        });
+        
+        const tr = document.createElement('tr');
+        tr.dataset.index = i;
+        tr.dataset.pagina = pagina;
+        tr.dataset.numLinha = numLinha;
+        
+        tr.innerHTML = `
+            <td class="num-linha">${numLinha}</td>
+            <td><input type="date" id="ger_dataRec_${pagina}_${i}" class="input-gerador" value="${dado.dataRecebimento || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="datetime-local" id="ger_dataCal_${pagina}_${i}" class="input-gerador" value="${dado.dataCalibracao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="ger_lote_${pagina}_${i}" placeholder="Ex: G12345678" class="input-gerador" value="${dado.lote || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="ger_validade_${pagina}_${i}" class="input-gerador" value="${dado.validade || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="ger_dataDev_${pagina}_${i}" class="input-gerador" value="${dado.dataDevolucao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="ger_respRec_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelRecebimento || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <select id="ger_status_${pagina}_${i}" class="input-gerador" onchange="salvarDadosLinha(${pagina}, ${i}); atualizarContadores();">
+                    ${statusOptions}
+                </select>
+            </td>
+            <td><input type="text" id="ger_respLib_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelLiberacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="ger_respDev_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelDevolucao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <button class="btn-acao-linha" onclick="limparLinhaGerador(${pagina}, ${i})" title="Limpar linha">✕</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    atualizarInfoPagina(pagina);
+    atualizarContadorGeradores(linhasVisiveis);
+}
+
+// ==========================================
+// FUNÇÃO PRINCIPAL RENDERIZAR
+// ==========================================
+
+function renderizarPagina(pagina) {
+    if (filtroAtivoGerador) {
+        renderizarPaginaComFiltroGerador(pagina);
+    } else {
+        renderizarPaginaOriginal(pagina);
+    }
+}
+
+// ==========================================
+// FUNÇÕES DE PAGINAÇÃO E GERENCIAMENTO
+// ==========================================
+
+function inicializarPagina(pagina) {
+    if (!dadosPaginas[pagina]) {
+        dadosPaginas[pagina] = [];
+        for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+            dadosPaginas[pagina][i] = {
+                dataRecebimento: '',
+                dataCalibracao: '',
+                lote: '',
+                validade: '',
+                dataDevolucao: '',
+                responsavelRecebimento: '',
+                status: 'aguardando',
+                responsavelLiberacao: '',
+                responsavelDevolucao: ''
+            };
+        }
+    }
+    
+    renderizarPagina(pagina);
+    atualizarPaginacao();
+    atualizarInfoPagina(pagina);
+    verificarPaginaCompleta(pagina);
+    atualizarContadores();
+}
+
+function salvarDadosLinha(pagina, index) {
+    if (!dadosPaginas[pagina]) {
+        dadosPaginas[pagina] = [];
+    }
+    
+    if (!dadosPaginas[pagina][index]) {
+        dadosPaginas[pagina][index] = {};
+    }
+    
+    dadosPaginas[pagina][index] = {
+        dataRecebimento: document.getElementById(`ger_dataRec_${pagina}_${index}`)?.value || '',
+        dataCalibracao: document.getElementById(`ger_dataCal_${pagina}_${index}`)?.value || '',
+        lote: document.getElementById(`ger_lote_${pagina}_${index}`)?.value || '',
+        validade: document.getElementById(`ger_validade_${pagina}_${index}`)?.value || '',
+        dataDevolucao: document.getElementById(`ger_dataDev_${pagina}_${index}`)?.value || '',
+        responsavelRecebimento: document.getElementById(`ger_respRec_${pagina}_${index}`)?.value || '',
+        status: document.getElementById(`ger_status_${pagina}_${index}`)?.value || 'aguardando',
+        responsavelLiberacao: document.getElementById(`ger_respLib_${pagina}_${index}`)?.value || '',
+        responsavelDevolucao: document.getElementById(`ger_respDev_${pagina}_${index}`)?.value || ''
+    };
+    
+    verificarPaginaCompleta(pagina);
+    atualizarContadores();
+}
+
+function verificarPaginaCompleta(pagina) {
+    const dados = dadosPaginas[pagina] || [];
+    let completas = 0;
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        const linha = dados[i] || {};
+        const preenchida = linha.dataRecebimento || linha.dataCalibracao || linha.lote || 
+                           linha.validade || linha.dataDevolucao || linha.responsavelRecebimento || 
+                           linha.responsavelLiberacao || linha.responsavelDevolucao;
+        if (preenchida) completas++;
+    }
+    
+    const alerta = document.getElementById('alertaPaginaCompleta');
+    if (completas >= LINHAS_POR_PAGINA) {
+        alerta.style.display = 'block';
+        adicionarBotaoNovaPagina();
+    } else {
+        alerta.style.display = 'none';
+    }
+}
+
+function adicionarBotaoNovaPagina() {
+    const container = document.getElementById('paginacaoContainer');
+    const btnExistente = document.getElementById('btnNovaPagina');
+    
+    if (!btnExistente) {
+        const btn = document.createElement('button');
+        btn.id = 'btnNovaPagina';
+        btn.className = 'btn-pagina nova-pagina';
+        btn.innerHTML = '📄 + Nova Página';
+        btn.onclick = function() {
+            criarNovaPagina();
+        };
+        container.appendChild(btn);
+    }
+}
+
+function criarNovaPagina() {
+    const novaPagina = totalPaginas;
+    dadosPaginas[novaPagina] = [];
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        dadosPaginas[novaPagina][i] = {
+            dataRecebimento: '',
+            dataCalibracao: '',
+            lote: '',
+            validade: '',
+            dataDevolucao: '',
+            responsavelRecebimento: '',
+            status: 'aguardando',
+            responsavelLiberacao: '',
+            responsavelDevolucao: ''
+        };
+    }
+    
+    totalPaginas++;
+    paginaAtual = novaPagina;
+    
+    const btnNova = document.getElementById('btnNovaPagina');
+    if (btnNova) btnNova.remove();
+    
+    const alerta = document.getElementById('alertaPaginaCompleta');
+    alerta.style.display = 'none';
+    
+    renderizarPagina(paginaAtual);
+    atualizarPaginacao();
+    atualizarInfoPagina(paginaAtual);
+    atualizarContadores();
+    
+    mostrarFeedbackSalvamento(`📄 Página ${paginaAtual + 1} criada!`, 'success');
+}
+
+function atualizarPaginacao() {
+    const container = document.getElementById('paginacaoContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const btnAnterior = document.createElement('button');
+    btnAnterior.className = 'btn-pagina';
+    btnAnterior.innerHTML = '◀ Anterior';
+    btnAnterior.onclick = function() {
+        if (paginaAtual > 0) {
+            paginaAtual--;
+            renderizarPagina(paginaAtual);
+            atualizarPaginacao();
+            atualizarInfoPagina(paginaAtual);
+            atualizarContadores();
+        }
+    };
+    if (paginaAtual === 0) {
+        btnAnterior.style.opacity = '0.3';
+        btnAnterior.style.cursor = 'default';
+    }
+    container.appendChild(btnAnterior);
+    
+    for (let i = 0; i < totalPaginas; i++) {
+        const btn = document.createElement('button');
+        btn.className = `btn-pagina ${i === paginaAtual ? 'ativo' : ''}`;
+        btn.textContent = `📄 ${i + 1}`;
+        btn.onclick = function() {
+            paginaAtual = i;
+            renderizarPagina(paginaAtual);
+            atualizarPaginacao();
+            atualizarInfoPagina(paginaAtual);
+            atualizarContadores();
+            const alerta = document.getElementById('alertaPaginaCompleta');
+            alerta.style.display = 'none';
+            verificarPaginaCompleta(paginaAtual);
+        };
+        container.appendChild(btn);
+    }
+    
+    const btnProxima = document.createElement('button');
+    btnProxima.className = 'btn-pagina';
+    btnProxima.innerHTML = 'Próxima ▶';
+    btnProxima.onclick = function() {
+        if (paginaAtual < totalPaginas - 1) {
+            paginaAtual++;
+            renderizarPagina(paginaAtual);
+            atualizarPaginacao();
+            atualizarInfoPagina(paginaAtual);
+            atualizarContadores();
+        }
+    };
+    if (paginaAtual === totalPaginas - 1) {
+        btnProxima.style.opacity = '0.3';
+        btnProxima.style.cursor = 'default';
+    }
+    container.appendChild(btnProxima);
+    
+    const info = document.createElement('span');
+    info.className = 'info-pagina';
+    info.textContent = `📊 ${totalPaginas} páginas · ${totalPaginas * LINHAS_POR_PAGINA} linhas`;
+    container.appendChild(info);
+    
+    if (document.getElementById('alertaPaginaCompleta').style.display === 'block') {
+        adicionarBotaoNovaPagina();
+    }
+}
+
+function atualizarInfoPagina(pagina) {
+    const info = document.getElementById('infoPaginaAtual');
+    const infoTotal = document.getElementById('infoTotalLinhas');
+    if (info) info.textContent = `(Página ${pagina + 1})`;
+    if (infoTotal) infoTotal.textContent = `📋 Página ${pagina + 1} · ${LINHAS_POR_PAGINA} linhas`;
+}
+
+function atualizarContadores() {
+    let total = 0;
+    let ativos = 0;
+    let devolvidos = 0;
+    
+    for (let p = 0; p < totalPaginas; p++) {
+        const dados = dadosPaginas[p] || [];
+        for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+            const linha = dados[i] || {};
+            const preenchida = linha.dataRecebimento || linha.lote;
+            if (preenchida) {
+                total++;
+                if (linha.status === 'devolvido') {
+                    devolvidos++;
+                } else {
+                    ativos++;
+                }
+            }
+        }
+    }
+    
+    document.getElementById('totalGeradores').textContent = total;
+    document.getElementById('ativosGeradores').textContent = ativos;
+    document.getElementById('devolvidosGeradores').textContent = devolvidos;
+}
+
+function limparLinhaGerador(pagina, index) {
+    if (!confirm(`Deseja limpar a linha ${index + 1} da página ${pagina + 1}?`)) return;
+    
+    if (dadosPaginas[pagina] && dadosPaginas[pagina][index]) {
+        dadosPaginas[pagina][index] = {
+            dataRecebimento: '',
+            dataCalibracao: '',
+            lote: '',
+            validade: '',
+            dataDevolucao: '',
+            responsavelRecebimento: '',
+            status: 'aguardando',
+            responsavelLiberacao: '',
+            responsavelDevolucao: ''
+        };
+    }
+    
+    renderizarPagina(pagina);
+    atualizarContadores();
+    mostrarFeedbackSalvamento(`🗑️ Linha ${index + 1} limpa!`, 'info');
+}
+
+function salvarTabelaGeradores() {
+    let totalGeradores = 0;
+    const todosGeradores = [];
+    
+    for (let p = 0; p < totalPaginas; p++) {
+        const dados = dadosPaginas[p] || [];
+        for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+            const linha = dados[i] || {};
+            const preenchida = linha.dataRecebimento || linha.lote;
+            
+            if (preenchida) {
+                totalGeradores++;
+                todosGeradores.push({
+                    pagina: p + 1,
+                    numero: (p * LINHAS_POR_PAGINA) + i + 1,
+                    ...linha
+                });
+            }
+        }
+    }
+    
+    if (totalGeradores === 0) {
+        alert('⚠️ Nenhum dado para salvar! Preencha pelo menos uma linha.');
+        return;
+    }
+    
+    const registro = {
+        id: Date.now(),
+        dataSalvamento: new Date().toISOString(),
+        totalPaginas: totalPaginas,
+        totalGeradores: totalGeradores,
+        geradores: todosGeradores
+    };
+    
+    let registros = JSON.parse(localStorage.getItem('radiocalc_geradores') || '[]');
+    registros.unshift(registro);
+    localStorage.setItem('radiocalc_geradores', JSON.stringify(registros));
+    
+    mostrarFeedbackSalvamento(`✅ ${totalGeradores} geradores salvos em ${totalPaginas} páginas!`, 'success');
+    atualizarHistoricoGeradores();
+}
+
+function exportarExcelGeradores() {
+    const dados = [];
+    
+    dados.push(['==================================================']);
+    dados.push(['         ⚛️ RADIOCALCBR - REGISTRO DE GERADORES']);
+    dados.push(['==================================================']);
+    dados.push([]);
+    dados.push(['📋 REGISTRO DE GERADORES Mo-99/Tc-99m']);
+    dados.push(['📅 Data de geração:', new Date().toLocaleString('pt-BR')]);
+    dados.push(['📄 Total de páginas:', totalPaginas]);
+    dados.push([]);
+    
+    dados.push([
+        '#',
+        'Página',
+        'Data Recebimento',
+        'Data Calibração',
+        'Lote',
+        'Validade',
+        'Data Devolução',
+        'Responsável Recebimento',
+        'Status',
+        'Responsável Liberação',
+        'Responsável Devolução'
+    ]);
+    
+    let linhasPreenchidas = 0;
+    
+    for (let p = 0; p < totalPaginas; p++) {
+        const dadosPagina = dadosPaginas[p] || [];
+        for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+            const linha = dadosPagina[i] || {};
+            const preenchida = linha.dataRecebimento || linha.lote;
+            
+            if (preenchida) {
+                linhasPreenchidas++;
+                const statusLabel = STATUS_OPTIONS.find(s => s.value === linha.status)?.label || linha.status || '';
+                
+                dados.push([
+                    (p * LINHAS_POR_PAGINA) + i + 1,
+                    p + 1,
+                    linha.dataRecebimento || '',
+                    linha.dataCalibracao || '',
+                    linha.lote || '',
+                    linha.validade || '',
+                    linha.dataDevolucao || '',
+                    linha.responsavelRecebimento || '',
+                    statusLabel,
+                    linha.responsavelLiberacao || '',
+                    linha.responsavelDevolucao || ''
+                ]);
+            }
+        }
+    }
+    
+    dados.push([]);
+    dados.push(['📊 Total de geradores registrados:', linhasPreenchidas]);
+    dados.push(['📄 Total de páginas:', totalPaginas]);
+    dados.push([]);
+    dados.push(['==================================================']);
+    dados.push(['📌 GERADO POR RADIOCALCBR']);
+    dados.push(['📧 fisixassessoria@gmail.com']);
+    dados.push(['==================================================']);
+    dados.push(['⚠️ AVISO: Documento de controle de geradores Mo-99/Tc-99m.']);
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(dados);
+    XLSX.utils.book_append_sheet(wb, ws, 'Geradores');
+    
+    const nomeArquivo = `Geradores_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, nomeArquivo);
+    
+    mostrarFeedbackSalvamento(`📊 Excel gerado com ${linhasPreenchidas} geradores em ${totalPaginas} páginas!`, 'success');
+}
+
+function atualizarHistoricoGeradores() {
+    const container = document.getElementById('historicoGeradoresContainer');
+    if (!container) return;
+    
+    const registros = JSON.parse(localStorage.getItem('radiocalc_geradores') || '[]');
+    
+    if (registros.length === 0) {
+        container.innerHTML = `
+            <div style="color: #666; font-size: 0.8rem; text-align: center; padding: 20px;">
+                Nenhum registro salvo ainda.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    registros.slice(0, 5).forEach((reg, index) => {
+        const data = new Date(reg.dataSalvamento).toLocaleString('pt-BR');
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.75rem; color: #aaa;">
+                <span>
+                    <strong style="color: #ffd700;">#${index + 1}</strong>
+                    ${reg.totalGeradores} geradores · ${reg.totalPaginas || 1} páginas
+                </span>
+                <span style="color: #666; font-size: 0.65rem;">${data}</span>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function mostrarFeedbackSalvamento(mensagem, tipo = 'success') {
+    const existing = document.querySelector('.feedback-flash');
+    if (existing) existing.remove();
+    
+    const div = document.createElement('div');
+    div.className = `feedback-flash ${tipo}`;
+    div.textContent = mensagem;
+    document.body.appendChild(div);
+    
+    setTimeout(() => {
+        div.style.opacity = '0';
+        div.style.transition = 'opacity 0.5s';
+        setTimeout(() => div.remove(), 500);
+    }, 3000);
+}
+
+function voltarParaPrincipal() {
+    window.location.href = '../index.html';
+}
+
+// ==========================================
+// FUNÇÕES DO FILTRO
+// ==========================================
+
+function aplicarFiltroGerador() {
+    const dataInicio = document.getElementById('filtroDataInicioGerador').value;
+    const dataFim = document.getElementById('filtroDataFimGerador').value;
+    
+    if (!dataInicio && !dataFim) {
+        mostrarToastGerador('⚠️ Selecione pelo menos uma data para filtrar.', 'aviso');
+        return;
+    }
+    
+    if (dataInicio && dataFim && dataInicio > dataFim) {
+        mostrarToastGerador('⚠️ A data inicial não pode ser maior que a data final!', 'erro');
+        return;
+    }
+    
+    filtroDataInicioGerador = dataInicio ? new Date(dataInicio) : null;
+    filtroDataFimGerador = dataFim ? new Date(dataFim) : null;
+    filtroAtivoGerador = true;
+    
+    renderizarPagina(paginaAtual);
+    atualizarInfoFiltroGerador();
+    
+    mostrarToastGerador('✅ Filtro aplicado com sucesso!', 'success');
+}
+
+function limparFiltroGerador() {
+    document.getElementById('filtroDataInicioGerador').value = '';
+    document.getElementById('filtroDataFimGerador').value = '';
+    filtroAtivoGerador = false;
+    filtroDataInicioGerador = null;
+    filtroDataFimGerador = null;
+    
+    renderizarPagina(paginaAtual);
+    atualizarInfoFiltroGerador();
+    
+    mostrarToastGerador('✅ Filtro removido. Mostrando todos os registros.', 'info');
+}
+
+function atualizarInfoFiltroGerador() {
+    const infoEl = document.getElementById('infoFiltroGerador');
+    if (!infoEl) return;
+    
+    if (!filtroAtivoGerador) {
+        infoEl.textContent = '📋 Mostrando todos os registros';
+        infoEl.style.color = '#666';
+        return;
+    }
+    
+    let texto = '🔍 Filtro: ';
+    const inicio = document.getElementById('filtroDataInicioGerador').value;
+    const fim = document.getElementById('filtroDataFimGerador').value;
+    
+    if (inicio && fim) {
+        texto += `${formatarDataBR(inicio)} até ${formatarDataBR(fim)}`;
+    } else if (inicio) {
+        texto += `a partir de ${formatarDataBR(inicio)}`;
+    } else if (fim) {
+        texto += `até ${formatarDataBR(fim)}`;
+    }
+    
+    infoEl.textContent = texto;
+    infoEl.style.color = '#00d2ff';
+}
+
+function atualizarContadorGeradores(visiveis) {
+    const infoTotal = document.getElementById('infoTotalLinhas');
+    if (infoTotal) {
+        const total = visiveis !== undefined ? visiveis : LINHAS_POR_PAGINA;
+        infoTotal.textContent = `📋 Página ${paginaAtual + 1} · ${total} linhas ${filtroAtivoGerador ? '(filtrado)' : ''}`;
+    }
+}
+
+function mostrarToastGerador(mensagem, tipo = 'success') {
+    const existing = document.querySelector('.toast-gerador');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-gerador';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 9999;
+        animation: fadeInUp 0.3s ease;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        max-width: 400px;
+        background: ${tipo === 'success' ? 'rgba(0,255,100,0.15)' : 
+                     tipo === 'erro' ? 'rgba(255,107,107,0.15)' : 
+                     'rgba(0,210,255,0.15)'};
+        border: 1px solid ${tipo === 'success' ? 'rgba(0,255,100,0.3)' : 
+                           tipo === 'erro' ? 'rgba(255,107,107,0.3)' : 
+                           'rgba(0,210,255,0.3)'};
+        color: ${tipo === 'success' ? '#00ff64' : 
+                tipo === 'erro' ? '#ff6b6b' : 
+                '#00d2ff'};
+    `;
+    toast.textContent = mensagem;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+function formatarDataBR(dataStr) {
+    if (!dataStr) return '';
+    const partes = dataStr.split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+// ==========================================
+// INICIALIZAR
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('⚛️⬇️ Inicializando Registro de Geradores com Paginação...');
+    
+    inicializarPagina(0);
+    atualizarHistoricoGeradores();
+    atualizarContadores();
+    
+    console.log('✅ Sistema de paginação inicializado!');
+});
+
+// ==========================================
+// EXPORTA FUNÇÕES
+// ==========================================
+
+window.aplicarFiltroGerador = aplicarFiltroGerador;
+window.limparFiltroGerador = limparFiltroGerador;
+window.renderizarPaginaComFiltroGerador = renderizarPaginaComFiltroGerador;
+window.atualizarContadorGeradores = atualizarContadorGeradores;
+window.mostrarToastGerador = mostrarToastGerador;
+window.inicializarPagina = inicializarPagina;
+window.renderizarPagina = renderizarPagina;
+window.salvarDadosLinha = salvarDadosLinha;
+window.verificarPaginaCompleta = verificarPaginaCompleta;
+window.criarNovaPagina = criarNovaPagina;
+window.atualizarPaginacao = atualizarPaginacao;
+window.limparLinhaGerador = limparLinhaGerador;
+window.salvarTabelaGeradores = salvarTabelaGeradores;
+window.exportarExcelGeradores = exportarExcelGeradores;
+window.atualizarHistoricoGeradores = atualizarHistoricoGeradores;
+window.atualizarContadores = atualizarContadores;
+window.voltarParaPrincipal = voltarParaPrincipal;
+// ==========================================
+// 🔥 SOBRESCREVER FUNÇÃO DE SALVAR PARA USAR FIREBASE - GERADOR
+// ==========================================
+
+// Guarda a função original
+const salvarTabelaGeradoresOriginal = salvarTabelaGeradores;
+
+// Sobrescreve para usar Firebase primeiro
+salvarTabelaGeradores = async function() {
+    // Verifica se o Firebase e auth estão disponíveis
+    if (typeof auth !== 'undefined' && auth.currentUser) {
+        const usuarioId = auth.currentUser.uid;
+        
+        // Coleta os dados
+        let totalGeradores = 0;
+        const todosGeradores = [];
+        
+        for (let p = 0; p < totalPaginas; p++) {
+            const dados = dadosPaginas[p] || [];
+            for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+                const linha = dados[i] || {};
+                const preenchida = linha.dataRecebimento || linha.lote || 
+                                   linha.dataCalibracao || linha.validade;
+                if (preenchida) {
+                    totalGeradores++;
+                    todosGeradores.push({
+                        pagina: p + 1,
+                        numero: (p * LINHAS_POR_PAGINA) + i + 1,
+                        ...linha
+                    });
+                }
+            }
+        }
+        
+        if (totalGeradores === 0) {
+            alert('⚠️ Nenhum dado para salvar! Preencha pelo menos uma linha.');
+            return;
+        }
+        
+        const dados = {
+            dataSalvamento: new Date().toISOString(),
+            totalPaginas: totalPaginas,
+            totalGeradores: totalGeradores,
+            geradores: todosGeradores
+        };
+        
+        try {
+            // Tenta salvar no Firebase
+            await salvarGeradorFirebase(usuarioId, dados);
+            mostrarFeedbackSalvamento(`✅ ${totalGeradores} geradores salvos no Firebase!`, 'success');
+            
+            // Também salva localmente como backup
+            let registros = JSON.parse(localStorage.getItem('radiocalc_geradores') || '[]');
+            registros.unshift({
+                id: Date.now(),
+                ...dados
+            });
+            localStorage.setItem('radiocalc_geradores', JSON.stringify(registros));
+            atualizarHistoricoGeradores();
+            
+        } catch (error) {
+            console.warn('⚠️ Erro ao salvar no Firebase, usando localStorage:', error);
+            // Fallback: usa a função original
+            salvarTabelaGeradoresOriginal();
+        }
+    } else {
+        // Usuário não logado, usa localStorage
+        salvarTabelaGeradoresOriginal();
+    }
+};
+</script>
+
+</body>
+</html>

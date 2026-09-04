@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioCalc - Registro de Rejeitos Radioativos</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90' fill='%23ffd700'%3ER%3C/text%3E%3C/svg%3E">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    
+    <style>
+        body { 
+            padding: 20px; 
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header-pagina {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 2px solid rgba(155,89,182,0.2);
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .btn-voltar {
+            background: rgba(155,89,182,0.15);
+            border: 1px solid rgba(155,89,182,0.3);
+            color: #9b59b6;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .btn-voltar:hover {
+            background: rgba(155,89,182,0.25);
+        }
+        
+        .titulo-pagina { 
+            color: #9b59b6; 
+        }
+        .titulo-pagina span { 
+            font-size: 0.8rem; 
+            color: #888; 
+            font-weight: normal; 
+        }
+
+        .badge-info {
+            display: inline-block;
+            background: rgba(0,210,255,0.1);
+            color: #00d2ff;
+            font-size: 0.55rem;
+            padding: 2px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,210,255,0.15);
+        }
+
+        .paginacao-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn-pagina {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(155,89,182,0.2);
+            background: rgba(255,255,255,0.03);
+            color: #888;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .btn-pagina:hover {
+            background: rgba(155,89,182,0.1);
+            border-color: rgba(155,89,182,0.4);
+            color: #fff;
+        }
+
+        .btn-pagina.ativo {
+            background: rgba(155,89,182,0.2);
+            border-color: #9b59b6;
+            color: #9b59b6;
+        }
+
+        .btn-pagina.nova-pagina {
+            background: rgba(0,210,255,0.1);
+            border-color: rgba(0,210,255,0.3);
+            color: #00d2ff;
+        }
+
+        .btn-pagina.nova-pagina:hover {
+            background: rgba(0,210,255,0.2);
+        }
+
+        .info-pagina {
+            color: #666;
+            font-size: 0.8rem;
+            padding: 5px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .table-rejeitos-wrapper {
+            max-height: 550px;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(155,89,182,0.15);
+        }
+
+        .table-rejeitos-wrapper::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .table-rejeitos-wrapper::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+        }
+        .table-rejeitos-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(155,89,182,0.3);
+            border-radius: 8px;
+        }
+        .table-rejeitos-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(155,89,182,0.5);
+        }
+
+        #tabelaRejeitos {
+            min-width: 1600px;
+            font-size: 0.7rem;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #tabelaRejeitos thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #tabelaRejeitos th {
+            background: rgba(155, 89, 182, 0.25);
+            color: #ffd700;
+            font-size: 0.6rem;
+            padding: 8px 4px;
+            text-align: center;
+            border-bottom: 2px solid rgba(155, 89, 182, 0.3);
+            white-space: nowrap;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        #tabelaRejeitos td {
+            padding: 4px 3px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #tabelaRejeitos td .input-rejeito {
+            width: 100%;
+            padding: 5px 6px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 0.65rem;
+            min-width: 60px;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        #tabelaRejeitos td .input-rejeito:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.1);
+        }
+
+        #tabelaRejeitos td .input-rejeito[type="date"] {
+            min-width: 100px;
+        }
+
+        #tabelaRejeitos td .input-rejeito[type="number"] {
+            min-width: 70px;
+        }
+
+        #tabelaRejeitos td .input-rejeito[type="text"] {
+            min-width: 80px;
+        }
+
+        #tabelaRejeitos td select.input-rejeito {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 12px;
+            padding-right: 24px;
+            cursor: pointer;
+        }
+
+        #tabelaRejeitos td select.input-rejeito option {
+            background-color: #2a2a3e;
+            color: #fff;
+        }
+
+        #tabelaRejeitos .num-linha {
+            color: #ffd700;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        #tabelaRejeitos tr:hover {
+            background: rgba(155, 89, 182, 0.05);
+        }
+
+        .linha-supervisor {
+            margin-top: 15px;
+            padding: 15px 20px;
+            background: rgba(255,215,0,0.05);
+            border: 2px solid rgba(255,215,0,0.15);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .linha-supervisor input {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 0.85rem;
+            min-width: 200px;
+        }
+
+        .linha-supervisor input:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        .btn-validar {
+            padding: 8px 20px;
+            background: linear-gradient(90deg, #ffd700, #f7971e);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-validar:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-salvar-rejeitos {
+            padding: 10px 25px;
+            background: linear-gradient(90deg, #9b59b6, #8e44ad);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-salvar-rejeitos:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-excel-rejeitos {
+            padding: 10px 25px;
+            background: rgba(0, 210, 255, 0.15);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            border-radius: 8px;
+            color: #00d2ff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-excel-rejeitos:hover {
+            background: rgba(0, 210, 255, 0.25);
+        }
+
+        .btn-acao-linha {
+            background: rgba(255,107,107,0.15);
+            border: 1px solid rgba(255,107,107,0.2);
+            color: #ff6b6b;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            transition: 0.3s;
+        }
+        .btn-acao-linha:hover {
+            background: rgba(255,107,107,0.3);
+        }
+
+        .alerta-pagina-completa {
+            background: rgba(0,255,100,0.08);
+            border: 2px solid rgba(0,255,100,0.2);
+            border-radius: 10px;
+            padding: 12px 20px;
+            text-align: center;
+            margin: 10px 0;
+            color: #00ff64;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .feedback-flash {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            z-index: 9999;
+            animation: fadeInUp 0.5s ease;
+            max-width: 450px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+
+        .feedback-flash.success {
+            background: rgba(0, 255, 100, 0.15);
+            border: 2px solid rgba(0, 255, 100, 0.3);
+            color: #00ff64;
+        }
+
+        .feedback-flash.error {
+            background: rgba(255, 107, 107, 0.15);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+
+        .feedback-flash.info {
+            background: rgba(0, 210, 255, 0.15);
+            border: 2px solid rgba(0, 210, 255, 0.3);
+            color: #00d2ff;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-pagina {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .linha-supervisor {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .linha-supervisor input {
+                min-width: auto;
+            }
+            .paginacao-container {
+                gap: 5px;
+            }
+            .btn-pagina {
+                padding: 5px 10px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container" style="max-width: 100%; margin: 0 auto; padding: 0 10px;">
+    
+    <!-- ===== HEADER ===== -->
+    <div class="header-pagina">
+        <div>
+            <h1 class="titulo-pagina">
+                <span style="color: #ff6b6b;">☢️</span>
+                <span style="color: #ffd700;">🗑️</span>
+                Registro de Rejeitos Radioativos
+                <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                    (Resíduos sólidos e líquidos)
+                </span>
+            </h1>
+            <p style="color: #888; font-size: 0.85rem; margin-top: 4px;">
+                Registre todos os rejeitos radioativos gerados no serviço.
+                <span class="badge-info" id="infoTotalLinhas">📋 Página 1 · 18 linhas</span>
+            </p>
+        </div>
+        <button class="btn-voltar" onclick="voltarParaPrincipal()">⬅ Voltar ao RadioCalc</button>
+    </div>
+
+    <!-- ===== FILTRO POR PERÍODO ===== -->
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(155,89,182,0.2); border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <span style="color: #ffd700; font-weight: 600; font-size: 0.9rem;">🔍 Filtrar por período:</span>
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+            <input type="date" id="filtroDataInicio" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+            <input type="date" id="filtroDataFim" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+        </div>
+        
+        <button onclick="aplicarFiltroRejeitos()" style="padding: 6px 20px; background: linear-gradient(90deg, #9b59b6, #8e44ad); border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            🔍 Filtrar
+        </button>
+        
+        <button onclick="limparFiltroRejeitos()" style="padding: 6px 16px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px; color: #888; cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+            ✕ Limpar
+        </button>
+        
+        <span id="infoFiltroRejeitos" style="color: #666; font-size: 0.75rem; margin-left: auto;">
+            Mostrando todos os registros
+        </span>
+    </div>
+
+    <!-- ===== ALERTA DE PÁGINA COMPLETA ===== -->
+    <div class="alerta-pagina-completa" id="alertaPaginaCompleta">
+        ✅ Todas as 18 linhas desta página foram preenchidas! 
+        <strong>Clique em "📄 + Nova Página" para continuar.</strong>
+    </div>
+
+    <!-- ===== CARD PRINCIPAL ===== -->
+    <div class="card" style="padding: 20px;">
+        
+        <!-- ===== PAGINAÇÃO ===== -->
+        <div class="paginacao-container" id="paginacaoContainer">
+            <!-- Botões gerados pelo JavaScript -->
+        </div>
+
+        <!-- ===== TABELA DE REJEITOS ===== -->
+        <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>📋</span>
+            Planilha de Rejeitos Radioativos
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtual">
+                (Página 1)
+            </span>
+        </h4>
+
+        <div class="table-rejeitos-wrapper">
+            <table id="tabelaRejeitos">
+                <thead>
+                    <tr>
+                        <th style="min-width: 35px; width: 35px;">#</th>
+                        <th style="min-width: 110px;">Data de Segregação</th>
+                        <th style="min-width: 100px;">Radionuclídeo</th>
+                        <th style="min-width: 100px;">Identificação</th>
+                        <th style="min-width: 90px;">Contêiner</th>
+                        <th style="min-width: 100px;">Tipo da Embalagem</th>
+                        <th style="min-width: 90px;">Peso/Volume</th>
+                        <th style="min-width: 110px;">Taxa de Exposição (μSv/h)</th>
+                        <th style="min-width: 110px;">Atividade Estimada (mCi)</th>
+                        <th style="min-width: 120px;">Data Estimada de Descarte</th>
+                        <th style="min-width: 140px;">Responsável pela Segregação</th>
+                        <th style="min-width: 120px;">Data do Descarte</th>
+                        <th style="min-width: 110px;">Taxa de Exposição (μSv/h)</th>
+                        <th style="min-width: 110px;">Atividade Estimada (mCi)</th>
+                        <th style="min-width: 140px;">Responsável pelo Descarte</th>
+                        <th style="min-width: 40px; width: 40px;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaRejeitos">
+                    <!-- As 18 linhas serão geradas pelo JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== LINHA DO SUPERVISOR ===== -->
+        <div class="linha-supervisor">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
+                <span style="color: #ffd700; font-weight: 600; font-size: 0.9rem;">✅ Conferido e validado por supervisor de radioproteção:</span>
+                <input type="text" id="supervisorRejeitos" placeholder="Nome do Supervisor" style="flex: 1; min-width: 180px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="color: #888; font-size: 0.75rem;">📅 Data:</span>
+                <input type="date" id="dataValidacaoRejeitos" style="min-width: 130px;">
+                <button class="btn-validar" onclick="validarRejeitos()">✅ Validar</button>
+            </div>
+        </div>
+
+        <!-- ===== BOTÕES DE AÇÃO ===== -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button class="btn-salvar-rejeitos" onclick="salvarTabelaRejeitos()">
+                💾 Salvar Registro
+            </button>
+            <button class="btn-excel-rejeitos" onclick="exportarExcelRejeitos()">
+                📊 Exportar Excel
+            </button>
+        </div>
+
+        <!-- ===== HISTÓRICO DE REGISTROS SALVOS ===== -->
+        <div style="margin-top: 25px; border-top: 1px solid rgba(155,89,182,0.15); padding-top: 20px;">
+            <h5 style="color: #aaa; margin-bottom: 10px;">📋 Registros Salvos</h5>
+            <div id="historicoRejeitosContainer" style="max-height: 200px; overflow-y: auto;">
+                <div style="color: #666; font-size: 0.8rem; text-align: center; padding: 20px;">
+                    Nenhum registro salvo ainda.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer style="text-align: center; padding: 20px 0; color: #555; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 30px;">
+        ☢️ RadioCalc &bull; Registro de Rejeitos Radioativos &bull; v1.0
+    </footer>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/ferramentas.js"></script>
+
+<script>
+// ==========================================
+// ☢️🗑️ TABELA DE REJEITOS - COM PAGINAÇÃO
+// ==========================================
+
+let paginaAtual = 0;
+let totalPaginas = 1;
+const LINHAS_POR_PAGINA = 18;
+
+// ===== DADOS DE TODAS AS PÁGINAS =====
+let dadosPaginas = {
+    0: [] // Página 0 = 18 linhas
+};
+
+// ==========================================
+// FUNÇÃO ORIGINAL RENDERIZAR
+// ==========================================
+
+function renderizarPaginaOriginal(pagina) {
+    const tbody = document.getElementById('corpoTabelaRejeitos');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const dados = dadosPaginas[pagina] || [];
+    const inicio = pagina * LINHAS_POR_PAGINA;
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        const numLinha = inicio + i + 1;
+        const dado = dados[i] || {};
+        
+        const tr = document.createElement('tr');
+        tr.dataset.index = i;
+        tr.dataset.pagina = pagina;
+        tr.dataset.numLinha = numLinha;
+        
+        tr.innerHTML = `
+            <td class="num-linha">${numLinha}</td>
+            <td><input type="date" id="rej_dataSeg_${pagina}_${i}" class="input-rejeito" value="${dado.dataSegregacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <select id="rej_radionuclideo_${pagina}_${i}" class="input-rejeito" onchange="salvarDadosLinha(${pagina}, ${i})">
+                    <option value="">Selecione</option>
+                    <option value="Tc-99m" ${dado.radionuclideo === 'Tc-99m' ? 'selected' : ''}>Tc-99m</option>
+                    <option value="F-18" ${dado.radionuclideo === 'F-18' ? 'selected' : ''}>F-18</option>
+                    <option value="I-123" ${dado.radionuclideo === 'I-123' ? 'selected' : ''}>I-123</option>
+                    <option value="I-131" ${dado.radionuclideo === 'I-131' ? 'selected' : ''}>I-131</option>
+                    <option value="Ga-67" ${dado.radionuclideo === 'Ga-67' ? 'selected' : ''}>Ga-67</option>
+                    <option value="In-111" ${dado.radionuclideo === 'In-111' ? 'selected' : ''}>In-111</option>
+                    <option value="Tl-201" ${dado.radionuclideo === 'Tl-201' ? 'selected' : ''}>Tl-201</option>
+                    <option value="Mo-99" ${dado.radionuclideo === 'Mo-99' ? 'selected' : ''}>Mo-99</option>
+                    <option value="Outro" ${dado.radionuclideo === 'Outro' ? 'selected' : ''}>Outro</option>
+                </select>
+            </td>
+            <td><input type="text" id="rej_identificacao_${pagina}_${i}" placeholder="Ex: Nº da etiqueta X" class="input-rejeito" value="${dado.identificacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <select id="rej_conteiner_${pagina}_${i}" class="input-rejeito" onchange="salvarDadosLinha(${pagina}, ${i})">
+                    <option value="">Selecione</option>
+                    <option value="1" ${dado.conteiner === '1' ? 'selected' : ''}>1</option>
+                    <option value="2" ${dado.conteiner === '2' ? 'selected' : ''}>2</option>
+                    <option value="3" ${dado.conteiner === '3' ? 'selected' : ''}>3</option>
+                    <option value="4" ${dado.conteiner === '4' ? 'selected' : ''}>4</option>
+                    <option value="5" ${dado.conteiner === '5' ? 'selected' : ''}>5</option>
+                    <option value="6" ${dado.conteiner === '6' ? 'selected' : ''}>6</option>
+                </select>
+            </td>
+            <td>
+                <select id="rej_tipoEmb_${pagina}_${i}" class="input-rejeito" onchange="salvarDadosLinha(${pagina}, ${i})">
+                    <option value="">Selecione</option>
+                    <option value="Perfuro cortante" ${dado.tipoEmbalagem === 'Perfuro cortante' ? 'selected' : ''}>Perfuro cortante</option>
+                    <option value="Luvas e algodão" ${dado.tipoEmbalagem === 'Luvas e algodão' ? 'selected' : ''}>Luvas e algodão</option>
+                </select>
+            </td>
+            <td><input type="text" id="rej_pesoVol_${pagina}_${i}" placeholder="kg ou mL" class="input-rejeito" value="${dado.pesoVolume || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_taxaExp_${pagina}_${i}" placeholder="μSv/h" step="0.01" class="input-rejeito" value="${dado.taxaExposicao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_atividade_${pagina}_${i}" placeholder="mCi" step="0.001" class="input-rejeito" value="${dado.atividadeEstimada || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="rej_dataDescEst_${pagina}_${i}" class="input-rejeito" value="${dado.dataDescarteEstimado || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="rej_respSeg_${pagina}_${i}" placeholder="Responsável" class="input-rejeito" value="${dado.responsavelSegregacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="rej_dataDescReal_${pagina}_${i}" class="input-rejeito" value="${dado.dataDescarteReal || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_taxaExpDesc_${pagina}_${i}" placeholder="μSv/h" step="0.01" class="input-rejeito" value="${dado.taxaExposicaoDescarte || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_atividadeDesc_${pagina}_${i}" placeholder="mCi" step="0.001" class="input-rejeito" value="${dado.atividadeDescarte || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="rej_respDesc_${pagina}_${i}" placeholder="Responsável" class="input-rejeito" value="${dado.responsavelDescarte || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <button class="btn-acao-linha" onclick="limparLinhaRejeito(${pagina}, ${i})" title="Limpar linha">✕</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+// ==========================================
+// FUNÇÃO RENDERIZAR COM FILTRO
+// ==========================================
+
+let filtroAtivo = false;
+let filtroDataInicio = null;
+let filtroDataFim = null;
+
+function deveExibirLinhaNoFiltro(dado) {
+    if (!filtroAtivo) return true;
+    if (!filtroDataInicio && !filtroDataFim) return true;
+    
+    let dataLinha = null;
+    if (dado.dataSegregacao) {
+        dataLinha = new Date(dado.dataSegregacao);
+    }
+    
+    if (!dataLinha || isNaN(dataLinha.getTime())) {
+        if (dado.dataDescarteEstimado) {
+            dataLinha = new Date(dado.dataDescarteEstimado);
+        } else if (dado.dataDescarteReal) {
+            dataLinha = new Date(dado.dataDescarteReal);
+        }
+    }
+    
+    if (!dataLinha || isNaN(dataLinha.getTime())) {
+        return true;
+    }
+    
+    if (filtroDataInicio && dataLinha < filtroDataInicio) {
+        return false;
+    }
+    
+    if (filtroDataFim) {
+        const dataFim = new Date(filtroDataFim);
+        dataFim.setHours(23, 59, 59, 999);
+        if (dataLinha > dataFim) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function renderizarPaginaComFiltro(pagina) {
+    const tbody = document.getElementById('corpoTabelaRejeitos');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const dados = dadosPaginas[pagina] || [];
+    const inicio = pagina * LINHAS_POR_PAGINA;
+    let linhasVisiveis = 0;
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        const numLinha = inicio + i + 1;
+        const dado = dados[i] || {};
+        
+        const deveExibir = deveExibirLinhaNoFiltro(dado);
+        
+        if (!deveExibir) {
+            const tr = document.createElement('tr');
+            tr.dataset.index = i;
+            tr.dataset.pagina = pagina;
+            tr.dataset.numLinha = numLinha;
+            tr.style.display = 'none';
+            tr.innerHTML = `
+                <td class="num-linha">${numLinha}</td>
+                <td colspan="15" style="text-align: center; color: #555; font-size: 0.7rem; padding: 10px;">
+                    🔒 Registro fora do período selecionado
+                </td>
+            `;
+            tbody.appendChild(tr);
+            continue;
+        }
+        
+        linhasVisiveis++;
+        
+        const tr = document.createElement('tr');
+        tr.dataset.index = i;
+        tr.dataset.pagina = pagina;
+        tr.dataset.numLinha = numLinha;
+        
+        tr.innerHTML = `
+            <td class="num-linha">${numLinha}</td>
+            <td><input type="date" id="rej_dataSeg_${pagina}_${i}" class="input-rejeito" value="${dado.dataSegregacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <select id="rej_radionuclideo_${pagina}_${i}" class="input-rejeito" onchange="salvarDadosLinha(${pagina}, ${i})">
+                    <option value="">Selecione</option>
+                    <option value="Tc-99m" ${dado.radionuclideo === 'Tc-99m' ? 'selected' : ''}>Tc-99m</option>
+                    <option value="F-18" ${dado.radionuclideo === 'F-18' ? 'selected' : ''}>F-18</option>
+                    <option value="I-123" ${dado.radionuclideo === 'I-123' ? 'selected' : ''}>I-123</option>
+                    <option value="I-131" ${dado.radionuclideo === 'I-131' ? 'selected' : ''}>I-131</option>
+                    <option value="Ga-67" ${dado.radionuclideo === 'Ga-67' ? 'selected' : ''}>Ga-67</option>
+                    <option value="In-111" ${dado.radionuclideo === 'In-111' ? 'selected' : ''}>In-111</option>
+                    <option value="Tl-201" ${dado.radionuclideo === 'Tl-201' ? 'selected' : ''}>Tl-201</option>
+                    <option value="Mo-99" ${dado.radionuclideo === 'Mo-99' ? 'selected' : ''}>Mo-99</option>
+                    <option value="Outro" ${dado.radionuclideo === 'Outro' ? 'selected' : ''}>Outro</option>
+                </select>
+            </td>
+            <td><input type="text" id="rej_identificacao_${pagina}_${i}" placeholder="Ex: Nº da etiqueta X" class="input-rejeito" value="${dado.identificacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <select id="rej_conteiner_${pagina}_${i}" class="input-rejeito" onchange="salvarDadosLinha(${pagina}, ${i})">
+                    <option value="">Selecione</option>
+                    <option value="1" ${dado.conteiner === '1' ? 'selected' : ''}>1</option>
+                    <option value="2" ${dado.conteiner === '2' ? 'selected' : ''}>2</option>
+                    <option value="3" ${dado.conteiner === '3' ? 'selected' : ''}>3</option>
+                    <option value="4" ${dado.conteiner === '4' ? 'selected' : ''}>4</option>
+                    <option value="5" ${dado.conteiner === '5' ? 'selected' : ''}>5</option>
+                    <option value="6" ${dado.conteiner === '6' ? 'selected' : ''}>6</option>
+                </select>
+            </td>
+            <td>
+                <select id="rej_tipoEmb_${pagina}_${i}" class="input-rejeito" onchange="salvarDadosLinha(${pagina}, ${i})">
+                    <option value="">Selecione</option>
+                    <option value="Perfuro cortante" ${dado.tipoEmbalagem === 'Perfuro cortante' ? 'selected' : ''}>Perfuro cortante</option>
+                    <option value="Luvas e algodão" ${dado.tipoEmbalagem === 'Luvas e algodão' ? 'selected' : ''}>Luvas e algodão</option>
+                </select>
+            </td>
+            <td><input type="text" id="rej_pesoVol_${pagina}_${i}" placeholder="kg ou mL" class="input-rejeito" value="${dado.pesoVolume || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_taxaExp_${pagina}_${i}" placeholder="μSv/h" step="0.01" class="input-rejeito" value="${dado.taxaExposicao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_atividade_${pagina}_${i}" placeholder="mCi" step="0.001" class="input-rejeito" value="${dado.atividadeEstimada || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="rej_dataDescEst_${pagina}_${i}" class="input-rejeito" value="${dado.dataDescarteEstimado || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="rej_respSeg_${pagina}_${i}" placeholder="Responsável" class="input-rejeito" value="${dado.responsavelSegregacao || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="date" id="rej_dataDescReal_${pagina}_${i}" class="input-rejeito" value="${dado.dataDescarteReal || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_taxaExpDesc_${pagina}_${i}" placeholder="μSv/h" step="0.01" class="input-rejeito" value="${dado.taxaExposicaoDescarte || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="number" id="rej_atividadeDesc_${pagina}_${i}" placeholder="mCi" step="0.001" class="input-rejeito" value="${dado.atividadeDescarte || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td><input type="text" id="rej_respDesc_${pagina}_${i}" placeholder="Responsável" class="input-rejeito" value="${dado.responsavelDescarte || ''}" onchange="salvarDadosLinha(${pagina}, ${i})"></td>
+            <td>
+                <button class="btn-acao-linha" onclick="limparLinhaRejeito(${pagina}, ${i})" title="Limpar linha">✕</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    atualizarInfoPagina(pagina);
+    atualizarContadorRejeitos(linhasVisiveis);
+}
+
+// ==========================================
+// FUNÇÃO PRINCIPAL RENDERIZAR
+// ==========================================
+
+function renderizarPagina(pagina) {
+    if (filtroAtivo) {
+        renderizarPaginaComFiltro(pagina);
+    } else {
+        renderizarPaginaOriginal(pagina);
+    }
+}
+
+// ==========================================
+// FUNÇÕES DE PAGINAÇÃO E GERENCIAMENTO
+// ==========================================
+
+function inicializarPagina(pagina) {
+    if (!dadosPaginas[pagina]) {
+        dadosPaginas[pagina] = [];
+        for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+            dadosPaginas[pagina][i] = {
+                dataSegregacao: '',
+                radionuclideo: '',
+                identificacao: '',
+                conteiner: '',
+                tipoEmbalagem: '',
+                pesoVolume: '',
+                taxaExposicao: '',
+                atividadeEstimada: '',
+                dataDescarteEstimado: '',
+                responsavelSegregacao: '',
+                dataDescarteReal: '',
+                taxaExposicaoDescarte: '',
+                atividadeDescarte: '',
+                responsavelDescarte: ''
+            };
+        }
+    }
+    
+    renderizarPagina(pagina);
+    atualizarPaginacao();
+    atualizarInfoPagina(pagina);
+    verificarPaginaCompleta(pagina);
+}
+
+function salvarDadosLinha(pagina, index) {
+    if (!dadosPaginas[pagina]) {
+        dadosPaginas[pagina] = [];
+    }
+    
+    if (!dadosPaginas[pagina][index]) {
+        dadosPaginas[pagina][index] = {};
+    }
+    
+    dadosPaginas[pagina][index] = {
+        dataSegregacao: document.getElementById(`rej_dataSeg_${pagina}_${index}`)?.value || '',
+        radionuclideo: document.getElementById(`rej_radionuclideo_${pagina}_${index}`)?.value || '',
+        identificacao: document.getElementById(`rej_identificacao_${pagina}_${index}`)?.value || '',
+        conteiner: document.getElementById(`rej_conteiner_${pagina}_${index}`)?.value || '',
+        tipoEmbalagem: document.getElementById(`rej_tipoEmb_${pagina}_${index}`)?.value || '',
+        pesoVolume: document.getElementById(`rej_pesoVol_${pagina}_${index}`)?.value || '',
+        taxaExposicao: document.getElementById(`rej_taxaExp_${pagina}_${index}`)?.value || '',
+        atividadeEstimada: document.getElementById(`rej_atividade_${pagina}_${index}`)?.value || '',
+        dataDescarteEstimado: document.getElementById(`rej_dataDescEst_${pagina}_${index}`)?.value || '',
+        responsavelSegregacao: document.getElementById(`rej_respSeg_${pagina}_${index}`)?.value || '',
+        dataDescarteReal: document.getElementById(`rej_dataDescReal_${pagina}_${index}`)?.value || '',
+        taxaExposicaoDescarte: document.getElementById(`rej_taxaExpDesc_${pagina}_${index}`)?.value || '',
+        atividadeDescarte: document.getElementById(`rej_atividadeDesc_${pagina}_${index}`)?.value || '',
+        responsavelDescarte: document.getElementById(`rej_respDesc_${pagina}_${index}`)?.value || ''
+    };
+    
+    verificarPaginaCompleta(pagina);
+}
+
+function verificarPaginaCompleta(pagina) {
+    const dados = dadosPaginas[pagina] || [];
+    let completas = 0;
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        const linha = dados[i] || {};
+        const preenchida = linha.dataSegregacao || linha.radionuclideo || linha.identificacao || 
+                           linha.conteiner || linha.tipoEmbalagem || linha.pesoVolume || 
+                           linha.taxaExposicao || linha.atividadeEstimada || linha.dataDescarteEstimado || 
+                           linha.responsavelSegregacao || linha.dataDescarteReal || 
+                           linha.taxaExposicaoDescarte || linha.atividadeDescarte || linha.responsavelDescarte;
+        if (preenchida) completas++;
+    }
+    
+    const alerta = document.getElementById('alertaPaginaCompleta');
+    if (completas >= LINHAS_POR_PAGINA) {
+        alerta.style.display = 'block';
+        adicionarBotaoNovaPagina();
+    } else {
+        alerta.style.display = 'none';
+    }
+}
+
+function adicionarBotaoNovaPagina() {
+    const container = document.getElementById('paginacaoContainer');
+    const btnExistente = document.getElementById('btnNovaPagina');
+    
+    if (!btnExistente) {
+        const btn = document.createElement('button');
+        btn.id = 'btnNovaPagina';
+        btn.className = 'btn-pagina nova-pagina';
+        btn.innerHTML = '📄 + Nova Página';
+        btn.onclick = function() {
+            criarNovaPagina();
+        };
+        container.appendChild(btn);
+    }
+}
+
+function criarNovaPagina() {
+    const novaPagina = totalPaginas;
+    dadosPaginas[novaPagina] = [];
+    
+    for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+        dadosPaginas[novaPagina][i] = {
+            dataSegregacao: '',
+            radionuclideo: '',
+            identificacao: '',
+            conteiner: '',
+            tipoEmbalagem: '',
+            pesoVolume: '',
+            taxaExposicao: '',
+            atividadeEstimada: '',
+            dataDescarteEstimado: '',
+            responsavelSegregacao: '',
+            dataDescarteReal: '',
+            taxaExposicaoDescarte: '',
+            atividadeDescarte: '',
+            responsavelDescarte: ''
+        };
+    }
+    
+    totalPaginas++;
+    paginaAtual = novaPagina;
+    
+    const btnNova = document.getElementById('btnNovaPagina');
+    if (btnNova) btnNova.remove();
+    
+    const alerta = document.getElementById('alertaPaginaCompleta');
+    alerta.style.display = 'none';
+    
+    renderizarPagina(paginaAtual);
+    atualizarPaginacao();
+    atualizarInfoPagina(paginaAtual);
+    
+    mostrarFeedbackSalvamento(`📄 Página ${paginaAtual + 1} criada!`, 'success');
+}
+
+function atualizarPaginacao() {
+    const container = document.getElementById('paginacaoContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const btnAnterior = document.createElement('button');
+    btnAnterior.className = 'btn-pagina';
+    btnAnterior.innerHTML = '◀ Anterior';
+    btnAnterior.onclick = function() {
+        if (paginaAtual > 0) {
+            paginaAtual--;
+            renderizarPagina(paginaAtual);
+            atualizarPaginacao();
+            atualizarInfoPagina(paginaAtual);
+        }
+    };
+    if (paginaAtual === 0) {
+        btnAnterior.style.opacity = '0.3';
+        btnAnterior.style.cursor = 'default';
+    }
+    container.appendChild(btnAnterior);
+    
+    for (let i = 0; i < totalPaginas; i++) {
+        const btn = document.createElement('button');
+        btn.className = `btn-pagina ${i === paginaAtual ? 'ativo' : ''}`;
+        btn.textContent = `📄 ${i + 1}`;
+        btn.onclick = function() {
+            paginaAtual = i;
+            renderizarPagina(paginaAtual);
+            atualizarPaginacao();
+            atualizarInfoPagina(paginaAtual);
+            const alerta = document.getElementById('alertaPaginaCompleta');
+            alerta.style.display = 'none';
+            verificarPaginaCompleta(paginaAtual);
+        };
+        container.appendChild(btn);
+    }
+    
+    const btnProxima = document.createElement('button');
+    btnProxima.className = 'btn-pagina';
+    btnProxima.innerHTML = 'Próxima ▶';
+    btnProxima.onclick = function() {
+        if (paginaAtual < totalPaginas - 1) {
+            paginaAtual++;
+            renderizarPagina(paginaAtual);
+            atualizarPaginacao();
+            atualizarInfoPagina(paginaAtual);
+        }
+    };
+    if (paginaAtual === totalPaginas - 1) {
+        btnProxima.style.opacity = '0.3';
+        btnProxima.style.cursor = 'default';
+    }
+    container.appendChild(btnProxima);
+    
+    const info = document.createElement('span');
+    info.className = 'info-pagina';
+    info.textContent = `📊 ${totalPaginas} páginas · ${totalPaginas * LINHAS_POR_PAGINA} linhas`;
+    container.appendChild(info);
+    
+    const alerta = document.getElementById('alertaPaginaCompleta');
+    if (alerta.style.display === 'block') {
+        adicionarBotaoNovaPagina();
+    }
+}
+
+function atualizarInfoPagina(pagina) {
+    const info = document.getElementById('infoPaginaAtual');
+    const infoTotal = document.getElementById('infoTotalLinhas');
+    if (info) info.textContent = `(Página ${pagina + 1})`;
+    if (infoTotal) infoTotal.textContent = `📋 Página ${pagina + 1} · ${LINHAS_POR_PAGINA} linhas`;
+}
+
+function limparLinhaRejeito(pagina, index) {
+    if (!confirm(`Deseja limpar a linha ${index + 1} da página ${pagina + 1}?`)) return;
+    
+    if (dadosPaginas[pagina] && dadosPaginas[pagina][index]) {
+        dadosPaginas[pagina][index] = {
+            dataSegregacao: '',
+            radionuclideo: '',
+            identificacao: '',
+            conteiner: '',
+            tipoEmbalagem: '',
+            pesoVolume: '',
+            taxaExposicao: '',
+            atividadeEstimada: '',
+            dataDescarteEstimado: '',
+            responsavelSegregacao: '',
+            dataDescarteReal: '',
+            taxaExposicaoDescarte: '',
+            atividadeDescarte: '',
+            responsavelDescarte: ''
+        };
+    }
+    
+    renderizarPagina(pagina);
+    mostrarFeedbackSalvamento(`🗑️ Linha ${index + 1} limpa!`, 'info');
+}
+
+function salvarTabelaRejeitos() {
+    let totalRejeitos = 0;
+    const todosRejeitos = [];
+    
+    for (let p = 0; p < totalPaginas; p++) {
+        const dados = dadosPaginas[p] || [];
+        for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+            const linha = dados[i] || {};
+            const preenchida = linha.dataSegregacao || linha.radionuclideo || linha.identificacao || 
+                               linha.conteiner || linha.tipoEmbalagem || linha.pesoVolume || 
+                               linha.taxaExposicao || linha.atividadeEstimada || linha.dataDescarteEstimado || 
+                               linha.responsavelSegregacao || linha.dataDescarteReal || 
+                               linha.taxaExposicaoDescarte || linha.atividadeDescarte || linha.responsavelDescarte;
+            
+            if (preenchida) {
+                totalRejeitos++;
+                todosRejeitos.push({
+                    pagina: p + 1,
+                    numero: (p * LINHAS_POR_PAGINA) + i + 1,
+                    ...linha
+                });
+            }
+        }
+    }
+    
+    if (totalRejeitos === 0) {
+        alert('⚠️ Nenhum dado para salvar! Preencha pelo menos uma linha.');
+        return;
+    }
+    
+    const supervisor = document.getElementById('supervisorRejeitos')?.value || '';
+    const dataValidacao = document.getElementById('dataValidacaoRejeitos')?.value || '';
+    
+    const registro = {
+        id: Date.now(),
+        dataSalvamento: new Date().toISOString(),
+        supervisor: supervisor,
+        dataValidacao: dataValidacao,
+        totalPaginas: totalPaginas,
+        totalRejeitos: totalRejeitos,
+        rejeitos: todosRejeitos
+    };
+    
+    let registros = JSON.parse(localStorage.getItem('radiocalc_rejeitos_radioativos') || '[]');
+    registros.unshift(registro);
+    localStorage.setItem('radiocalc_rejeitos_radioativos', JSON.stringify(registros));
+    
+    mostrarFeedbackSalvamento(`✅ ${totalRejeitos} rejeitos salvos em ${totalPaginas} páginas!`, 'success');
+    atualizarHistoricoRejeitos();
+}
+
+function validarRejeitos() {
+    const supervisor = document.getElementById('supervisorRejeitos')?.value || '';
+    const dataValidacao = document.getElementById('dataValidacaoRejeitos')?.value || '';
+    
+    if (!supervisor) {
+        alert('⚠️ Digite o nome do supervisor de radioproteção!');
+        document.getElementById('supervisorRejeitos').focus();
+        return;
+    }
+    
+    if (!dataValidacao) {
+        alert('⚠️ Selecione a data de validação!');
+        return;
+    }
+    
+    mostrarFeedbackSalvamento(`✅ Registro validado por ${supervisor} em ${dataValidacao}`, 'success');
+}
+
+function exportarExcelRejeitos() {
+    const dados = [];
+    
+    dados.push(['==================================================']);
+    dados.push(['         ☢️ RADIOCALCBR - REJEITOS RADIOATIVOS']);
+    dados.push(['==================================================']);
+    dados.push([]);
+    dados.push(['📋 REGISTRO DE REJEITOS RADIOATIVOS']);
+    dados.push(['📅 Data de geração:', new Date().toLocaleString('pt-BR')]);
+    dados.push(['📄 Total de páginas:', totalPaginas]);
+    dados.push([]);
+    
+    dados.push([
+        '#',
+        'Página',
+        'Data Segregação',
+        'Radionuclídeo',
+        'Identificação',
+        'Contêiner',
+        'Tipo Embalagem',
+        'Peso/Volume',
+        'Taxa Exposição (μSv/h)',
+        'Atividade Estimada (mCi)',
+        'Data Descarte Estimado',
+        'Responsável Segregação',
+        'Data Descarte Real',
+        'Taxa Exposição (μSv/h)',
+        'Atividade Descarte (mCi)',
+        'Responsável Descarte'
+    ]);
+    
+    let linhasPreenchidas = 0;
+    
+    for (let p = 0; p < totalPaginas; p++) {
+        const dadosPagina = dadosPaginas[p] || [];
+        for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+            const linha = dadosPagina[i] || {};
+            const preenchida = linha.dataSegregacao || linha.radionuclideo || linha.identificacao || 
+                               linha.conteiner || linha.tipoEmbalagem || linha.pesoVolume || 
+                               linha.taxaExposicao || linha.atividadeEstimada || linha.dataDescarteEstimado || 
+                               linha.responsavelSegregacao || linha.dataDescarteReal || 
+                               linha.taxaExposicaoDescarte || linha.atividadeDescarte || linha.responsavelDescarte;
+            
+            if (preenchida) {
+                linhasPreenchidas++;
+                dados.push([
+                    (p * LINHAS_POR_PAGINA) + i + 1,
+                    p + 1,
+                    linha.dataSegregacao || '',
+                    linha.radionuclideo || '',
+                    linha.identificacao || '',
+                    linha.conteiner || '',
+                    linha.tipoEmbalagem || '',
+                    linha.pesoVolume || '',
+                    linha.taxaExposicao || '',
+                    linha.atividadeEstimada || '',
+                    linha.dataDescarteEstimado || '',
+                    linha.responsavelSegregacao || '',
+                    linha.dataDescarteReal || '',
+                    linha.taxaExposicaoDescarte || '',
+                    linha.atividadeDescarte || '',
+                    linha.responsavelDescarte || ''
+                ]);
+            }
+        }
+    }
+    
+    const supervisor = document.getElementById('supervisorRejeitos')?.value || '';
+    const dataValidacao = document.getElementById('dataValidacaoRejeitos')?.value || '';
+    
+    dados.push([]);
+    dados.push(['✅ CONFERIDO E VALIDADO POR SUPERVISOR DE RADIOPROTEÇÃO']);
+    dados.push(['👨‍⚕️ Supervisor:', supervisor]);
+    dados.push(['📅 Data da Validação:', dataValidacao]);
+    dados.push([]);
+    dados.push(['📊 Total de rejeitos registrados:', linhasPreenchidas]);
+    dados.push(['📄 Total de páginas:', totalPaginas]);
+    dados.push([]);
+    dados.push(['==================================================']);
+    dados.push(['📌 GERADO POR RADIOCALCBR']);
+    dados.push(['📧 fisixassessoria@gmail.com']);
+    dados.push(['==================================================']);
+    dados.push(['⚠️ AVISO: Documento de controle de rejeitos radioativos.']);
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(dados);
+    XLSX.utils.book_append_sheet(wb, ws, 'Rejeitos Radioativos');
+    
+    const nomeArquivo = `Rejeitos_Radioativos_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, nomeArquivo);
+    
+    mostrarFeedbackSalvamento(`📊 Excel gerado com ${linhasPreenchidas} rejeitos em ${totalPaginas} páginas!`, 'success');
+}
+
+function atualizarHistoricoRejeitos() {
+    const container = document.getElementById('historicoRejeitosContainer');
+    if (!container) return;
+    
+    const registros = JSON.parse(localStorage.getItem('radiocalc_rejeitos_radioativos') || '[]');
+    
+    if (registros.length === 0) {
+        container.innerHTML = `
+            <div style="color: #666; font-size: 0.8rem; text-align: center; padding: 20px;">
+                Nenhum registro salvo ainda.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    registros.slice(0, 5).forEach((reg, index) => {
+        const data = new Date(reg.dataSalvamento).toLocaleString('pt-BR');
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.75rem; color: #aaa;">
+                <span>
+                    <strong style="color: #ffd700;">#${index + 1}</strong>
+                    ${reg.totalRejeitos} rejeitos · ${reg.totalPaginas || 1} páginas
+                    ${reg.supervisor ? `· Supervisor: ${reg.supervisor}` : ''}
+                </span>
+                <span style="color: #666; font-size: 0.65rem;">${data}</span>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function mostrarFeedbackSalvamento(mensagem, tipo = 'success') {
+    const existing = document.querySelector('.feedback-flash');
+    if (existing) existing.remove();
+    
+    const div = document.createElement('div');
+    div.className = `feedback-flash ${tipo}`;
+    div.textContent = mensagem;
+    document.body.appendChild(div);
+    
+    setTimeout(() => {
+        div.style.opacity = '0';
+        div.style.transition = 'opacity 0.5s';
+        setTimeout(() => div.remove(), 500);
+    }, 3000);
+}
+
+function voltarParaPrincipal() {
+    window.location.href = '../index.html';
+}
+
+// ==========================================
+// FUNÇÕES DO FILTRO
+// ==========================================
+
+function aplicarFiltroRejeitos() {
+    const dataInicio = document.getElementById('filtroDataInicio').value;
+    const dataFim = document.getElementById('filtroDataFim').value;
+    
+    if (!dataInicio && !dataFim) {
+        mostrarToastRejeitos('⚠️ Selecione pelo menos uma data para filtrar.', 'aviso');
+        return;
+    }
+    
+    if (dataInicio && dataFim && dataInicio > dataFim) {
+        mostrarToastRejeitos('⚠️ A data inicial não pode ser maior que a data final!', 'erro');
+        return;
+    }
+    
+    filtroDataInicio = dataInicio ? new Date(dataInicio) : null;
+    filtroDataFim = dataFim ? new Date(dataFim) : null;
+    filtroAtivo = true;
+    
+    renderizarPagina(paginaAtual);
+    atualizarInfoFiltro();
+    
+    mostrarToastRejeitos('✅ Filtro aplicado com sucesso!', 'success');
+}
+
+function limparFiltroRejeitos() {
+    document.getElementById('filtroDataInicio').value = '';
+    document.getElementById('filtroDataFim').value = '';
+    filtroAtivo = false;
+    filtroDataInicio = null;
+    filtroDataFim = null;
+    
+    renderizarPagina(paginaAtual);
+    atualizarInfoFiltro();
+    
+    mostrarToastRejeitos('✅ Filtro removido. Mostrando todos os registros.', 'info');
+}
+
+function atualizarInfoFiltro() {
+    const infoEl = document.getElementById('infoFiltroRejeitos');
+    if (!infoEl) return;
+    
+    if (!filtroAtivo) {
+        infoEl.textContent = '📋 Mostrando todos os registros';
+        infoEl.style.color = '#666';
+        return;
+    }
+    
+    let texto = '🔍 Filtro: ';
+    const inicio = document.getElementById('filtroDataInicio').value;
+    const fim = document.getElementById('filtroDataFim').value;
+    
+    if (inicio && fim) {
+        texto += `${formatarDataBR(inicio)} até ${formatarDataBR(fim)}`;
+    } else if (inicio) {
+        texto += `a partir de ${formatarDataBR(inicio)}`;
+    } else if (fim) {
+        texto += `até ${formatarDataBR(fim)}`;
+    }
+    
+    infoEl.textContent = texto;
+    infoEl.style.color = '#00d2ff';
+}
+
+function atualizarContadorRejeitos(visiveis) {
+    const infoTotal = document.getElementById('infoTotalLinhas');
+    if (infoTotal) {
+        const total = visiveis !== undefined ? visiveis : LINHAS_POR_PAGINA;
+        infoTotal.textContent = `📋 Página ${paginaAtual + 1} · ${total} linhas ${filtroAtivo ? '(filtrado)' : ''}`;
+    }
+}
+
+function mostrarToastRejeitos(mensagem, tipo = 'success') {
+    const existing = document.querySelector('.toast-rejeitos');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-rejeitos';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 9999;
+        animation: fadeInUp 0.3s ease;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        max-width: 400px;
+        background: ${tipo === 'success' ? 'rgba(0,255,100,0.15)' : 
+                     tipo === 'erro' ? 'rgba(255,107,107,0.15)' : 
+                     'rgba(0,210,255,0.15)'};
+        border: 1px solid ${tipo === 'success' ? 'rgba(0,255,100,0.3)' : 
+                           tipo === 'erro' ? 'rgba(255,107,107,0.3)' : 
+                           'rgba(0,210,255,0.3)'};
+        color: ${tipo === 'success' ? '#00ff64' : 
+                tipo === 'erro' ? '#ff6b6b' : 
+                '#00d2ff'};
+    `;
+    toast.textContent = mensagem;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+function formatarDataBR(dataStr) {
+    if (!dataStr) return '';
+    const partes = dataStr.split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+// ==========================================
+// INICIALIZAR
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('☢️🗑️ Inicializando Registro de Rejeitos com Paginação...');
+    
+    inicializarPagina(0);
+    atualizarHistoricoRejeitos();
+    
+    console.log('✅ Sistema de paginação inicializado!');
+});
+
+// ==========================================
+// EXPORTA FUNÇÕES
+// ==========================================
+
+window.aplicarFiltroRejeitos = aplicarFiltroRejeitos;
+window.limparFiltroRejeitos = limparFiltroRejeitos;
+window.renderizarPaginaComFiltro = renderizarPaginaComFiltro;
+window.inicializarPagina = inicializarPagina;
+window.renderizarPagina = renderizarPagina;
+window.salvarDadosLinha = salvarDadosLinha;
+window.verificarPaginaCompleta = verificarPaginaCompleta;
+window.criarNovaPagina = criarNovaPagina;
+window.atualizarPaginacao = atualizarPaginacao;
+window.limparLinhaRejeito = limparLinhaRejeito;
+window.salvarTabelaRejeitos = salvarTabelaRejeitos;
+window.validarRejeitos = validarRejeitos;
+window.exportarExcelRejeitos = exportarExcelRejeitos;
+window.atualizarHistoricoRejeitos = atualizarHistoricoRejeitos;
+window.voltarParaPrincipal = voltarParaPrincipal;
+// ==========================================
+// 🔥 SOBRESCREVER FUNÇÃO DE SALVAR PARA USAR FIREBASE
+// ==========================================
+
+// Guarda a função original
+const salvarTabelaRejeitosOriginal = salvarTabelaRejeitos;
+
+// Sobrescreve para usar Firebase primeiro
+salvarTabelaRejeitos = async function() {
+    // Verifica se o Firebase e auth estão disponíveis
+    if (typeof auth !== 'undefined' && auth.currentUser) {
+        const usuarioId = auth.currentUser.uid;
+        
+        // Coleta os dados
+        let totalRejeitos = 0;
+        const todosRejeitos = [];
+        
+        for (let p = 0; p < totalPaginas; p++) {
+            const dados = dadosPaginas[p] || [];
+            for (let i = 0; i < LINHAS_POR_PAGINA; i++) {
+                const linha = dados[i] || {};
+                const preenchida = linha.dataSegregacao || linha.radionuclideo || linha.identificacao || 
+                                   linha.conteiner || linha.tipoEmbalagem || linha.pesoVolume;
+                if (preenchida) {
+                    totalRejeitos++;
+                    todosRejeitos.push({
+                        pagina: p + 1,
+                        numero: (p * LINHAS_POR_PAGINA) + i + 1,
+                        ...linha
+                    });
+                }
+            }
+        }
+        
+        if (totalRejeitos === 0) {
+            alert('⚠️ Nenhum dado para salvar! Preencha pelo menos uma linha.');
+            return;
+        }
+        
+        const supervisor = document.getElementById('supervisorRejeitos')?.value || '';
+        const dataValidacao = document.getElementById('dataValidacaoRejeitos')?.value || '';
+        
+        const dados = {
+            dataSalvamento: new Date().toISOString(),
+            supervisor: supervisor,
+            dataValidacao: dataValidacao,
+            totalPaginas: totalPaginas,
+            totalRejeitos: totalRejeitos,
+            rejeitos: todosRejeitos
+        };
+        
+        try {
+            // Tenta salvar no Firebase
+            await salvarRejeitosFirebase(usuarioId, dados);
+            mostrarFeedbackSalvamento(`✅ ${totalRejeitos} rejeitos salvos no Firebase!`, 'success');
+            
+            // Também salva localmente como backup
+            let registros = JSON.parse(localStorage.getItem('radiocalc_rejeitos_radioativos') || '[]');
+            registros.unshift({
+                id: Date.now(),
+                ...dados
+            });
+            localStorage.setItem('radiocalc_rejeitos_radioativos', JSON.stringify(registros));
+            atualizarHistoricoRejeitos();
+            
+        } catch (error) {
+            console.warn('⚠️ Erro ao salvar no Firebase, usando localStorage:', error);
+            // Fallback: usa a função original
+            salvarTabelaRejeitosOriginal();
+        }
+    } else {
+        // Usuário não logado, usa localStorage
+        salvarTabelaRejeitosOriginal();
+    }
+};
+</script>
+
+</body>
+</html>
