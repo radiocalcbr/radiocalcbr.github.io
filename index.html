@@ -21,26 +21,9 @@
     <!-- ===== BIBLIOTECA BROWSER PRINT ZEBRA ===== -->
 <script src="https://cdn.jsdelivr.net/npm/browserprint@3.0.216/dist/BrowserPrint-3.0.216.min.js"></script>
     
-  <!-- ===== FIREBASE ===== -->
+    <!-- ===== BIBLIOTECAS DO FIREBASE ===== -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
-    <!-- ===== SCRIPTS DO PROJETO ===== -->
-    <script src="assets/js/config.js"></script>
-    <script src="assets/js/firebase-db.js"></script>
-    <script src="assets/js/firebase-auth.js"></script>
-    <script src="assets/js/traducoes.js"></script>
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/planejamento.js"></script>
-    <script src="assets/js/pacientes.js"></script>
-    <script src="assets/js/marcacao.js"></script>
-    <script src="assets/js/pediatrico.js"></script>
-    <script src="assets/js/interface.js"></script>
-    <script src="assets/js/salvar.js"></script>
-    <script src="assets/js/historico.js"></script>
-    <script src="assets/js/graficos.js"></script>
-    <script src="assets/js/main.js"></script>
     
     <!-- ===== CSS ===== -->
     <link rel="stylesheet" href="assets/css/style.css">
@@ -369,9 +352,6 @@
         <button class="tab-btn" onclick="trocarAba('marcacao')" data-translate="aba_marcacao">🧪 Marcação</button>
         <button class="tab-btn" onclick="trocarAba('pacientes')" data-translate="aba_pacientes">👥 Pacientes</button>
         <button class="tab-btn" onclick="trocarAba('pediatrica')" data-translate="aba_pediatrica">👶 Dose Pediátrica</button>
-         <button class="tab-btn" onclick="trocarAba('ferramentas')" style="color: #9b59b6; border-color: #9b59b6;">
-        🔧 Outras Ferramentas
-    </button>
     </div>
 
        <!-- ===== ABA 1: PLANEJAMENTO OTIMIZADO ===== -->
@@ -401,7 +381,7 @@
 
                     <!-- Coluna 1: Dados do Gerador -->
                     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 10px;">
-                        <h4 style="margin-top: 0; color: #00d2ff; font-size: 0.95rem;">⚛️⬇️ Dados do Gerador</h4>
+                        <h4 style="margin-top: 0; color: #00d2ff; font-size: 0.95rem;">📦 Dados do Gerador</h4>
                         <div class="input-group">
                             <label style="color: #ccc; font-size: 0.85rem;">Atividade nominal do Mo-99 (mCi):</label>
                             <select id="atividade-nominal-multi" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
@@ -1151,91 +1131,7 @@
             </div>
         </div>
     </div>
-<!-- ===== ABA 5: OUTRAS FERRAMENTAS ===== -->
-<div id="aba-ferramentas" class="tab-content">
-    <div class="card">
-        <h3 class="card-title" style="color: #9b59b6;">
-            🔧 Outras Ferramentas
-            <span class="snmmi-badge" style="background: rgba(155,89,182,0.2); color: #9b59b6; border-color: rgba(155,89,182,0.3);">
-                v1.0 beta
-            </span>
-        </h3>
-        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;">
-            Selecione uma ferramenta abaixo para abrir seu módulo completo.
-        </p>
 
-        <!-- ===== MENU DE FERRAMENTAS (CARDS CLICÁVEIS) ===== -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-            
-            <!-- Card 1: Registro de Marcação -->
-            <div onclick="abrirPaginaFerramenta('registro-marcacao')" style="
-                background: rgba(155,89,182,0.08);
-                border: 2px solid rgba(155,89,182,0.2);
-                border-radius: 16px;
-                padding: 30px 20px;
-                text-align: center;
-                cursor: pointer;
-                transition: 0.3s;
-            " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-5px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
-                <div style="font-size: 3rem; margin-bottom: 10px;">📋</div>
-                <h4 style="color: #fff; margin-bottom: 8px;">Registro de Marcação</h4>
-                <p style="color: #888; font-size: 0.85rem; margin: 0;">
-                    Registre todas as marcações de radiofármacos realizadas.
-                </p>
-                <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
-                    Clique para abrir ➜
-                </span>
-            </div>
-
-            <!-- Card 2: Registro de Rejeitos -->
-            <div onclick="abrirPaginaFerramenta('registro-rejeitos')" style="
-                background: rgba(155,89,182,0.08);
-                border: 2px solid rgba(155,89,182,0.2);
-                border-radius: 16px;
-                padding: 30px 20px;
-                text-align: center;
-                cursor: pointer;
-                transition: 0.3s;
-            " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-5px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
-                <div style="font-size: 3rem; margin-bottom: 10px;">🗑️☢️</div>
-                <h4 style="color: #fff; margin-bottom: 8px;">Registro de Rejeitos</h4>
-                <p style="color: #888; font-size: 0.85rem; margin: 0;">
-                    Controle e registre todos os rejeitos de radioativos do setor de medicina nuclear.
-                </p>
-                <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
-                    Clique para abrir ➜
-                </span>
-            </div>
-
-            <!-- Card 3: Registro de Gerador -->
-            <div onclick="abrirPaginaFerramenta('registro-gerador')" style="
-                background: rgba(155,89,182,0.08);
-                border: 2px solid rgba(155,89,182,0.2);
-                border-radius: 16px;
-                padding: 30px 20px;
-                text-align: center;
-                cursor: pointer;
-                transition: 0.3s;
-            " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-5px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
-                <div style="font-size: 3rem; margin-bottom: 10px;">⚛️⬇️</div>
-                <h4 style="color: #fff; margin-bottom: 8px;">Registro de Gerador</h4>
-               <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
-    Gerencie o ciclo de vida do gerador 
-    <strong style="color: #ffd700;">Mo-99/Tc-99m</strong>
-    <br><br>
-    <span style="color: #666; font-size: 0.7rem;">
-        📅 Calibração · 📦 Lote · ⏳ Validade · 🗑️ Devolução
-    </span>
-</p>
-                <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
-                    Clique para abrir ➜
-                </span>
-            </div>
-
-        </div>
-
-    </div>
-</div>
     <!-- FOOTER -->
     <footer class="footer">
         <div class="disclaimer-footer" id="footerDisclaimer">
@@ -1506,8 +1402,24 @@
     <div class="footer-pdf">RadioCalc &bull; Ferramenta para planejamento de radiofármacos em medicina nuclear</div>
 </div>
 
-    <!-- ===== FORÇAR Tc-99m COMO PADRÃO ===== -->
-    <script>
+<!-- ... todo o conteúdo da página ... -->
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/traducoes.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/planejamento.js"></script>
+<script src="assets/js/pacientes.js"></script>
+<script src="assets/js/marcacao.js"></script>
+<script src="assets/js/pediatrico.js"></script>
+<script src="assets/js/interface.js"></script>
+<script src="assets/js/salvar.js"></script>
+<script src="assets/js/historico.js"></script>
+<script src="assets/js/graficos.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/firebase-auth.js"></script>
+
+<!-- ===== FORÇAR Tc-99m COMO PADRÃO ===== -->
+<script>
     (function() {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', forcarTc99m);
@@ -1535,6 +1447,6 @@
             }, 300);
         }
     })();
-    </script>
+</script>
 </body>
 </html>
