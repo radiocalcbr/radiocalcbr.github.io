@@ -290,3 +290,44 @@ window.calcularPlanejamentoComValidacao = calcularPlanejamentoComValidacao;
 window.verificarIntervaloDatas = verificarIntervaloDatas;
 window.formatarData = formatarData;
 window.mostrarToast = mostrarToast;
+// ============================================
+// 🔧 FUNÇÕES DAS FERRAMENTAS
+// ============================================
+
+/**
+ * Abre a página da ferramenta selecionada
+ * @param {string} ferramenta - Nome da ferramenta 
+ *        Opções: 'registro-marcacao', 'registro-rejeitos', 'registro-gerador'
+ */
+function abrirPaginaFerramenta(ferramenta) {
+    // Mapeia as ferramentas para seus arquivos HTML
+    const paginas = {
+        'registro-marcacao': 'paginas/registro-marcacao.html',
+        'registro-rejeitos': 'paginas/registro-rejeitos.html',
+        'registro-gerador': 'paginas/registro-gerador.html'
+    };
+    
+    const url = paginas[ferramenta];
+    if (!url) {
+        alert('⚠️ Página não encontrada!');
+        console.error('❌ Ferramenta não encontrada:', ferramenta);
+        return;
+    }
+    
+    // Abre em uma nova aba
+    window.open(url, '_blank');
+}
+
+/**
+ * Função para voltar para a página principal
+ * (use nas páginas das ferramentas)
+ */
+function voltarParaPrincipal() {
+    window.location.href = '../index.html';
+}
+
+// ============================================
+// EXPORTA AS NOVAS FUNÇÕES PARA USO GLOBAL
+// ============================================
+window.abrirPaginaFerramenta = abrirPaginaFerramenta;
+window.voltarParaPrincipal = voltarParaPrincipal;

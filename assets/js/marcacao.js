@@ -50,8 +50,11 @@ function atualizarInfoIsotopo() {
         horarioUltimo.value = ultimo.toISOString().slice(0, 16);
     }
     
+   if (typeof atualizarHorariosAgendaPadrao === 'function') {
     atualizarHorariosAgendaPadrao();
-    setTimeout(() => { calcularPlanejamento(); calcularPacientes(); }, 100);
+} else {
+    console.warn('⚠️ atualizarHorariosAgendaPadrao não está disponível - ignorando');
+}
 }
 
 function calcularMarcacao() {
