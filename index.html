@@ -24,12 +24,12 @@
     <!-- ===== BIBLIOTECAS DO FIREBASE ===== -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <!-- ===== CSS ===== -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <body>
 
 <!-- ===== TELA DE LOGIN ===== -->
 <div id="telaLogin" style="
@@ -352,6 +352,9 @@
         <button class="tab-btn" onclick="trocarAba('marcacao')" data-translate="aba_marcacao">🧪 Marcação</button>
         <button class="tab-btn" onclick="trocarAba('pacientes')" data-translate="aba_pacientes">👥 Pacientes</button>
         <button class="tab-btn" onclick="trocarAba('pediatrica')" data-translate="aba_pediatrica">👶 Dose Pediátrica</button>
+         <button class="tab-btn" onclick="trocarAba('ferramentas')" style="color: #9b59b6; border-color: #9b59b6;">
+        🔧 Outras Ferramentas
+    </button>
     </div>
 
        <!-- ===== ABA 1: PLANEJAMENTO OTIMIZADO ===== -->
@@ -381,7 +384,7 @@
 
                     <!-- Coluna 1: Dados do Gerador -->
                     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 10px;">
-                        <h4 style="margin-top: 0; color: #00d2ff; font-size: 0.95rem;">📦 Dados do Gerador</h4>
+                        <h4 style="margin-top: 0; color: #00d2ff; font-size: 0.95rem;">⚛️⬇️ Dados do Gerador</h4>
                         <div class="input-group">
                             <label style="color: #ccc; font-size: 0.85rem;">Atividade nominal do Mo-99 (mCi):</label>
                             <select id="atividade-nominal-multi" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
@@ -1131,30 +1134,158 @@
             </div>
         </div>
     </div>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-        <div class="disclaimer-footer" id="footerDisclaimer">
-            <span style="color: #ffd700;">⚠️</span> 
-            <strong>Aviso de Responsabilidade:</strong> 
-            Esta ferramenta destina-se ao <span class="highlight">auxílio de profissionais habilitados</span> em medicina nuclear. 
-            Os resultados devem ser validados clinicamente e 
-            <span class="highlight">não substituem protocolos institucionais, julgamento clínico ou recomendações do fabricante</span>. 
-            O usuário é o único responsável pela validação e aplicação dos resultados.
-        </div>
-        <p id="footerText">
-            ☢️ RadioCalc &bull; Ferramenta para planejamento de radiofármacos em medicina nuclear
-            <br>
-            Baseado nas diretrizes SNMMI 2024 e Planilha v2.3
-            <br>
-            Desenvolvido para uso profissional &bull; 
-            <a href="#" onclick="abrirSobre(); return false;">ℹ️ Sobre</a> &bull; 
-            <a href="#">Voltar ao topo</a>
+<!-- ===== ABA 5: OUTRAS FERRAMENTAS ===== -->
+<div id="aba-ferramentas" class="tab-content">
+    <div class="card">
+        <h3 class="card-title" style="color: #9b59b6;">
+            🔧 Outras Ferramentas
+            <span class="snmmi-badge" style="background: rgba(155,89,182,0.2); color: #9b59b6; border-color: rgba(155,89,182,0.3);">
+                v1.0 beta
+            </span>
+        </h3>
+        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;">
+            Selecione uma ferramenta abaixo para abrir seu módulo completo.
         </p>
-    </footer>
 
-</div>
+       <!-- ===== MENU DE FERRAMENTAS (CARDS CLICÁVEIS) ===== -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; justify-content: center; padding: 0 20px;">
+    
+    <!-- Card 1: Registro de Marcação -->
+    <div onclick="abrirPaginaFerramenta('registro-marcacao')" style="
+        background: rgba(155,89,182,0.08);
+        border: 2px solid rgba(155,89,182,0.2);
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
+        <div style="font-size: 3rem; margin-bottom: 10px;">📋</div>
+        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Registro de Marcação</h4>
+        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+            Registre todas as marcações de radiofármacos realizadas.
+        </p>
+        <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
+            Clique para abrir ➜
+        </span>
+    </div>
+
+    <!-- Card 2: Gerência de Estoque de Kits -->
+    <div onclick="
+        console.log('🖱️ Card clicado!');
+        var modal = document.getElementById('modalEstoque');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('ativo');
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+            console.log('✅ Modal aberto!');
+            if (typeof carregarEstoqueSalvo === 'function') {
+                carregarEstoqueSalvo();
+            }
+        } else {
+            console.error('❌ Modal não encontrado!');
+            alert('Erro: Modal de estoque não encontrado!');
+        }
+    " style="
+        background: rgba(155,89,182,0.08);
+        border: 2px solid rgba(155,89,182,0.2);
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
+        <div style="font-size: 3rem; margin-bottom: 10px;">📦📋</div>
+        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Gerência de Estoque de Kits</h4>
+        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+            Controle de <strong style="color: #ffd700;">entrada e saída</strong> de frascos
+            <br><br>
+            <span style="color: #666; font-size: 0.7rem;">
+                📦 Kits · 🔢 Lotes · ⏳ Validades · 📊 Saldo automático
+            </span>
+        </p>
+        <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
+            Clique para abrir ➜
+        </span>
+    </div>
+
+    <!-- Card 3: Registro de Rejeitos -->
+    <div onclick="abrirModalRejeitos()" style="
+        background: rgba(155,89,182,0.08);
+        border: 2px solid rgba(155,89,182,0.2);
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🗑️☢️</div>
+        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Registro de Rejeitos</h4>
+        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+            Controle e registre todos os rejeitos de radioativos do setor de medicina nuclear.
+        </p>
+        <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
+            Clique para abrir ➜
+        </span>
+    </div>
+
+    <!-- Card 4: Registro de Gerador -->
+    <div onclick="abrirModalGerador()" style="
+        background: rgba(155,89,182,0.08);
+        border: 2px solid rgba(155,89,182,0.2);
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
+        <div style="font-size: 3rem; margin-bottom: 10px;">⚛️⬇️</div>
+        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Registro de Gerador</h4>
+        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+            Gerencie o ciclo de vida do gerador 
+            <strong style="color: #ffd700;">Mo-99/Tc-99m</strong>
+            <br><br>
+            <span style="color: #666; font-size: 0.7rem;">
+                📅 Calibração · 📦 Lote · ⏳ Validade · 🗑️ Devolução
+            </span>
+        </p>
+         <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
+            Clique para abrir ➜
+        </span>
+    </div>  
+</div>      
+</div>      
+</div>      
+
 <!-- ===== CONTEÚDO PRINCIPAL (fim) ===== -->
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="disclaimer-footer" id="footerDisclaimer">
+        <span style="color: #ffd700;">⚠️</span>
+        <strong>Aviso de Responsabilidade:</strong>
+        Esta ferramenta destina-se ao <span class="highlight">auxílio de profissionais habilitados</span> em medicina nuclear.
+        Os resultados devem ser validados clinicamente e
+        <span class="highlight">não substituem protocolos institucionais, julgamento clínico ou recomendações do fabricante</span>.
+        O usuário é o único responsável pela validação e aplicação dos resultados.
+    </div>
+    <p id="footerText">
+        ☢️ RadioCalc &bull; Ferramenta para planejamento de radiofármacos em medicina nuclear
+        <br>
+        Baseado nas diretrizes SNMMI 2024 e Planilha v2.3
+        <br>
+        Desenvolvido para uso profissional &bull;
+        <a href="#" onclick="abrirSobre(); return false;">ℹ️ Sobre</a> &bull;
+        <a href="#">Voltar ao topo</a>
+    </p>
+</footer>
+
+<!-- ===== BOTÃO FLUTUANTE DE FEEDBACK ===== -->
+<button class="feedback-button-floating" onclick="abrirFeedback()">
+    💬 Feedback
+    <span style="background: #ff6b6b; color: #fff; border-radius: 50%; padding: 2px 8px; font-size: 0.7rem;">1</span>
+</button>
 
 <!-- ===== MODAL SOBRE ===== -->
 <div class="modal-sobre-overlay" id="modalSobre" onclick="fecharSobreExterno(event)">
@@ -1220,31 +1351,768 @@
         </div>
     </div>
 </div>
-
-<!-- ===== BOTÃO FLUTUANTE DE FEEDBACK ===== -->
-<button onclick="abrirFeedback()" style="
+<!-- ===== MODAL DE GERÊNCIA DE ESTOQUE (VERSÃO SIMPLIFICADA) ===== -->
+<div id="modalEstoque" style="
+    display: none;
     position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #ffd700, #f7971e);
-    color: #000;
-    border: none;
-    border-radius: 50px;
-    padding: 14px 24px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4);
-    transition: 0.3s;
-    z-index: 9999;
-    display: flex;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 99999;
     align-items: center;
-    gap: 10px;
-    font-size: 0.95rem;
-" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-    💬 Feedback
-    <span style="background: #ff6b6b; color: #fff; border-radius: 50%; padding: 2px 8px; font-size: 0.7rem;">1</span>
-</button>
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 1200px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        border: 1px solid rgba(155,89,182,0.3);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        position: relative;
+    ">
+     <!-- Cabeçalho -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
+    <div>
+        <h3 style="color: #9b59b6; margin: 0;">📦 Gerência de Estoque de Kits</h3>
+        <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
+            Controle de entrada e saída de frascos de kits para marcação
+        </p>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <!-- INDICADOR DE NUVEM -->
+        <span id="indicadorEstoqueNuvem" style="
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: #888;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+        ">
+            ☁️ Verificando...
+        </span>
+        
+        <!-- BOTÃO SALVAR NA NUVEM -->
+        <button onclick="salvarEstoqueNaNuvem()" style="
+            background: rgba(46,204,113,0.15);
+            border: 1px solid rgba(46,204,113,0.3);
+            color: #2ecc71;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        " onmouseover="this.style.background='rgba(46,204,113,0.25)'" onmouseout="this.style.background='rgba(46,204,113,0.15)'">
+            ☁️ Salvar Nuvem
+        </button>
+        
+        <!-- BOTÃO CARREGAR DA NUVEM -->
+        <button onclick="carregarEstoqueDaNuvem()" style="
+            background: rgba(52,152,219,0.15);
+            border: 1px solid rgba(52,152,219,0.3);
+            color: #3498db;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        " onmouseover="this.style.background='rgba(52,152,219,0.25)'" onmouseout="this.style.background='rgba(52,152,219,0.15)'">
+            ☁️ Carregar Nuvem
+        </button>
+        
+        <!-- BOTÃO FECHAR -->
+        <button onclick="
+            var modal = document.getElementById('modalEstoque');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                modal.classList.remove('ativo');
+            }
+        " style="
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0 10px;
+            transition: 0.3s;
+        " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+    </div>
+</div>
 
+        <!-- ===== FORMULÁRIO DE CADASTRO ===== -->
+        <div style="
+            background: rgba(155,89,182,0.05);
+            border: 1px solid rgba(155,89,182,0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        ">
+            <h4 style="color: #ffd700; margin: 0 0 15px 0; font-size: 1rem;">📝 Cadastrar Movimentação</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                
+                <!-- Tipo do Kit -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">🧪 Tipo do Kit</label>
+                    <select id="estoqueTipoKit" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                        <optgroup label="🔵 Tc-99m">
+                            <option value="MIBI">MIBI (Miocárdio)</option>
+                            <option value="MDP">MDP (Ósseo)</option>
+                            <option value="DMSA">DMSA (Renal)</option>
+                            <option value="DTPA">DTPA (Renal)</option>
+                            <option value="FITATO">FITATO (Fígado)</option>
+                            <option value="PIRO">PIRO (Pirofosfato)</option>
+                            <option value="HIDA">HIDA (Hepatobiliar)</option>
+                            <option value="SESTAMIBI">Sestamibi (Miocárdio)</option>
+                        </optgroup>
+                        <optgroup label="🟢 F-18">
+                            <option value="FDG">FDG</option>
+                            <option value="FES">FES</option>
+                            <option value="F-PSMA">F-PSMA</option>
+                            <option value="NaF">NaF</option>
+                        </optgroup>
+                        <optgroup label="🟡 I-123">
+                            <option value="MIBG">MIBG</option>
+                            <option value="NaI">NaI</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- Lote -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">🔢 Lote</label>
+                    <input type="text" id="estoqueLote" placeholder="Ex: L12345678" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Validade -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📅 Validade</label>
+                    <input type="date" id="estoqueValidade" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Quantidade de Frascos -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📦 Quantidade de Frascos</label>
+                    <input type="number" id="estoqueQuantidade" value="1" min="1" step="1" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Tipo de Movimentação -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">🔄 Tipo de Movimentação</label>
+                    <select id="estoqueTipoMovimento" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                        <option value="entrada" style="color: #2ecc71;">✅ Entrada (Chegou ao setor)</option>
+                        <option value="saida" style="color: #e74c3c;">❌ Saída (Utilizado/Retirado)</option>
+                    </select>
+                </div>
+
+                <!-- Observação -->
+                <div class="input-group" style="grid-column: span 1;">
+                    <label style="color: #ccc; font-size: 0.85rem;">📝 Observação (opcional)</label>
+                    <input type="text" id="estoqueObservacao" placeholder="Ex: Recebido do fornecedor X" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+            </div>
+
+            <!-- Botões -->
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                <button onclick="cadastrarMovimentacaoEstoque()" style="
+                    padding: 12px 30px;
+                    background: linear-gradient(135deg, #8e44ad, #9b59b6);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 1em;
+                    font-weight: bold;
+                    transition: 0.3s;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    📝 Cadastrar Movimentação
+                </button>
+                <button onclick="limparCamposEstoque()" style="
+                    padding: 12px 20px;
+                    background: rgba(255,255,255,0.05);
+                    color: #888;
+                    border: 1px solid #444;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                    transition: 0.3s;
+                " onmouseover="this.style.borderColor='#ffd700'" onmouseout="this.style.borderColor='#444'">
+                    🗑️ Limpar Campos
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== RESULTADOS / TABELA DE ESTOQUE ===== -->
+        <div style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                <h4 style="color: #00d2ff; margin: 0;">📊 Estoque Atual</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="exportarEstoqueExcel()" style="
+                        padding: 8px 20px;
+                        background: rgba(0, 210, 255, 0.15);
+                        border: 1px solid rgba(0, 210, 255, 0.3);
+                        color: #00d2ff;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 0.85rem;
+                        transition: 0.3s;
+                    " onmouseover="this.style.background='rgba(0, 210, 255, 0.25)'" onmouseout="this.style.background='rgba(0, 210, 255, 0.15)'">
+                        📊 Exportar Excel
+                    </button>
+                    <button onclick="limparHistoricoEstoque()" style="
+                        padding: 8px 20px;
+                        background: rgba(255,107,107,0.15);
+                        border: 1px solid rgba(255,107,107,0.3);
+                        color: #ff6b6b;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 0.85rem;
+                        transition: 0.3s;
+                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                        🗑️ Limpar Histórico
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cards Resumo -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;" id="estoqueResumoCards">
+                <div style="background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
+                    <div style="color: #888; font-size: 0.8rem;">Total de Frascos</div>
+                    <div style="font-size: 2rem; color: #2ecc71;" id="totalFrascosEstoque">0</div>
+                </div>
+                <div style="background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
+                    <div style="color: #888; font-size: 0.8rem;">Tipos de Kits</div>
+                    <div style="font-size: 2rem; color: #3498db;" id="totalTiposEstoque">0</div>
+                </div>
+                <div style="background: rgba(241, 196, 15, 0.1); border: 1px solid rgba(241, 196, 15, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
+                    <div style="color: #888; font-size: 0.8rem;">Lotes Diferentes</div>
+                    <div style="font-size: 2rem; color: #f1c40f;" id="totalLotesEstoque">0</div>
+                </div>
+                <div style="background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
+                    <div style="color: #888; font-size: 0.8rem;">Alertas de Validade</div>
+                    <div style="font-size: 2rem; color: #e74c3c;" id="totalAlertasEstoque">0</div>
+                </div>
+            </div>
+
+            <!-- Tabela de Estoque -->
+            <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                <table style="min-width: 900px; font-size: 0.8rem; width: 100%; border-collapse: collapse;">
+                    <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
+                        <tr style="border-bottom: 2px solid rgba(155,89,182,0.3);">
+                            <th style="padding: 10px; text-align: left; color: #9b59b6;">#</th>
+                            <th style="padding: 10px; text-align: left; color: #9b59b6;">🧪 Kit</th>
+                            <th style="padding: 10px; text-align: left; color: #9b59b6;">🔢 Lote</th>
+                            <th style="padding: 10px; text-align: left; color: #9b59b6;">📅 Validade</th>
+                            <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Entrada</th>
+                            <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Saída</th>
+                            <th style="padding: 10px; text-align: center; color: #9b59b6; background: rgba(255,215,0,0.05);">📊 Saldo</th>
+                            <th style="padding: 10px; text-align: center; color: #9b59b6;">⚠️ Status</th>
+                            <th style="padding: 10px; text-align: center; color: #9b59b6;">📝 Observação</th>
+                            <th style="padding: 10px; text-align: center; color: #9b59b6;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoEstoque">
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 40px; color: #888;">
+                                Nenhum item cadastrado. Adicione a primeira movimentação!
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Legendas -->
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #2ecc71; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Válido
+                </span>
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #f1c40f; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Vence em ≤ 7 dias
+                </span>
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #e74c3c; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Vencido
+                </span>
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #e67e22; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Estoque baixo (≤ 2)
+                </span>
+            </div>
+        </div>
+    </div>
+    <!-- ===== MODAL DE EDIÇÃO DE ITEM ===== -->
+<div id="modalEditarEstoque" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+    z-index: 100001;
+    align-items: center;
+    justify-content: center;
+">
+    <div style="
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        border: 2px solid rgba(52,152,219,0.3);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: #3498db; margin: 0;">✏️ Editar Item do Estoque</h3>
+            <button onclick="fecharModalEdicao()" style="
+                background: rgba(255,255,255,0.05);
+                border: none;
+                color: #888;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 0 10px;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+        </div>
+
+        <form id="formEditarEstoque">
+            <input type="hidden" id="editarIndex" value="">
+            
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">🧪 Kit</label>
+                <select id="editarKit" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+                    <optgroup label="🔵 Tc-99m">
+                        <option value="MIBI">MIBI (Miocárdio)</option>
+                        <option value="MDP">MDP (Ósseo)</option>
+                        <option value="DMSA">DMSA (Renal)</option>
+                        <option value="DTPA">DTPA (Renal)</option>
+                        <option value="FITATO">FITATO (Fígado)</option>
+                        <option value="PIRO">PIRO (Pirofosfato)</option>
+                        <option value="HIDA">HIDA (Hepatobiliar)</option>
+                        <option value="SESTAMIBI">Sestamibi (Miocárdio)</option>
+                    </optgroup>
+                    <optgroup label="🟢 F-18">
+                        <option value="FDG">FDG</option>
+                        <option value="FES">FES</option>
+                        <option value="F-PSMA">F-PSMA</option>
+                        <option value="NaF">NaF</option>
+                    </optgroup>
+                    <optgroup label="🟡 I-123">
+                        <option value="MIBG">MIBG</option>
+                        <option value="NaI">NaI</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">🔢 Lote</label>
+                <input type="text" id="editarLote" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📅 Validade</label>
+                <input type="date" id="editarValidade" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📦 Entrada</label>
+                <input type="number" id="editarEntrada" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📦 Saída</label>
+                <input type="number" id="editarSaida" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📝 Observação</label>
+                <input type="text" id="editarObservacao" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" onclick="salvarEdicaoItem()" style="
+                    flex: 2;
+                    padding: 12px;
+                    background: linear-gradient(135deg, #3498db, #2980b9);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    transition: 0.3s;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    💾 Salvar Alterações
+                </button>
+                <button type="button" onclick="fecharModalEdicao()" style="
+                    flex: 1;
+                    padding: 12px;
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid #444;
+                    border-radius: 8px;
+                    color: #888;
+                    cursor: pointer;
+                    transition: 0.3s;
+                " onmouseover="this.style.borderColor='#ff6b6b'" onmouseout="this.style.borderColor='#444'">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+<!-- ===== MODAL DE REGISTRO DE REJEITOS ===== -->
+<div id="modalRejeitos" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 99998;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 1400px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        border: 1px solid rgba(255,107,107,0.3);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        position: relative;
+    ">
+        <!-- Cabeçalho -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h3 style="color: #ff6b6b; margin: 0;">
+                    <span style="color: #ff6b6b;">☢️</span>
+                    <span style="color: #ffd700;">🗑️</span>
+                    Registro de Rejeitos Radioativos
+                    <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                        (Resíduos sólidos e líquidos)
+                    </span>
+                </h3>
+                <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
+                    Registre todos os rejeitos radioativos gerados no serviço.
+                    <span class="badge-info" id="infoTotalLinhasModal">📋 Página 1 · 18 linhas</span>
+                </p>
+            </div>
+            <button onclick="fecharModalRejeitos()" style="
+                background: rgba(255,255,255,0.05);
+                border: none;
+                color: #888;
+                font-size: 1.8rem;
+                cursor: pointer;
+                padding: 0 15px;
+                transition: 0.3s;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+        </div>
+
+        <!-- FILTRO -->
+        <div class="filtro-container">
+            <span class="filtro-label">🔍 Filtrar por período:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+                <input type="date" id="filtroDataInicioModal">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+                <input type="date" id="filtroDataFimModal">
+            </div>
+            <button class="btn-filtrar" onclick="aplicarFiltroRejeitosModal()">🔍 Filtrar</button>
+            <button class="btn-limpar-filtro" onclick="limparFiltroRejeitosModal()">✕ Limpar</button>
+            <span class="info-filtro" id="infoFiltroRejeitosModal">Mostrando todos os registros</span>
+        </div>
+
+        <!-- ALERTA PÁGINA COMPLETA -->
+        <div class="alerta-pagina-completa" id="alertaPaginaCompletaModal">
+            ✅ Todas as 18 linhas desta página foram preenchidas! 
+            <strong>Clique em "📄 + Nova Página" para continuar.</strong>
+        </div>
+
+        <!-- PAGINAÇÃO -->
+        <div class="paginacao-container" id="paginacaoContainerModal"></div>
+
+        <!-- TABELA -->
+        <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>📋</span>
+            Planilha de Rejeitos Radioativos
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualModal">(Página 1)</span>
+        </h4>
+
+        <div class="table-rejeitos-wrapper">
+            <table id="tabelaRejeitosModal">
+                <thead>
+                    <tr>
+                        <th style="min-width: 35px; width: 35px;">#</th>
+                        <th style="min-width: 110px;">Data de Segregação</th>
+                        <th style="min-width: 100px;">Radionuclídeo</th>
+                        <th style="min-width: 100px;">Identificação</th>
+                        <th style="min-width: 90px;">Contêiner</th>
+                        <th style="min-width: 100px;">Tipo da Embalagem</th>
+                        <th style="min-width: 90px;">Peso/Volume</th>
+                        <th style="min-width: 110px;">Taxa de Exposição (μSv/h)</th>
+                        <th style="min-width: 110px;">Atividade Estimada (mCi)</th>
+                        <th style="min-width: 120px;">Data Estimada de Descarte</th>
+                        <th style="min-width: 140px;">Responsável pela Segregação</th>
+                        <th style="min-width: 120px;">Data do Descarte</th>
+                        <th style="min-width: 110px;">Taxa de Exposição (μSv/h)</th>
+                        <th style="min-width: 110px;">Atividade Estimada (mCi)</th>
+                        <th style="min-width: 140px;">Responsável pelo Descarte</th>
+                        <th style="min-width: 40px; width: 40px;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaRejeitosModal"></tbody>
+            </table>
+        </div>
+
+        <!-- SUPERVISOR -->
+        <div class="linha-supervisor">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
+                <span style="color: #ffd700; font-weight: 600; font-size: 0.9rem;">✅ Conferido e validado por supervisor de radioproteção:</span>
+                <input type="text" id="supervisorRejeitosModal" placeholder="Nome do Supervisor" style="flex: 1; min-width: 180px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="color: #888; font-size: 0.75rem;">📅 Data:</span>
+                <input type="date" id="dataValidacaoRejeitosModal" style="min-width: 130px;">
+                <button class="btn-validar" onclick="validarRejeitosModal()">✅ Validar</button>
+            </div>
+        </div>
+
+        <!-- BOTÕES -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button class="btn-salvar-rejeitos" onclick="salvarTabelaRejeitosModal()">💾 Salvar Registro</button>
+            <button class="btn-excel-rejeitos" onclick="exportarExcelRejeitosModal()">📊 Exportar Excel</button>
+        </div>
+
+        <!-- HISTÓRICO -->
+        <div class="historico-rejeitos">
+            <h5>📋 Registros Salvos</h5>
+            <div class="container" id="historicoRejeitosContainerModal">
+                <div class="historico-vazio">Nenhum registro salvo ainda.</div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ===== MODAL DE REGISTRO DE GERADOR ===== -->
+<div id="modalGerador" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 99997;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 1400px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        border: 1px solid rgba(255,215,0,0.3);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        position: relative;
+    ">
+        <!-- Cabeçalho -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h3 style="color: #ffd700; margin: 0;">
+                    <span style="color: #ffd700;">⚛️⬇️</span>
+                    Registro de Gerador Mo-99/Tc-99m
+                    <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                        (Ciclo de vida do gerador)
+                    </span>
+                </h3>
+                <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
+                    Gerencie o ciclo de vida do gerador Mo-99/Tc-99m.
+                    <span class="badge-info" id="infoTotalLinhasGerador">📋 Página 1 · 18 linhas</span>
+                </p>
+            </div>
+            <button onclick="fecharModalGerador()" style="
+                background: rgba(255,255,255,0.05);
+                border: none;
+                color: #888;
+                font-size: 1.8rem;
+                cursor: pointer;
+                padding: 0 15px;
+                transition: 0.3s;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+        </div>
+
+        <!-- FILTRO -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(155,89,182,0.2); border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <span style="color: #ffd700; font-weight: 600; font-size: 0.9rem;">🔍 Filtrar por período:</span>
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+                <input type="date" id="filtroDataInicioGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+                <input type="date" id="filtroDataFimGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+            </div>
+            
+            <button onclick="aplicarFiltroGeradorModal()" style="padding: 6px 20px; background: linear-gradient(90deg, #9b59b6, #8e44ad); border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                🔍 Filtrar
+            </button>
+            
+            <button onclick="limparFiltroGeradorModal()" style="padding: 6px 16px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px; color: #888; cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+                ✕ Limpar
+            </button>
+            
+            <span id="infoFiltroGerador" style="color: #666; font-size: 0.75rem; margin-left: auto;">
+                Mostrando todos os registros
+            </span>
+        </div>
+
+        <!-- ALERTA PÁGINA COMPLETA -->
+        <div class="alerta-pagina-completa" id="alertaPaginaCompletaGerador">
+            ✅ Todas as 18 linhas desta página foram preenchidas! 
+            <strong>Clique em "📄 + Nova Página" para continuar.</strong>
+        </div>
+
+        <!-- PAGINAÇÃO -->
+        <div class="paginacao-container" id="paginacaoContainerGerador"></div>
+
+        <!-- TABELA -->
+        <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>📋</span>
+            Registro de Geradores Mo-99/Tc-99m
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualGerador">(Página 1)</span>
+        </h4>
+
+        <div class="table-gerador-wrapper">
+            <table id="tabelaGeradoresModal">
+                <thead>
+                    <tr>
+                        <th style="min-width: 35px; width: 35px;">#</th>
+                        <th style="min-width: 110px;">📅 Data Recebimento</th>
+                        <th style="min-width: 120px;">⚛️ Data Calibração</th>
+                        <th style="min-width: 100px;">📦 Lote</th>
+                        <th style="min-width: 100px;">📅 Validade</th>
+                        <th style="min-width: 110px;">📅 Data Devolução</th>
+                        <th style="min-width: 130px;">👤 Responsável Recebimento</th>
+                        <th style="min-width: 130px;">📌 Status</th>
+                        <th style="min-width: 130px;">👤 Responsável Liberação</th>
+                        <th style="min-width: 130px;">👤 Responsável Devolução</th>
+                        <th style="min-width: 40px; width: 40px;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaGeradoresModal"></tbody>
+            </table>
+        </div>
+
+        <!-- RESUMO E CONTADORES -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 15px; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <span style="color: #aaa;">Total: <strong id="totalGeradoresModal" style="color: #ffd700;">0</strong></span>
+                <span style="color: #aaa;">Ativos: <strong id="ativosGeradoresModal" style="color: #00ff64;">0</strong></span>
+                <span style="color: #aaa;">Devolvidos: <strong id="devolvidosGeradoresModal" style="color: #ff6b6b;">0</strong></span>
+            </div>
+        </div>
+
+        <!-- BOTÕES -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button class="btn-salvar-gerador" onclick="salvarTabelaGeradoresModal()">💾 Salvar Registro</button>
+            <button class="btn-excel-gerador" onclick="exportarExcelGeradoresModal()">📊 Exportar Excel</button>
+        </div>
+
+        <!-- HISTÓRICO -->
+        <div style="margin-top: 25px; border-top: 1px solid rgba(155,89,182,0.15); padding-top: 20px;">
+            <h5 style="color: #aaa; margin-bottom: 10px;">📋 Registros Salvos</h5>
+            <div id="historicoGeradoresContainerModal" style="max-height: 200px; overflow-y: auto;">
+                <div style="color: #666; font-size: 0.8rem; text-align: center; padding: 20px;">
+                    Nenhum registro salvo ainda.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- ===== MODAL DE FEEDBACK ===== -->
 <div id="modalFeedback" style="
     display: none;
@@ -1402,6 +2270,7 @@
     <div class="footer-pdf">RadioCalc &bull; Ferramenta para planejamento de radiofármacos em medicina nuclear</div>
 </div>
 
+
 <!-- ... todo o conteúdo da página ... -->
 
 <script src="assets/js/config.js"></script>
@@ -1417,6 +2286,10 @@
 <script src="assets/js/graficos.js"></script>
 <script src="assets/js/main.js"></script>
 <script src="assets/js/firebase-auth.js"></script>
+<script src="assets/js/estoque.js"></script>
+<script src="assets/js/rejeitos.js"></script>
+<script src="assets/js/gerador.js"></script>
+<script src="assets/js/cloud-estoque.js"></script>
 
 <!-- ===== FORÇAR Tc-99m COMO PADRÃO ===== -->
 <script>
@@ -1447,6 +2320,7 @@
             }, 300);
         }
     })();
+    
 </script>
 </body>
 </html>
