@@ -4,6 +4,56 @@
 // ============================================================
 
 // ============================================================
+// ===== VARIÁVEIS GLOBAIS =====
+// ============================================================
+
+let registrosGerador = [];
+let geradorIdCounter = 0;
+
+// ============================================================
+// ===== VARIÁVEIS DE PAGINAÇÃO DO HISTÓRICO =====
+// ============================================================
+
+let paginaAtualHistoricoGerador = 1;
+const ITENS_POR_PAGINA_HISTORICO = 10; // 10 registros por página
+let historicoGeradorFiltrado = [];
+
+// ============================================================
+// ===== CARREGAR DADOS SALVOS =====
+// ============================================================
+
+function carregarGeradoresSalvos() {
+    const salvo = localStorage.getItem('radiocalc_geradores_historico');
+    if (salvo) {
+        try {
+            registrosGerador = JSON.parse(salvo);
+            geradorIdCounter = registrosGerador.length > 0 
+                ? Math.max(...registrosGerador.map(item => item.id || 0)) + 1 
+                : 0;
+            atualizarTabelaGeradorHistorico();
+            atualizarHistoricoGeradorComPaginacao()
+            atualizarContadoresGerador();
+        } catch (e) {
+            console.error('Erro ao carregar geradores:', e);
+            registrosGerador = [];
+            geradorIdCounter = 0;
+        }
+    }
+}
+
+// ============================================================
+// ===== SALVAR DADOS =====
+// ============================================================
+
+function salvarGeradores() {
+    try {
+        localStorage.setItem('radiocalc_geradores_historico', JSON.stringify(registrosGerador));
+    } catch (e) {
+        console.error('Erro ao salvar geradores:', e);
+    }
+}
+
+// ============================================================
 // ===== FUNÇÕES PARA ABRIR/FECHAR MODAL =====
 // ============================================================
 
@@ -13,9 +63,15 @@ function abrirModalGerador() {
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('ativo');
-        if (typeof inicializarGeradorModal === 'function') {
-            inicializarGeradorModal();
+        carregarGeradoresSalvos();
+        preencherDatasPadrao();
+        atualizarHistoricoGeradorComPaginacao();
+        
+        // VERIFICAR STATUS DA NUVEM
+        if (typeof verificarStatusNuvemGerador === 'function') {
+            setTimeout(verificarStatusNuvemGerador, 500);
         }
+        
         console.log('✅ Modal de gerador aberto!');
     } else {
         console.error('❌ Modal de gerador não encontrado!');
@@ -33,7 +89,421 @@ function fecharModalGerador() {
 }
 
 // ============================================================
-// ===== FECHAR MODAL COM ESC =====
+// ===== PREENCHER DATAS PADRÃO =====
+// ============================================================
+
+function preencherDatasPadrao() {
+    const hoje = new Date();
+    const hojeStr = hoje.toISOString().split('T')[0];
+    
+    const dataRecebimento = document.getElementById('gerDataRecebimento');
+    const dataCalibracao = document.getElementById('gerDataCalibracao');
+    const dataValidade = document.getElementById('gerDataValidade');
+    const dataDevolucao = document.getElementById('gerDataDevolucao');
+    
+    if (dataRecebimento && !dataRecebimento.value) {
+        dataRecebimento.value = hojeStr;
+    }
+    if (dataCalibracao && !dataCalibracao.value) {
+        dataCalibracao.value = hojeStr + 'T08:00';
+    }
+    if (dataValidade && !dataValidade.value) {
+        const validade = new Date();
+        validade.setDate(validade.getDate() + 14);
+        dataValidade.value = validade.toISOString().split('T')[0];
+    }
+}
+
+// ============================================================
+// ===== REGISTRAR GERADOR =====
+// ============================================================
+
+function registrarGerador() {
+    console.log('📝 Registrando gerador...');
+    
+    // Capturar valores do formulário
+    const dataRecebimento = document.getElementById('gerDataRecebimento')?.value || '';
+    const dataCalibracao = document.getElementById('gerDataCalibracao')?.value || '';
+    const lote = document.getElementById('gerLote')?.value.trim() || '';
+    const validade = document.getElementById('gerDataValidade')?.value || '';
+    const dataDevolucao = document.getElementById('gerDataDevolucao')?.value || '';
+    const responsavelRecebimento = document.getElementById('gerResponsavelRecebimento')?.value.trim() || '';
+    const status = document.getElementById('gerStatus')?.value || 'aguardando';
+    const responsavelLiberacao = document.getElementById('gerResponsavelLiberacao')?.value.trim() || '';
+    const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao')?.value.trim() || '';
+    
+    // Validações
+    if (!dataRecebimento) {
+        mostrarFeedbackGerador('⚠️ Informe a Data de Recebimento!', 'erro');
+        return;
+    }
+    if (!lote) {
+        mostrarFeedbackGerador('⚠️ Informe o Lote do gerador!', 'erro');
+        return;
+    }
+    if (!validade) {
+        mostrarFeedbackGerador('⚠️ Informe a Data de Validade!', 'erro');
+        return;
+    }
+    
+    // Verificar se já existe um registro com o mesmo lote
+    const existe = registrosGerador.some(item => 
+        item.lote === lote && 
+        item.dataRecebimento === dataRecebimento
+    );
+    
+    if (existe) {
+        mostrarFeedbackGerador('⚠️ Já existe um registro com este lote e data de recebimento!', 'erro');
+        return;
+    }
+    
+    // Criar novo registro
+    const novoRegistro = {
+        id: geradorIdCounter++,
+        dataRecebimento: dataRecebimento,
+        dataCalibracao: dataCalibracao,
+        lote: lote,
+        validade: validade,
+        dataDevolucao: dataDevolucao,
+        responsavelRecebimento: responsavelRecebimento,
+        status: status,
+        responsavelLiberacao: responsavelLiberacao,
+        responsavelDevolucao: responsavelDevolucao,
+        dataRegistro: new Date().toISOString()
+    };
+    
+    registrosGerador.push(novoRegistro);
+    salvarGeradores();
+    atualizarHistoricoGeradorComPaginacao();
+    atualizarTabelaGeradorHistorico();
+    limparCamposGerador();
+    atualizarContadoresGerador();
+    
+    mostrarFeedbackGerador(`✅ Gerador ${lote} registrado com sucesso!`, 'success');
+}
+
+// ============================================================
+// ===== LIMPAR CAMPOS DO FORMULÁRIO =====
+// ============================================================
+
+function limparCamposGerador() {
+    const campos = [
+        'gerDataRecebimento',
+        'gerDataCalibracao',
+        'gerLote',
+        'gerDataValidade',
+        'gerDataDevolucao',
+        'gerResponsavelRecebimento',
+        'gerResponsavelLiberacao',
+        'gerResponsavelDevolucao'
+    ];
+    
+    campos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    const status = document.getElementById('gerStatus');
+    if (status) status.value = 'aguardando';
+    
+    // Preencher datas padrão novamente
+    preencherDatasPadrao();
+}
+
+// ============================================================
+// ===== ATUALIZAR TABELA DE HISTÓRICO =====
+// ============================================================
+
+function atualizarTabelaGeradorHistorico() {
+    const tbody = document.getElementById('corpoTabelaGeradoresModal');
+    if (!tbody) return;
+    
+    if (registrosGerador.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="11" style="text-align: center; padding: 40px; color: #888;">
+                    Nenhum gerador registrado. Preencha o formulário acima e clique em "📝 Registrar Gerador".
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Ordenar por data de recebimento (mais recente primeiro)
+    const registrosOrdenados = [...registrosGerador].sort((a, b) => {
+        return new Date(b.dataRecebimento) - new Date(a.dataRecebimento);
+    });
+    
+    let html = '';
+    
+    registrosOrdenados.forEach((item, index) => {
+        const statusInfo = getStatusInfo(item.status);
+        
+        html += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 10px; text-align: center;">${index + 1}</td>
+                <td style="padding: 10px;">${formatarDataBR(item.dataRecebimento)}</td>
+                <td style="padding: 10px;">${formatarDataHoraBR(item.dataCalibracao)}</td>
+                <td style="padding: 10px; font-weight: 600; color: #ffd700;">${item.lote}</td>
+                <td style="padding: 10px;">${formatarDataBR(item.validade)}</td>
+                <td style="padding: 10px;">${item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelRecebimento || '-'}</td>
+                <td style="padding: 10px;">
+                    <span style="
+                        display: inline-block;
+                        padding: 3px 12px;
+                        border-radius: 12px;
+                        font-size: 0.7rem;
+                        font-weight: 600;
+                        ${statusInfo.style}
+                    ">
+                        ${statusInfo.label}
+                    </span>
+                </td>
+                <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
+                <td style="padding: 10px; text-align: center;">
+                    <button onclick="removerGerador(${item.id})" style="
+                        background: rgba(255,107,107,0.15);
+                        border: 1px solid rgba(255,107,107,0.2);
+                        color: #ff6b6b;
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 0.7rem;
+                        transition: 0.3s;
+                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                        🗑️
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// ===== STATUS HELPER =====
+// ============================================================
+
+function getStatusInfo(status) {
+    const statusMap = {
+        'aguardando': { label: '🔵 Aguardando decaimento', style: 'color: #3498db; background: rgba(52,152,219,0.15);' },
+        'pronto': { label: '🟡 Pronto para liberação', style: 'color: #f1c40f; background: rgba(241,196,15,0.15);' },
+        'transito': { label: '🟠 Em trânsito', style: 'color: #e67e22; background: rgba(230,126,34,0.15);' },
+        'devolvido': { label: '✅ Devolvido', style: 'color: #2ecc71; background: rgba(46,204,113,0.15);' }
+    };
+    return statusMap[status] || statusMap['aguardando'];
+}
+
+// ============================================================
+// ===== REMOVER GERADOR =====
+// ============================================================
+
+function removerGerador(id) {
+    if (!confirm('⚠️ Tem certeza que deseja remover este registro do gerador?')) return;
+    
+    const item = registrosGerador.find(r => r.id === id);
+    registrosGerador = registrosGerador.filter(r => r.id !== id);
+    salvarGeradores();
+    atualizarHistoricoGeradorComPaginacao();
+    atualizarTabelaGeradorHistorico();
+    atualizarContadoresGerador();
+    
+    mostrarFeedbackGerador(`🗑️ Gerador ${item?.lote || ''} removido!`, 'info');
+}
+
+// ============================================================
+// ===== ATUALIZAR CONTADORES =====
+// ============================================================
+
+function atualizarContadoresGerador() {
+    const total = registrosGerador.length;
+    const ativos = registrosGerador.filter(r => r.status !== 'devolvido').length;
+    const devolvidos = registrosGerador.filter(r => r.status === 'devolvido').length;
+    
+    const totalEl = document.getElementById('totalGeradoresModal');
+    const ativosEl = document.getElementById('ativosGeradoresModal');
+    const devolvidosEl = document.getElementById('devolvidosGeradoresModal');
+    
+    if (totalEl) totalEl.textContent = total;
+    if (ativosEl) ativosEl.textContent = ativos;
+    if (devolvidosEl) devolvidosEl.textContent = devolvidos;
+}
+
+// ============================================================
+// ===== FILTROS =====
+// ============================================================
+
+function aplicarFiltroGeradorModal() {
+    const dataInicio = document.getElementById('filtroDataInicioGerador')?.value || '';
+    const dataFim = document.getElementById('filtroDataFimGerador')?.value || '';
+    
+    if (!dataInicio && !dataFim) {
+        mostrarFeedbackGerador('⚠️ Selecione pelo menos uma data para filtrar.', 'aviso');
+        return;
+    }
+    
+    if (dataInicio && dataFim && dataInicio > dataFim) {
+        mostrarFeedbackGerador('⚠️ A data inicial não pode ser maior que a data final!', 'erro');
+        return;
+    }
+    
+    const tbody = document.getElementById('corpoTabelaGeradoresModal');
+    if (!tbody) return;
+    
+    // Filtrar registros
+    let filtrados = [...registrosGerador];
+    
+    if (dataInicio) {
+        filtrados = filtrados.filter(r => r.dataRecebimento >= dataInicio);
+    }
+    if (dataFim) {
+        filtrados = filtrados.filter(r => r.dataRecebimento <= dataFim);
+    }
+    
+    if (filtrados.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="11" style="text-align: center; padding: 40px; color: #888;">
+                    🔍 Nenhum registro encontrado no período selecionado.
+                </td>
+            </tr>
+        `;
+        atualizarInfoFiltroGerador(dataInicio, dataFim);
+        return;
+    }
+    
+    // Renderizar filtrados
+    let html = '';
+    filtrados.sort((a, b) => new Date(b.dataRecebimento) - new Date(a.dataRecebimento));
+    
+    filtrados.forEach((item, index) => {
+        const statusInfo = getStatusInfo(item.status);
+        html += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 10px; text-align: center;">${index + 1}</td>
+                <td style="padding: 10px;">${formatarDataBR(item.dataRecebimento)}</td>
+                <td style="padding: 10px;">${formatarDataHoraBR(item.dataCalibracao)}</td>
+                <td style="padding: 10px; font-weight: 600; color: #ffd700;">${item.lote}</td>
+                <td style="padding: 10px;">${formatarDataBR(item.validade)}</td>
+                <td style="padding: 10px;">${item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelRecebimento || '-'}</td>
+                <td style="padding: 10px;">
+                    <span style="display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; ${statusInfo.style}">
+                        ${statusInfo.label}
+                    </span>
+                </td>
+                <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
+                <td style="padding: 10px; text-align: center;">
+                    <button onclick="removerGerador(${item.id})" style="background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.2); color: #ff6b6b; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; transition: 0.3s;" onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    atualizarInfoFiltroGerador(dataInicio, dataFim);
+    mostrarFeedbackGerador('✅ Filtro aplicado com sucesso!', 'success');
+}
+
+function limparFiltroGeradorModal() {
+    document.getElementById('filtroDataInicioGerador').value = '';
+    document.getElementById('filtroDataFimGerador').value = '';
+    atualizarTabelaGeradorHistorico();
+    atualizarInfoFiltroGerador('', '');
+    mostrarFeedbackGerador('✅ Filtro removido. Mostrando todos os registros.', 'info');
+}
+
+function atualizarInfoFiltroGerador(dataInicio, dataFim) {
+    const infoEl = document.getElementById('infoFiltroGerador');
+    if (!infoEl) return;
+    
+    if (!dataInicio && !dataFim) {
+        infoEl.textContent = '📋 Mostrando todos os registros';
+        infoEl.style.color = '#666';
+        return;
+    }
+    
+    let texto = '🔍 Filtro: ';
+    if (dataInicio && dataFim) {
+        texto += `de ${formatarDataBR(dataInicio)} até ${formatarDataBR(dataFim)}`;
+    } else if (dataInicio) {
+        texto += `a partir de ${formatarDataBR(dataInicio)}`;
+    } else if (dataFim) {
+        texto += `até ${formatarDataBR(dataFim)}`;
+    }
+    
+    infoEl.textContent = texto;
+    infoEl.style.color = '#00d2ff';
+}
+
+// ============================================================
+// ===== EXPORTAR EXCEL =====
+// ============================================================
+
+function exportarExcelGeradoresModal() {
+    if (registrosGerador.length === 0) {
+        mostrarFeedbackGerador('⚠️ Não há dados para exportar.', 'aviso');
+        return;
+    }
+    
+    try {
+        const dados = registrosGerador.map(item => ({
+            'Data Recebimento': formatarDataBR(item.dataRecebimento),
+            'Data Calibração': formatarDataHoraBR(item.dataCalibracao),
+            'Lote': item.lote,
+            'Validade': formatarDataBR(item.validade),
+            'Data Devolução': item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-',
+            'Responsável Recebimento': item.responsavelRecebimento || '-',
+            'Status': getStatusInfo(item.status).label,
+            'Responsável Liberação': item.responsavelLiberacao || '-',
+            'Responsável Devolução': item.responsavelDevolucao || '-'
+        }));
+        
+        if (typeof XLSX === 'undefined') {
+            mostrarFeedbackGerador('❌ Biblioteca XLSX não carregada.', 'erro');
+            return;
+        }
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(dados);
+        const colWidths = [
+            { wch: 18 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
+            { wch: 18 }, { wch: 25 }, { wch: 20 }, { wch: 25 }, { wch: 25 }
+        ];
+        ws['!cols'] = colWidths;
+        
+        XLSX.utils.book_append_sheet(wb, ws, 'Geradores');
+        XLSX.writeFile(wb, `Geradores_${new Date().toISOString().split('T')[0]}.xlsx`);
+        
+        mostrarFeedbackGerador('✅ Excel exportado com sucesso!', 'success');
+    } catch (e) {
+        console.error('Erro ao exportar Excel:', e);
+        mostrarFeedbackGerador('❌ Erro ao exportar Excel.', 'erro');
+    }
+}
+
+// ============================================================
+// ===== LIMPAR HISTÓRICO =====
+// ============================================================
+
+function limparHistoricoGerador() {
+    if (!confirm('⚠️ Tem certeza que deseja limpar TODO o histórico de geradores? Esta ação não pode ser desfeita!')) return;
+    
+    registrosGerador = [];
+    geradorIdCounter = 0;
+    salvarGeradores();
+    atualizarHistoricoGeradorComPaginacao();
+    atualizarTabelaGeradorHistorico();
+    atualizarContadoresGerador();
+    mostrarFeedbackGerador('🗑️ Histórico de geradores limpo!', 'info');
+}
+
+// ============================================================
+// ===== FUNÇÕES PARA FECHAR COM ESC =====
 // ============================================================
 
 document.addEventListener('keydown', function(event) {
@@ -46,417 +516,35 @@ document.addEventListener('keydown', function(event) {
 });
 
 // ============================================================
-// ===== VARIÁVEIS DA TABELA =====
-// ============================================================
-
-let paginaAtualGerador = 0;
-let totalPaginasGerador = 1;
-const LINHAS_POR_PAGINA_GERADOR = 18;
-let dadosPaginasGerador = { 0: [] };
-let filtroAtivoGerador = false;
-let filtroDataInicioGerador = null;
-let filtroDataFimGerador = null;
-
-const STATUS_OPTIONS_GERADOR = [
-    { value: 'aguardando', label: '🔵 Aguardando decaimento', class: 'status-aguardando' },
-    { value: 'pronto', label: '🟡 Pronto para liberação', class: 'status-pronto' },
-    { value: 'transito', label: '🟠 Em trânsito', class: 'status-transito' },
-    { value: 'devolvido', label: '✅ Devolvido', class: 'status-devolvido' }
-];
-
-// ============================================================
-// ===== INICIALIZAR MODAL =====
-// ============================================================
-
-function inicializarGeradorModal() {
-    console.log('📋 Inicializando tabela de geradores...');
-    if (!dadosPaginasGerador[0] || dadosPaginasGerador[0].length === 0) {
-        for (let i = 0; i < LINHAS_POR_PAGINA_GERADOR; i++) {
-            if (!dadosPaginasGerador[0]) dadosPaginasGerador[0] = [];
-            dadosPaginasGerador[0][i] = {
-                dataRecebimento: '',
-                dataCalibracao: '',
-                lote: '',
-                validade: '',
-                dataDevolucao: '',
-                responsavelRecebimento: '',
-                status: 'aguardando',
-                responsavelLiberacao: '',
-                responsavelDevolucao: ''
-            };
-        }
-    }
-    renderizarPaginaGerador(0);
-    atualizarPaginacaoGerador();
-    atualizarHistoricoGeradorModal();
-    atualizarContadoresGerador();
-    console.log('✅ Tabela de geradores inicializada!');
-}
-
-// ============================================================
-// ===== RENDERIZAR PÁGINA =====
-// ============================================================
-
-function renderizarPaginaGerador(pagina) {
-    const tbody = document.getElementById('corpoTabelaGeradoresModal');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    const dados = dadosPaginasGerador[pagina] || [];
-    
-    for (let i = 0; i < LINHAS_POR_PAGINA_GERADOR; i++) {
-        const numLinha = (pagina * LINHAS_POR_PAGINA_GERADOR) + i + 1;
-        const dado = dados[i] || {};
-        
-        const tr = document.createElement('tr');
-        tr.dataset.index = i;
-        tr.dataset.pagina = pagina;
-        tr.dataset.numLinha = numLinha;
-        
-        let statusOptions = '';
-        STATUS_OPTIONS_GERADOR.forEach(opt => {
-            const selected = dado.status === opt.value ? 'selected' : '';
-            statusOptions += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
-        });
-        
-        tr.innerHTML = `
-            <td class="num-linha">${numLinha}</td>
-            <td><input type="date" id="ger_dataRec_${pagina}_${i}" class="input-gerador" value="${dado.dataRecebimento || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td><input type="datetime-local" id="ger_dataCal_${pagina}_${i}" class="input-gerador" value="${dado.dataCalibracao || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td><input type="text" id="ger_lote_${pagina}_${i}" placeholder="Ex: G12345678" class="input-gerador" value="${dado.lote || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td><input type="date" id="ger_validade_${pagina}_${i}" class="input-gerador" value="${dado.validade || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td><input type="date" id="ger_dataDev_${pagina}_${i}" class="input-gerador" value="${dado.dataDevolucao || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td><input type="text" id="ger_respRec_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelRecebimento || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td>
-                <select id="ger_status_${pagina}_${i}" class="input-gerador" onchange="salvarDadosLinhaGerador(${pagina}, ${i}); atualizarContadoresGerador();">
-                    ${statusOptions}
-                </select>
-            </td>
-            <td><input type="text" id="ger_respLib_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelLiberacao || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td><input type="text" id="ger_respDev_${pagina}_${i}" placeholder="Responsável" class="input-gerador" value="${dado.responsavelDevolucao || ''}" onchange="salvarDadosLinhaGerador(${pagina}, ${i})"></td>
-            <td>
-                <button class="btn-acao-linha" onclick="limparLinhaGeradorModal(${pagina}, ${i})" title="Limpar linha">✕</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    }
-    atualizarInfoPaginaGerador(pagina);
-    atualizarContadoresGerador();
-}
-
-// ============================================================
-// ===== SALVAR DADOS DA LINHA =====
-// ============================================================
-
-function salvarDadosLinhaGerador(pagina, index) {
-    if (!dadosPaginasGerador[pagina]) dadosPaginasGerador[pagina] = [];
-    if (!dadosPaginasGerador[pagina][index]) dadosPaginasGerador[pagina][index] = {};
-    
-    dadosPaginasGerador[pagina][index] = {
-        dataRecebimento: document.getElementById(`ger_dataRec_${pagina}_${index}`)?.value || '',
-        dataCalibracao: document.getElementById(`ger_dataCal_${pagina}_${index}`)?.value || '',
-        lote: document.getElementById(`ger_lote_${pagina}_${index}`)?.value || '',
-        validade: document.getElementById(`ger_validade_${pagina}_${index}`)?.value || '',
-        dataDevolucao: document.getElementById(`ger_dataDev_${pagina}_${index}`)?.value || '',
-        responsavelRecebimento: document.getElementById(`ger_respRec_${pagina}_${index}`)?.value || '',
-        status: document.getElementById(`ger_status_${pagina}_${index}`)?.value || 'aguardando',
-        responsavelLiberacao: document.getElementById(`ger_respLib_${pagina}_${index}`)?.value || '',
-        responsavelDevolucao: document.getElementById(`ger_respDev_${pagina}_${index}`)?.value || ''
-    };
-    verificarPaginaCompletaGerador(pagina);
-    atualizarContadoresGerador();
-}
-
-// ============================================================
-// ===== VERIFICAR PÁGINA COMPLETA =====
-// ============================================================
-
-function verificarPaginaCompletaGerador(pagina) {
-    const dados = dadosPaginasGerador[pagina] || [];
-    let completas = 0;
-    for (let i = 0; i < LINHAS_POR_PAGINA_GERADOR; i++) {
-        const linha = dados[i] || {};
-        const preenchida = linha.dataRecebimento || linha.lote || 
-                           linha.dataCalibracao || linha.validade;
-        if (preenchida) completas++;
-    }
-    const alerta = document.getElementById('alertaPaginaCompletaGerador');
-    if (alerta) {
-        if (completas >= LINHAS_POR_PAGINA_GERADOR) {
-            alerta.style.display = 'block';
-            adicionarBotaoNovaPaginaGerador();
-        } else {
-            alerta.style.display = 'none';
-        }
-    }
-}
-
-// ============================================================
-// ===== NOVA PÁGINA =====
-// ============================================================
-
-function adicionarBotaoNovaPaginaGerador() {
-    const container = document.getElementById('paginacaoContainerGerador');
-    if (!container) return;
-    if (document.getElementById('btnNovaPaginaGerador')) return;
-    const btn = document.createElement('button');
-    btn.id = 'btnNovaPaginaGerador';
-    btn.className = 'btn-pagina nova-pagina';
-    btn.innerHTML = '📄 + Nova Página';
-    btn.onclick = function() { criarNovaPaginaGerador(); };
-    container.appendChild(btn);
-}
-
-function criarNovaPaginaGerador() {
-    const novaPagina = totalPaginasGerador;
-    dadosPaginasGerador[novaPagina] = [];
-    for (let i = 0; i < LINHAS_POR_PAGINA_GERADOR; i++) {
-        dadosPaginasGerador[novaPagina][i] = {
-            dataRecebimento: '',
-            dataCalibracao: '',
-            lote: '',
-            validade: '',
-            dataDevolucao: '',
-            responsavelRecebimento: '',
-            status: 'aguardando',
-            responsavelLiberacao: '',
-            responsavelDevolucao: ''
-        };
-    }
-    totalPaginasGerador++;
-    paginaAtualGerador = novaPagina;
-    const btnNova = document.getElementById('btnNovaPaginaGerador');
-    if (btnNova) btnNova.remove();
-    const alerta = document.getElementById('alertaPaginaCompletaGerador');
-    if (alerta) alerta.style.display = 'none';
-    renderizarPaginaGerador(paginaAtualGerador);
-    atualizarPaginacaoGerador();
-    atualizarInfoPaginaGerador(paginaAtualGerador);
-    atualizarContadoresGerador();
-}
-
-// ============================================================
-// ===== ATUALIZAR PAGINAÇÃO =====
-// ============================================================
-
-function atualizarPaginacaoGerador() {
-    const container = document.getElementById('paginacaoContainerGerador');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    const btnAnterior = document.createElement('button');
-    btnAnterior.className = 'btn-pagina';
-    btnAnterior.innerHTML = '◀ Anterior';
-    btnAnterior.onclick = function() {
-        if (paginaAtualGerador > 0) {
-            paginaAtualGerador--;
-            renderizarPaginaGerador(paginaAtualGerador);
-            atualizarPaginacaoGerador();
-            atualizarInfoPaginaGerador(paginaAtualGerador);
-            atualizarContadoresGerador();
-        }
-    };
-    if (paginaAtualGerador === 0) {
-        btnAnterior.style.opacity = '0.3';
-        btnAnterior.style.cursor = 'default';
-    }
-    container.appendChild(btnAnterior);
-    
-    for (let i = 0; i < totalPaginasGerador; i++) {
-        const btn = document.createElement('button');
-        btn.className = `btn-pagina ${i === paginaAtualGerador ? 'ativo' : ''}`;
-        btn.textContent = `📄 ${i + 1}`;
-        btn.onclick = function() {
-            paginaAtualGerador = i;
-            renderizarPaginaGerador(paginaAtualGerador);
-            atualizarPaginacaoGerador();
-            atualizarInfoPaginaGerador(paginaAtualGerador);
-            atualizarContadoresGerador();
-            const alerta = document.getElementById('alertaPaginaCompletaGerador');
-            if (alerta) alerta.style.display = 'none';
-            verificarPaginaCompletaGerador(paginaAtualGerador);
-        };
-        container.appendChild(btn);
-    }
-    
-    const btnProxima = document.createElement('button');
-    btnProxima.className = 'btn-pagina';
-    btnProxima.innerHTML = 'Próxima ▶';
-    btnProxima.onclick = function() {
-        if (paginaAtualGerador < totalPaginasGerador - 1) {
-            paginaAtualGerador++;
-            renderizarPaginaGerador(paginaAtualGerador);
-            atualizarPaginacaoGerador();
-            atualizarInfoPaginaGerador(paginaAtualGerador);
-            atualizarContadoresGerador();
-        }
-    };
-    if (paginaAtualGerador === totalPaginasGerador - 1) {
-        btnProxima.style.opacity = '0.3';
-        btnProxima.style.cursor = 'default';
-    }
-    container.appendChild(btnProxima);
-    
-    const info = document.createElement('span');
-    info.className = 'info-pagina';
-    info.textContent = `📊 ${totalPaginasGerador} páginas · ${totalPaginasGerador * LINHAS_POR_PAGINA_GERADOR} linhas`;
-    container.appendChild(info);
-    
-    const alerta = document.getElementById('alertaPaginaCompletaGerador');
-    if (alerta && alerta.style.display === 'block') {
-        adicionarBotaoNovaPaginaGerador();
-    }
-}
-
-function atualizarInfoPaginaGerador(pagina) {
-    const info = document.getElementById('infoPaginaAtualGerador');
-    const infoTotal = document.getElementById('infoTotalLinhasGerador');
-    if (info) info.textContent = `(Página ${pagina + 1})`;
-    if (infoTotal) infoTotal.textContent = `📋 Página ${pagina + 1} · ${LINHAS_POR_PAGINA_GERADOR} linhas`;
-}
-
-function atualizarContadoresGerador() {
-    let total = 0;
-    let ativos = 0;
-    let devolvidos = 0;
-    
-    for (let p = 0; p < totalPaginasGerador; p++) {
-        const dados = dadosPaginasGerador[p] || [];
-        for (let i = 0; i < LINHAS_POR_PAGINA_GERADOR; i++) {
-            const linha = dados[i] || {};
-            const preenchida = linha.dataRecebimento || linha.lote;
-            if (preenchida) {
-                total++;
-                if (linha.status === 'devolvido') {
-                    devolvidos++;
-                } else {
-                    ativos++;
-                }
-            }
-        }
-    }
-    
-    const totalEl = document.getElementById('totalGeradoresModal');
-    const ativosEl = document.getElementById('ativosGeradoresModal');
-    const devolvidosEl = document.getElementById('devolvidosGeradoresModal');
-    
-    if (totalEl) totalEl.textContent = total;
-    if (ativosEl) ativosEl.textContent = ativos;
-    if (devolvidosEl) devolvidosEl.textContent = devolvidos;
-}
-
-// ============================================================
-// ===== LIMPAR LINHA =====
-// ============================================================
-
-function limparLinhaGeradorModal(pagina, index) {
-    if (!confirm(`Deseja limpar a linha ${index + 1} da página ${pagina + 1}?`)) return;
-    if (dadosPaginasGerador[pagina] && dadosPaginasGerador[pagina][index]) {
-        dadosPaginasGerador[pagina][index] = {
-            dataRecebimento: '',
-            dataCalibracao: '',
-            lote: '',
-            validade: '',
-            dataDevolucao: '',
-            responsavelRecebimento: '',
-            status: 'aguardando',
-            responsavelLiberacao: '',
-            responsavelDevolucao: ''
-        };
-    }
-    renderizarPaginaGerador(pagina);
-    atualizarContadoresGerador();
-    mostrarFeedbackGerador('🗑️ Linha ' + (index + 1) + ' limpa!', 'info');
-}
-
-// ============================================================
-// ===== SALVAR TABELA =====
-// ============================================================
-
-function salvarTabelaGeradoresModal() {
-    let totalGeradores = 0;
-    const todosGeradores = [];
-    for (let p = 0; p < totalPaginasGerador; p++) {
-        const dados = dadosPaginasGerador[p] || [];
-        for (let i = 0; i < LINHAS_POR_PAGINA_GERADOR; i++) {
-            const linha = dados[i] || {};
-            const preenchida = linha.dataRecebimento || linha.lote;
-            if (preenchida) {
-                totalGeradores++;
-                todosGeradores.push({
-                    pagina: p + 1,
-                    numero: (p * LINHAS_POR_PAGINA_GERADOR) + i + 1,
-                    ...linha
-                });
-            }
-        }
-    }
-    if (totalGeradores === 0) {
-        alert('⚠️ Nenhum dado para salvar! Preencha pelo menos uma linha.');
-        return;
-    }
-    const registro = {
-        id: Date.now(),
-        dataSalvamento: new Date().toISOString(),
-        totalPaginas: totalPaginasGerador,
-        totalGeradores: totalGeradores,
-        geradores: todosGeradores
-    };
-    let registros = JSON.parse(localStorage.getItem('radiocalc_geradores') || '[]');
-    registros.unshift(registro);
-    localStorage.setItem('radiocalc_geradores', JSON.stringify(registros));
-    mostrarFeedbackGerador('✅ ' + totalGeradores + ' geradores salvos em ' + totalPaginasGerador + ' páginas!', 'success');
-    atualizarHistoricoGeradorModal();
-}
-
-// ============================================================
-// ===== EXPORTAR EXCEL =====
-// ============================================================
-
-function exportarExcelGeradoresModal() {
-    alert('📊 Função de exportar Excel em desenvolvimento!');
-}
-
-// ============================================================
-// ===== HISTÓRICO =====
-// ============================================================
-
-function atualizarHistoricoGeradorModal() {
-    const container = document.getElementById('historicoGeradoresContainerModal');
-    if (!container) return;
-    const registros = JSON.parse(localStorage.getItem('radiocalc_geradores') || '[]');
-    if (registros.length === 0) {
-        container.innerHTML = '<div class="historico-vazio">Nenhum registro salvo ainda.</div>';
-        return;
-    }
-    let html = '';
-    registros.slice(0, 5).forEach((reg, index) => {
-        const data = new Date(reg.dataSalvamento).toLocaleString('pt-BR');
-        html += `
-            <div class="historico-item">
-                <span>
-                    <strong style="color: #ffd700;">#${index + 1}</strong>
-                    ${reg.totalGeradores} geradores · ${reg.totalPaginas || 1} páginas
-                </span>
-                <span class="data">${data}</span>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-}
-
-// ============================================================
 // ===== FEEDBACK =====
 // ============================================================
 
 function mostrarFeedbackGerador(mensagem, tipo) {
     tipo = tipo || 'success';
-    const existing = document.querySelector('.feedback-flash');
+    const existing = document.querySelector('.feedback-flash-gerador');
     if (existing) existing.remove();
+    
     const div = document.createElement('div');
-    div.className = 'feedback-flash ' + tipo;
+    div.className = 'feedback-flash-gerador';
+    div.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 15px 25px;
+        border-radius: 12px;
+        font-weight: 600;
+        z-index: 999999;
+        max-width: 400px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        animation: slideInUp 0.3s ease;
+        ${tipo === 'success' ? 'background: rgba(46,204,113,0.2); border: 1px solid #2ecc71; color: #2ecc71;' :
+          tipo === 'erro' ? 'background: rgba(231,76,60,0.2); border: 1px solid #e74c3c; color: #e74c3c;' :
+          tipo === 'aviso' ? 'background: rgba(241,196,15,0.2); border: 1px solid #f1c40f; color: #f1c40f;' :
+          'background: rgba(52,152,219,0.2); border: 1px solid #3498db; color: #3498db;'}
+    `;
     div.textContent = mensagem;
     document.body.appendChild(div);
+    
     setTimeout(function() {
         div.style.opacity = '0';
         div.style.transition = 'opacity 0.5s';
@@ -465,99 +553,227 @@ function mostrarFeedbackGerador(mensagem, tipo) {
 }
 
 // ============================================================
-// ===== FILTROS =====
+// ===== UTILITÁRIOS =====
 // ============================================================
 
-function aplicarFiltroGeradorModal() {
-    const dataInicio = document.getElementById('filtroDataInicioGerador').value;
-    const dataFim = document.getElementById('filtroDataFimGerador').value;
-    if (!dataInicio && !dataFim) {
-        mostrarToastGerador('⚠️ Selecione pelo menos uma data para filtrar.', 'aviso');
-        return;
-    }
-    if (dataInicio && dataFim && dataInicio > dataFim) {
-        mostrarToastGerador('⚠️ A data inicial não pode ser maior que a data final!', 'erro');
-        return;
-    }
-    filtroDataInicioGerador = dataInicio ? new Date(dataInicio) : null;
-    filtroDataFimGerador = dataFim ? new Date(dataFim) : null;
-    filtroAtivoGerador = true;
-    renderizarPaginaGerador(paginaAtualGerador);
-    atualizarInfoFiltroGerador();
-    mostrarToastGerador('✅ Filtro aplicado com sucesso!', 'success');
-}
-
-function limparFiltroGeradorModal() {
-    document.getElementById('filtroDataInicioGerador').value = '';
-    document.getElementById('filtroDataFimGerador').value = '';
-    filtroAtivoGerador = false;
-    filtroDataInicioGerador = null;
-    filtroDataFimGerador = null;
-    renderizarPaginaGerador(paginaAtualGerador);
-    atualizarInfoFiltroGerador();
-    mostrarToastGerador('✅ Filtro removido. Mostrando todos os registros.', 'info');
-}
-
-function atualizarInfoFiltroGerador() {
-    const infoEl = document.getElementById('infoFiltroGerador');
-    if (!infoEl) return;
-    if (!filtroAtivoGerador) {
-        infoEl.textContent = '📋 Mostrando todos os registros';
-        infoEl.style.color = '#666';
-        return;
-    }
-    let texto = '🔍 Filtro: ';
-    const inicio = document.getElementById('filtroDataInicioGerador').value;
-    const fim = document.getElementById('filtroDataFimGerador').value;
-    if (inicio && fim) {
-        texto += 'de ' + formatarDataBR(inicio) + ' até ' + formatarDataBR(fim);
-    } else if (inicio) {
-        texto += 'a partir de ' + formatarDataBR(inicio);
-    } else if (fim) {
-        texto += 'até ' + formatarDataBR(fim);
-    }
-    infoEl.textContent = texto;
-    infoEl.style.color = '#00d2ff';
-}
-
-function mostrarToastGerador(mensagem, tipo) {
-    tipo = tipo || 'success';
-    const existing = document.querySelector('.toast-gerador');
-    if (existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = 'toast-gerador ' + tipo;
-    toast.textContent = mensagem;
-    document.body.appendChild(toast);
-    setTimeout(function() {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.5s';
-        setTimeout(function() { toast.remove(); }, 500);
-    }, 3000);
-}
-
 function formatarDataBR(dataStr) {
-    if (!dataStr) return '';
+    if (!dataStr) return '-';
     const partes = dataStr.split('-');
-    return partes[2] + '/' + partes[1] + '/' + partes[0];
+    if (partes.length === 3) {
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+    return dataStr;
 }
 
+function formatarDataHoraBR(dataStr) {
+    if (!dataStr) return '-';
+    try {
+        const date = new Date(dataStr);
+        if (isNaN(date.getTime())) return dataStr;
+        return date.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dataStr;
+    }
+}
+// ============================================================
+// ===== FUNÇÕES DE PAGINAÇÃO DO HISTÓRICO =====
+// ============================================================
+
+function atualizarHistoricoGeradorComPaginacao() {
+    const container = document.getElementById('historicoGeradoresContainerModal');
+    if (!container) return;
+    
+    const registros = JSON.parse(localStorage.getItem('radiocalc_geradores_historico') || '[]');
+    
+    if (registros.length === 0) {
+        container.innerHTML = `
+            <div style="color: #888; font-size: 0.85rem; text-align: center; padding: 20px;">
+                Nenhum gerador registrado ainda.
+            </div>
+        `;
+        return;
+    }
+    
+    // Calcular paginação
+    const totalPaginas = Math.ceil(registros.length / ITENS_POR_PAGINA_HISTORICO);
+    
+    if (paginaAtualHistoricoGerador > totalPaginas) {
+        paginaAtualHistoricoGerador = totalPaginas;
+    }
+    if (paginaAtualHistoricoGerador < 1) {
+        paginaAtualHistoricoGerador = 1;
+    }
+    
+    const inicio = (paginaAtualHistoricoGerador - 1) * ITENS_POR_PAGINA_HISTORICO;
+    const fim = Math.min(inicio + ITENS_POR_PAGINA_HISTORICO, registros.length);
+    const registrosPagina = registros.slice(inicio, fim);
+    
+    let html = '';
+    
+    registrosPagina.forEach((reg, index) => {
+        const data = new Date(reg.dataSalvamento).toLocaleString('pt-BR');
+        const numGlobal = inicio + index + 1;
+        
+        html += `
+            <div class="historico-item" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 12px;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+                font-size: 0.8rem;
+                color: #aaa;
+                cursor: pointer;
+                transition: 0.3s;
+            " onclick="verDetalhesGerador(${numGlobal - 1})" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#aaa'">
+                <span>
+                    <strong style="color: #ffd700;">#${numGlobal}</strong>
+                    ${reg.totalGeradores || reg.registros?.length || 0} geradores · ${reg.totalPaginas || 1} páginas
+                </span>
+                <span class="data" style="color: #888; font-size: 0.7rem;">${data}</span>
+            </div>
+        `;
+    });
+    
+    // Controles de paginação
+    html += `
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            flex-wrap: wrap;
+            gap: 8px;
+        ">
+            <span style="color: #888; font-size: 0.75rem;">
+                📊 Mostrando <strong style="color: #ffd700;">${registros.length}</strong> registros 
+                (${inicio + 1} - ${fim} de ${registros.length})
+            </span>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button onclick="irPaginaHistoricoGerador(1)" ${paginaAtualHistoricoGerador === 1 ? 'disabled' : ''} style="
+                    padding: 3px 10px;
+                    border: 1px solid ${paginaAtualHistoricoGerador === 1 ? '#333' : '#555'};
+                    border-radius: 4px;
+                    background: ${paginaAtualHistoricoGerador === 1 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                    color: ${paginaAtualHistoricoGerador === 1 ? '#555' : '#9b59b6'};
+                    cursor: ${paginaAtualHistoricoGerador === 1 ? 'default' : 'pointer'};
+                    font-size: 0.7rem;
+                    transition: 0.3s;
+                ">
+                    ⏮
+                </button>
+                <button onclick="irPaginaHistoricoGerador(${paginaAtualHistoricoGerador - 1})" ${paginaAtualHistoricoGerador === 1 ? 'disabled' : ''} style="
+                    padding: 3px 10px;
+                    border: 1px solid ${paginaAtualHistoricoGerador === 1 ? '#333' : '#555'};
+                    border-radius: 4px;
+                    background: ${paginaAtualHistoricoGerador === 1 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                    color: ${paginaAtualHistoricoGerador === 1 ? '#555' : '#9b59b6'};
+                    cursor: ${paginaAtualHistoricoGerador === 1 ? 'default' : 'pointer'};
+                    font-size: 0.7rem;
+                    transition: 0.3s;
+                ">
+                    ◀
+                </button>
+                
+                <span style="color: #aaa; font-size: 0.75rem; padding: 0 6px;">
+                    Página <strong style="color: #ffd700;">${paginaAtualHistoricoGerador}</strong> de <strong style="color: #ffd700;">${totalPaginas || 1}</strong>
+                </span>
+                
+                <button onclick="irPaginaHistoricoGerador(${paginaAtualHistoricoGerador + 1})" ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? 'disabled' : ''} style="
+                    padding: 3px 10px;
+                    border: 1px solid ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? '#333' : '#555'};
+                    border-radius: 4px;
+                    background: ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                    color: ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? '#555' : '#9b59b6'};
+                    cursor: ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? 'default' : 'pointer'};
+                    font-size: 0.7rem;
+                    transition: 0.3s;
+                ">
+                    ▶
+                </button>
+                <button onclick="irPaginaHistoricoGerador(${totalPaginas})" ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? 'disabled' : ''} style="
+                    padding: 3px 10px;
+                    border: 1px solid ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? '#333' : '#555'};
+                    border-radius: 4px;
+                    background: ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                    color: ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? '#555' : '#9b59b6'};
+                    cursor: ${paginaAtualHistoricoGerador === totalPaginas || totalPaginas === 0 ? 'default' : 'pointer'};
+                    font-size: 0.7rem;
+                    transition: 0.3s;
+                ">
+                    ⏭
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function irPaginaHistoricoGerador(pagina) {
+    const registros = JSON.parse(localStorage.getItem('radiocalc_geradores_historico') || '[]');
+    const totalPaginas = Math.ceil(registros.length / ITENS_POR_PAGINA_HISTORICO);
+    
+    if (pagina < 1 || pagina > totalPaginas || pagina === paginaAtualHistoricoGerador) return;
+    
+    paginaAtualHistoricoGerador = pagina;
+    atualizarHistoricoGeradorComPaginacao();
+}
+
+function verDetalhesGerador(index) {
+    const registros = JSON.parse(localStorage.getItem('radiocalc_geradores_historico') || '[]');
+    const reg = registros[index];
+    if (!reg) return;
+    
+    let detalhes = `📋 Registro #${index + 1}\n`;
+    detalhes += `📅 Data: ${new Date(reg.dataSalvamento).toLocaleString('pt-BR')}\n`;
+    detalhes += `📊 Total: ${reg.totalGeradores || reg.registros?.length || 0} geradores\n`;
+    detalhes += `📄 Páginas: ${reg.totalPaginas || 1}\n\n`;
+    detalhes += `📋 Geradores:\n`;
+    detalhes += `─'.repeat(40)}\n`;
+    
+    const geradores = reg.registros || reg.geradores || [];
+    geradores.slice(0, 5).forEach((g, i) => {
+        detalhes += `${i + 1}. Lote: ${g.lote || '---'} | Status: ${g.status || '---'}\n`;
+    });
+    
+    if (geradores.length > 5) {
+        detalhes += `... e mais ${geradores.length - 5} geradores\n`;
+    }
+    
+    alert(detalhes);
+}
 // ============================================================
 // ===== EXPORTAR FUNÇÕES =====
 // ============================================================
 
 window.abrirModalGerador = abrirModalGerador;
 window.fecharModalGerador = fecharModalGerador;
-window.inicializarGeradorModal = inicializarGeradorModal;
-window.salvarTabelaGeradoresModal = salvarTabelaGeradoresModal;
-window.exportarExcelGeradoresModal = exportarExcelGeradoresModal;
+window.registrarGerador = registrarGerador;
+window.removerGerador = removerGerador;
 window.aplicarFiltroGeradorModal = aplicarFiltroGeradorModal;
 window.limparFiltroGeradorModal = limparFiltroGeradorModal;
+window.exportarExcelGeradoresModal = exportarExcelGeradoresModal;
+window.limparHistoricoGerador = limparHistoricoGerador;
+window.verDetalhesGerador = verDetalhesGerador;
 
-console.log('✅ Módulo de Gerador (Modal) carregado com sucesso!');
+console.log('✅ Módulo de Gerador (v2) carregado com sucesso!');
 console.log('📦 Funções disponíveis:');
 console.log('  - abrirModalGerador()');
 console.log('  - fecharModalGerador()');
-console.log('  - salvarTabelaGeradoresModal()');
+console.log('  - registrarGerador()');
+console.log('  - removerGerador(id)');
 console.log('  - exportarExcelGeradoresModal()');
+console.log('  - limparHistoricoGerador()');
 console.log('  - aplicarFiltroGeradorModal()');
 console.log('  - limparFiltroGeradorModal()');

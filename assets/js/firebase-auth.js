@@ -17,6 +17,11 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 console.log('✅ Firebase conectado!');
 
+// ===== FUNÇÃO PARA OBTER USUÁRIO ATUAL =====
+function getCurrentUser() {
+    return auth.currentUser;
+}
+
 // ==========================================
 // FUNÇÕES DE AUTENTICAÇÃO
 // ==========================================
@@ -35,6 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (nomeUsuario) nomeUsuario.textContent = usuario.email;
             
             console.log('✅ Usuário logado:', usuario.email);
+            
+            // Disparar evento para outros módulos
+            document.dispatchEvent(new CustomEvent('userLoggedIn', { detail: usuario }));
         } else {
             // Usuário não logado ❌
             const telaLogin = document.getElementById('telaLogin');
@@ -44,6 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (conteudoPrincipal) conteudoPrincipal.style.display = 'none';
             
             console.log('🚪 Aguardando login...');
+            
+            // Disparar evento para outros módulos
+            document.dispatchEvent(new CustomEvent('userLoggedOut'));
         }
     });
 });
@@ -222,6 +233,13 @@ window.fazerCadastro = fazerCadastro;
 window.mostrarCadastro = mostrarCadastro;
 window.mostrarLogin = mostrarLogin;
 window.esqueciSenha = esqueciSenha;
+window.getCurrentUser = getCurrentUser;  // ← ADICIONADO!
 window.auth = auth;
 
 console.log('✅ Módulo de autenticação carregado!');
+console.log('📦 Funções disponíveis:');
+console.log('  - getCurrentUser()');
+console.log('  - fazerLogin()');
+console.log('  - fazerLogout()');
+console.log('  - fazerCadastro()');
+console.log('  - esqueciSenha()');
