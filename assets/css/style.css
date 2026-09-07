@@ -2577,3 +2577,265 @@ tr:hover {
         padding: 1px 6px; 
     }
 }
+/* ==========================================
+   🔧 OTIMIZAÇÃO - OUTRAS FERRAMENTAS
+   ========================================== */
+
+/* Container principal das ferramentas */
+.tools-container {
+    max-width: 1600px;
+    margin: -5px auto 0 auto; /* Reduz espaço superior */
+    padding: 0;
+}
+
+/* Remove margem do subtítulo */
+.tools-container .subtitle {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+/* Grid responsivo que se adapta ao tamanho da tela */
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 5px;
+}
+
+/* Cards compactos e otimizados */
+.tool-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
+    padding: 14px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.25s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 80px;
+    justify-content: center;
+}
+
+.tool-card:hover {
+    border-color: rgba(255, 215, 0, 0.3);
+    background: rgba(255, 215, 0, 0.06);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Ícone da ferramenta */
+.tool-card .tool-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+    display: block;
+}
+
+/* Título da ferramenta */
+.tool-card .tool-name {
+    color: #ffd700;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* Descrição curta (opcional) */
+.tool-card .tool-desc {
+    color: #999;
+    font-size: 0.65rem;
+    margin: 4px 0 0 0;
+    line-height: 1.3;
+}
+
+/* Badge de novidade/destaque */
+.tool-card .tool-badge {
+    font-size: 0.5rem;
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-top: 6px;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+/* ==========================================
+   📏 REDUZIR ESPAÇO ENTRE ABAS E CARDS
+   ========================================== */
+
+/* Abas com menos espaço */
+.tabs {
+    margin-bottom: 10px !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Botões das abas mais compactos */
+.tab-btn {
+    padding: 8px 20px !important;
+    font-size: 0.85rem !important;
+}
+
+/* Remove padding extra do conteúdo da aba */
+.tab-content {
+    padding-top: 0 !important;
+}
+
+/* Título "Outras Ferramentas" com menos margem */
+.tools-container h2 {
+    margin-top: 5px;
+    margin-bottom: 6px;
+    font-size: 1.2rem;
+}
+
+/* ==========================================
+   📱 RESPONSIVIDADE - OUTRAS FERRAMENTAS
+   ========================================== */
+
+/* Telas muito grandes (> 1400px) */
+@media (min-width: 1400px) {
+    .tools-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .tool-card {
+        padding: 18px 16px;
+        min-height: 100px;
+    }
+    
+    .tool-card .tool-icon {
+        font-size: 34px;
+    }
+    
+    .tool-card .tool-name {
+        font-size: 1rem;
+    }
+}
+
+/* Telas médias (769px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .tools-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+    }
+    
+    .tool-card {
+        padding: 12px 10px;
+        min-height: 70px;
+    }
+    
+    .tool-card .tool-icon {
+        font-size: 24px;
+    }
+    
+    .tool-card .tool-name {
+        font-size: 0.8rem;
+    }
+}
+
+/* Tablets (600px - 768px) */
+@media (max-width: 768px) {
+    .tabs {
+        margin-bottom: 6px !important;
+    }
+    
+    .tab-btn {
+        padding: 6px 14px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .tools-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+        margin-top: 3px;
+    }
+    
+    .tool-card {
+        padding: 10px 8px;
+        min-height: 60px;
+        border-radius: 10px;
+    }
+    
+    .tool-card .tool-icon {
+        font-size: 22px;
+        margin-bottom: 4px;
+    }
+    
+    .tool-card .tool-name {
+        font-size: 0.75rem;
+    }
+    
+    .tool-card .tool-desc {
+        font-size: 0.6rem;
+    }
+    
+    .tools-container h2 {
+        font-size: 1rem;
+        margin-top: 3px;
+        margin-bottom: 4px;
+    }
+}
+
+/* Celulares pequenos (< 480px) */
+@media (max-width: 480px) {
+    .tab-btn {
+        padding: 5px 10px !important;
+        font-size: 0.65rem !important;
+    }
+    
+    .tools-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 6px;
+        margin-top: 2px;
+    }
+    
+    .tool-card {
+        padding: 8px 6px;
+        min-height: 50px;
+        border-radius: 8px;
+    }
+    
+    .tool-card .tool-icon {
+        font-size: 18px;
+        margin-bottom: 3px;
+    }
+    
+    .tool-card .tool-name {
+        font-size: 0.65rem;
+    }
+    
+    .tool-card .tool-desc {
+        display: none; /* Esconde descrição em telas muito pequenas */
+    }
+    
+    .tools-container h2 {
+        font-size: 0.9rem;
+        margin-top: 2px;
+        margin-bottom: 3px;
+    }
+}
+
+/* Celulares muito pequenos (< 380px) */
+@media (max-width: 380px) {
+    .tools-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 4px;
+    }
+    
+    .tool-card {
+        padding: 6px 4px;
+        min-height: 45px;
+        border-radius: 6px;
+    }
+    
+    .tool-card .tool-icon {
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+    
+    .tool-card .tool-name {
+        font-size: 0.6rem;
+    }
+}
