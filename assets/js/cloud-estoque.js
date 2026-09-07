@@ -244,7 +244,7 @@ async function salvarEstoqueNaNuvem() {
 }
 
 // ============================================
-// 📊 COLETAR DADOS DO ESTOQUE (CORRIGIDO)
+// 📊 COLETAR DADOS DO ESTOQUE
 // ============================================
 
 /**
@@ -290,13 +290,13 @@ function coletarDadosEstoque() {
     return itens;
 }
 
-// ============================================
-// 📥 CARREGAR ESTOQUE (CORRIGIDO)
+/// ============================================
+// 📥 CARREGAR ESTOQUE (VERSÃO CORRIGIDA - COM KIT)
 // ============================================
 
 /**
  * Carrega os dados do estoque do Firestore
- * 🔥 CORRIGIDO: Carrega item por item
+ * 🔥 CORRIGIDO: Carrega TODOS os itens da coleção com o nome do kit correto
  */
 async function carregarEstoqueDaNuvem() {
     try {
@@ -321,7 +321,7 @@ async function carregarEstoqueDaNuvem() {
 
         mostrarToastEstoque(`📥 Carregando estoque da organização...`, 'carregando');
 
-        // 🔥 CARREGAR ITENS DA COLEÇÃO (NÃO o documento único)
+        // 🔥 CARREGAR TODOS OS ITENS DA COLEÇÃO
         const estoqueRef = dbEstoque.collection('organizacoes')
             .doc(userInfo.organizacao)
             .collection('estoque');
@@ -334,15 +334,30 @@ async function carregarEstoqueDaNuvem() {
             // Pular o documento de resumo
             if (doc.id === '_resumo') return;
             
+            // 🔥 IMPORTANTE: Usar 'tipoKit' OU 'kit' - verificar qual campo existe
+            const nomeKit = data.tipoKit || data.kit || '';
+            
+            console.log('📦 Item encontrado:', {
+                id: doc.id,
+                tipoKit: data.tipoKit,
+                kit: data.kit,
+                nomeKit: nomeKit,
+                lote: data.lote,
+                validade: data.validade,
+                saldo: data.saldo
+            });
+            
             itens.push({
                 firebaseId: doc.id,
-                tipoKit: data.tipoKit || '',
+                tipoKit: nomeKit,        // Mantém consistência
+                kit: nomeKit,            // 🔥 ADICIONA O CAMPO 'kit' para compatibilidade
                 lote: data.lote || '',
                 validade: data.validade || '',
                 entrada: data.entrada || 0,
                 saida: data.saida || 0,
                 saldo: data.saldo || 0,
                 observacao: data.observacao || '',
+                status: data.status || '',
                 dataCadastro: data.criadoEm || '',
                 ultimaMovimentacao: data.ultimaMovimentacao || ''
             });
@@ -352,6 +367,8 @@ async function carregarEstoqueDaNuvem() {
             // 🔥 ATUALIZAR O ARRAY GLOBAL
             if (typeof estoqueItens !== 'undefined') {
                 estoqueItens = itens;
+                console.log('📊 Array estoqueItens atualizado:', estoqueItens.length, 'itens');
+                console.log('📊 Primeiro item:', estoqueItens[0]);
             }
             
             // Atualizar a tabela
@@ -374,7 +391,7 @@ async function carregarEstoqueDaNuvem() {
 
 /**
  * Verifica se o usuário tem estoque salvo na organização
- * 🔥 CORRIGIDO: Verifica a coleção
+ * 🔥 CORRIGIDO: Verifica a coleção (NÃO o documento estoque_atual)
  */
 async function verificarEstoqueNaNuvem() {
     try {
@@ -397,127 +414,6 @@ async function verificarEstoqueNaNuvem() {
     } catch (error) {
         console.error('❌ Erro ao verificar estoque:', error);
         return false;
-    }
-}
-
-// ============================================
-// 📊 COLETAR DADOS DA TABELA
-// ============================================
-
-/**
- * Coleta os dados da tabela de estoque
- */
-function coletarDadosEstoque() {
-    const itens = [];
-    const linhas = document.querySelectorAll('#corpoEstoque tr');
-    
-    linhas.forEach(row => {
-        const cols = row.querySelectorAll('td');
-        // Pula a linha de "Nenhum item cadastrado"
-        if (cols.length > 5 && cols[0]?.textContent !== 'Nenhum item cadastrado.') {
-            itens.push({
-                id: cols[0]?.textContent?.trim() || '',
-                kit: cols[1]?.textContent?.trim() || '',
-                lote: cols[2]?.textContent?.trim() || '',
-                validade: cols[3]?.textContent?.trim() || '',
-                entrada: parseInt(cols[4]?.textContent?.trim()) || 0,
-                saida: parseInt(cols[5]?.textContent?.trim()) || 0,
-                saldo: parseInt(cols[6]?.textContent?.trim()) || 0,
-                status: cols[7]?.textContent?.trim() || '',
-                observacao: cols[8]?.textContent?.trim() || '',
-                dataRegistro: new Date().toISOString()
-            });
-        }
-    });
-    
-    return itens;
-}
-
-// ============================================
-// 📜 HISTÓRICO
-// ============================================
-
-/**
- * Salva no histórico do estoque (ORGANIZAÇÃO)
- */
-async function salvarHistoricoEstoqueNuvem(dados, userInfo) {
-    try {
-        const resumo = {
-            timestamp: new Date().toISOString(),
-            usuario: userInfo.email,
-            usuarioId: userInfo.uid,
-            organizacao: userInfo.organizacao,
-            totalItens: dados.metadata.totalItens || 0,
-            totalFrascos: dados.metadata.totalFrascos || 0,
-            tipo: 'salvamento_estoque'
-        };
-
-        await dbEstoque.collection('organizacoes')
-            .doc(userInfo.organizacao)
-            .collection('historico')
-            .add(resumo);
-
-        console.log('✅ Histórico salvo na organização');
-
-    } catch (error) {
-        console.error('❌ Erro ao salvar histórico:', error);
-    }
-}
-
-// ============================================
-// 📥 CARREGAR ESTOQUE
-// ============================================
-
-/**
- * Carrega os dados do estoque do Firestore (ORGANIZAÇÃO)
- */
-async function carregarEstoqueDaNuvem() {
-    try {
-        const userInfo = await verificarUsuarioLogado();
-        if (!userInfo) {
-            mostrarToastEstoque('⚠️ Faça login para carregar dados', 'erro');
-            return;
-        }
-
-        if (!userInfo.organizacao) {
-            mostrarToastEstoque('⚠️ Usuário não vinculado a uma organização', 'erro');
-            return;
-        }
-
-        if (!dbEstoque) {
-            await inicializarFirestore();
-        }
-        if (!dbEstoque) {
-            mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
-            return;
-        }
-
-        mostrarToastEstoque(`📥 Carregando estoque da organização ${userInfo.organizacao}...`, 'carregando');
-
-        // 🔥 Carregar da ORGANIZAÇÃO
-        const docRef = await dbEstoque.collection('organizacoes')
-            .doc(userInfo.organizacao)
-            .collection('estoque')
-            .doc('estoque_atual')
-            .get();
-
-        if (!docRef.exists) {
-            mostrarToastEstoque(`📭 Nenhum dado de estoque encontrado para ${userInfo.organizacao}`, 'info');
-            return;
-        }
-
-        const dados = docRef.data();
-        if (dados.estoque && dados.estoque.length > 0) {
-            await preencherEstoqueNaInterface(dados.estoque);
-            mostrarToastEstoque(`✅ Carregados ${dados.estoque.length} itens do estoque da organização ${userInfo.organizacao}!`, 'sucesso');
-            atualizarIndicadorEstoqueNuvem(true);
-        } else {
-            mostrarToastEstoque('📭 Nenhum item de estoque encontrado', 'info');
-        }
-
-    } catch (error) {
-        console.error('❌ Erro ao carregar estoque:', error);
-        mostrarToastEstoque('❌ Erro ao carregar: ' + error.message, 'erro');
     }
 }
 
@@ -610,7 +506,7 @@ async function preencherEstoqueNaInterface(itens) {
 
         tr.innerHTML = `
             <td style="padding: 10px; color: #888;">${index + 1}</td>
-            <td style="padding: 10px; color: #fff;">${item.kit || '--'}</td>
+            <td style="padding: 10px; color: #fff;">${item.kit || item.tipoKit || '--'}</td>
             <td style="padding: 10px; color: #aaa;">${item.lote || '--'}</td>
             <td style="padding: 10px; color: #aaa;">${item.validade || '--'}</td>
             <td style="padding: 10px; text-align: center; color: #2ecc71;">${item.entrada || 0}</td>
@@ -658,12 +554,13 @@ function atualizarResumoEstoque(itens) {
 }
 
 // ============================================
-// 🗑️ REMOVER ITEM (APENAS ADMIN)
+// 🗑️ REMOVER ITEM (APENAS ADMIN) - CORRIGIDO
 // ============================================
 
 /**
  * Remove um item do estoque
  * 🔒 APENAS ADMINISTRADORES podem remover
+ * 🔥 CORRIGIDO: Remove também do Firestore
  */
 async function removerItemEstoque(index) {
     // 🔥 Verifica se é ADMIN
@@ -676,10 +573,71 @@ async function removerItemEstoque(index) {
     
     if (!confirm('⚠️ TEM CERTEZA? Esta ação removerá o item permanentemente do estoque da organização.')) return;
     
-    const tbody = document.getElementById('corpoEstoque');
-    const rows = tbody.querySelectorAll('tr');
-    
-    if (rows[index]) {
+    try {
+        const tbody = document.getElementById('corpoEstoque');
+        const rows = tbody.querySelectorAll('tr');
+        
+        if (!rows[index]) {
+            mostrarToastEstoque('❌ Item não encontrado!', 'erro');
+            return;
+        }
+
+        // 🔥 PEGA O ID DO FIREBASE DO ITEM
+        const cols = rows[index].querySelectorAll('td');
+        // O ID do Firebase está armazenado como atributo data-firebase-id ou no array global
+        let firebaseId = null;
+        
+        // Tenta pegar do array global estoqueItens
+        if (typeof estoqueItens !== 'undefined' && estoqueItens[index]) {
+            firebaseId = estoqueItens[index].firebaseId;
+        }
+        
+        // Se não tiver firebaseId, tenta pegar do atributo da linha
+        if (!firebaseId) {
+            firebaseId = rows[index].getAttribute('data-firebase-id');
+        }
+
+        // 🔥 REMOVER DO FIRESTORE
+        if (firebaseId) {
+            const userInfo = await verificarUsuarioLogado();
+            if (userInfo && userInfo.organizacao) {
+                const estoqueRef = dbEstoque.collection('organizacoes')
+                    .doc(userInfo.organizacao)
+                    .collection('estoque')
+                    .doc(firebaseId);
+                
+                await estoqueRef.delete();
+                console.log('🗑️ Item removido do Firestore:', firebaseId);
+            }
+        } else {
+            // Se não tiver ID, tenta remover pela query (lote + tipoKit + validade)
+            const cols = rows[index].querySelectorAll('td');
+            const kitNome = cols[1]?.textContent?.trim() || '';
+            const lote = cols[2]?.textContent?.trim() || '';
+            const validade = cols[3]?.textContent?.trim() || '';
+            
+            if (kitNome && lote && validade) {
+                const userInfo = await verificarUsuarioLogado();
+                if (userInfo && userInfo.organizacao) {
+                    const estoqueRef = dbEstoque.collection('organizacoes')
+                        .doc(userInfo.organizacao)
+                        .collection('estoque');
+                    
+                    const querySnapshot = await estoqueRef
+                        .where('tipoKit', '==', kitNome)
+                        .where('lote', '==', lote)
+                        .where('validade', '==', validade)
+                        .get();
+                    
+                    querySnapshot.forEach(async (doc) => {
+                        await doc.ref.delete();
+                        console.log('🗑️ Item removido do Firestore por query:', doc.id);
+                    });
+                }
+            }
+        }
+
+        // 🔥 REMOVER DA TABELA
         rows[index].remove();
         
         // Reorganizar índices
@@ -690,14 +648,22 @@ async function removerItemEstoque(index) {
                 firstCell.textContent = i + 1;
             }
         });
+
+        // 🔥 REMOVER DO ARRAY GLOBAL
+        if (typeof estoqueItens !== 'undefined') {
+            estoqueItens.splice(index, 1);
+            console.log('📊 Item removido do array global. Restam:', estoqueItens.length);
+        }
         
+        // Atualizar resumo
         const itensAtuais = coletarDadosEstoque();
         atualizarResumoEstoque(itensAtuais);
         
-        // 🔥 Salvar automaticamente na nuvem após remover
-        await salvarEstoqueNaNuvem();
-        
         mostrarToastEstoque('🗑️ Item removido permanentemente do estoque!', 'sucesso');
+
+    } catch (error) {
+        console.error('❌ Erro ao remover item:', error);
+        mostrarToastEstoque('❌ Erro ao remover: ' + error.message, 'erro');
     }
 }
 
@@ -998,33 +964,33 @@ function exportarEstoqueExcel() {
 }
 
 // ============================================
-// 🔍 VERIFICAR ESTOQUE NA NUVEM
+// 📜 HISTÓRICO
 // ============================================
 
 /**
- * Verifica se o usuário tem estoque salvo na organização
+ * Salva no histórico do estoque (ORGANIZAÇÃO)
  */
-async function verificarEstoqueNaNuvem() {
+async function salvarHistoricoEstoqueNuvem(dados, userInfo) {
     try {
-        const userInfo = await verificarUsuarioLogado();
-        if (!userInfo || !userInfo.organizacao) return false;
+        const resumo = {
+            timestamp: new Date().toISOString(),
+            usuario: userInfo.email,
+            usuarioId: userInfo.uid,
+            organizacao: userInfo.organizacao,
+            totalItens: dados.metadata.totalItens || 0,
+            totalFrascos: dados.metadata.totalFrascos || 0,
+            tipo: 'salvamento_estoque'
+        };
 
-        if (!dbEstoque) {
-            await inicializarFirestore();
-        }
-        if (!dbEstoque) return false;
-
-        const docRef = await dbEstoque.collection('organizacoes')
+        await dbEstoque.collection('organizacoes')
             .doc(userInfo.organizacao)
-            .collection('estoque')
-            .doc('estoque_atual')
-            .get();
+            .collection('historico')
+            .add(resumo);
 
-        return docRef.exists;
+        console.log('✅ Histórico salvo na organização');
 
     } catch (error) {
-        console.error('❌ Erro ao verificar estoque:', error);
-        return false;
+        console.error('❌ Erro ao salvar histórico:', error);
     }
 }
 
