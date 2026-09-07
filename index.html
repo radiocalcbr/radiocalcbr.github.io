@@ -1957,7 +1957,7 @@
         </div>
     </div>
 </div>
-<!-- ===== MODAL DE REGISTRO DE GERADOR ===== -->
+<!-- ===== MODAL DE REGISTRO DE GERADOR (VERSÃO ATUALIZADA) ===== -->
 <div id="modalGerador" style="
     display: none;
     position: fixed;
@@ -1977,7 +1977,7 @@
         background: #1a1a2e;
         border-radius: 20px;
         padding: 30px;
-        max-width: 1400px;
+        max-width: 1200px;
         width: 95%;
         max-height: 95vh;
         overflow-y: auto;
@@ -1985,30 +1985,254 @@
         box-shadow: 0 20px 60px rgba(0,0,0,0.9);
         position: relative;
     ">
-        <!-- Cabeçalho -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
-            <div>
-                <h3 style="color: #ffd700; margin: 0;">
-                    <span style="color: #ffd700;">⚛️⬇️</span>
-                    Registro de Gerador Mo-99/Tc-99m
-                    <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
-                        (Ciclo de vida do gerador)
-                    </span>
-                </h3>
-                <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
-                    Gerencie o ciclo de vida do gerador Mo-99/Tc-99m.
-                    <span class="badge-info" id="infoTotalLinhasGerador">📋 Página 1 · 18 linhas</span>
-                </p>
+        <!-- Cabeçalho com botões da nuvem -->
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+    <div>
+        <h3 style="color: #ffd700; margin: 0;">
+            <span>⚛️⬇️</span>
+            Registro de Gerador Mo-99/Tc-99m
+            <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                (Ciclo de vida do gerador)
+            </span>
+        </h3>
+        <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
+            Preencha os dados do gerador e clique em <strong style="color: #ffd700;">"📝 Registrar Gerador"</strong> para salvar no histórico.
+        </p>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <!-- INDICADOR DE NUVEM -->
+        <span id="indicadorGeradorNuvem" style="
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: #888;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        ">
+            ☁️ Verificando...
+        </span>
+        
+        <!-- BOTÃO SALVAR NA NUVEM -->
+        <button onclick="salvarGeradoresNaNuvem()" class="btn-nuvem-gerador" style="
+            background: rgba(46,204,113,0.15);
+            border: 1px solid rgba(46,204,113,0.3);
+            color: #2ecc71;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        " onmouseover="this.style.background='rgba(46,204,113,0.25)';this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(46,204,113,0.15)';this.style.transform='scale(1)'">
+            ☁️ Salvar Nuvem
+        </button>
+        
+        <!-- BOTÃO CARREGAR DA NUVEM -->
+        <button onclick="carregarGeradoresDaNuvem()" class="btn-nuvem-gerador" style="
+            background: rgba(52,152,219,0.15);
+            border: 1px solid rgba(52,152,219,0.3);
+            color: #3498db;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        " onmouseover="this.style.background='rgba(52,152,219,0.25)';this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(52,152,219,0.15)';this.style.transform='scale(1)'">
+            ☁️ Carregar Nuvem
+        </button>
+        
+        <!-- BOTÃO FECHAR -->
+        <button onclick="fecharModalGerador()" style="
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0 10px;
+            transition: 0.3s;
+        " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+    </div>
+</div>
+        <!-- ===== FORMULÁRIO DE CADASTRO ===== -->
+        <div style="
+            background: rgba(255,215,0,0.05);
+            border: 1px solid rgba(255,215,0,0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        ">
+            <h4 style="color: #ffd700; margin: 0 0 15px 0; font-size: 1rem;">📝 Cadastrar Gerador</h4>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                
+                <!-- Data Recebimento -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📅 Data Recebimento</label>
+                    <input type="date" id="gerDataRecebimento" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Data Calibração -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">⚛️ Data Calibração</label>
+                    <input type="datetime-local" id="gerDataCalibracao" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Lote -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📦 Lote</label>
+                    <input type="text" id="gerLote" placeholder="Ex: G12345678" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Validade -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📅 Validade</label>
+                    <input type="date" id="gerDataValidade" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Data Devolução -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📅 Data Devolução</label>
+                    <input type="date" id="gerDataDevolucao" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Responsável Recebimento -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">👤 Resp. Recebimento</label>
+                    <input type="text" id="gerResponsavelRecebimento" placeholder="Nome do responsável" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Status -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📌 Status</label>
+                    <select id="gerStatus" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                        <option value="aguardando">🔵 Aguardando decaimento</option>
+                        <option value="pronto">🟡 Pronto para liberação</option>
+                        <option value="transito">🟠 Em trânsito</option>
+                        <option value="devolvido">✅ Devolvido</option>
+                    </select>
+                </div>
+
+                <!-- Responsável Liberação -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">👤 Resp. Liberação</label>
+                    <input type="text" id="gerResponsavelLiberacao" placeholder="Nome do responsável" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Responsável Devolução -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">👤 Resp. Devolução</label>
+                    <input type="text" id="gerResponsavelDevolucao" placeholder="Nome do responsável" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
             </div>
-            <button onclick="fecharModalGerador()" style="
-                background: rgba(255,255,255,0.05);
-                border: none;
-                color: #888;
-                font-size: 1.8rem;
-                cursor: pointer;
-                padding: 0 15px;
-                transition: 0.3s;
-            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+
+            <!-- Botões -->
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                <button onclick="registrarGerador()" style="
+                    padding: 12px 35px;
+                    background: linear-gradient(135deg, #ffd700, #f7971e);
+                    color: #000;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 1em;
+                    font-weight: bold;
+                    transition: 0.3s;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    📝 Registrar Gerador
+                </button>
+                <button onclick="limparCamposGerador()" style="
+                    padding: 12px 20px;
+                    background: rgba(255,255,255,0.05);
+                    color: #888;
+                    border: 1px solid #444;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                    transition: 0.3s;
+                " onmouseover="this.style.borderColor='#ffd700'" onmouseout="this.style.borderColor='#444'">
+                    🗑️ Limpar Campos
+                </button>
+            </div>
         </div>
 
         <!-- FILTRO -->
@@ -2034,44 +2258,41 @@
             </button>
             
             <span id="infoFiltroGerador" style="color: #666; font-size: 0.75rem; margin-left: auto;">
-                Mostrando todos os registros
+                📋 Mostrando todos os registros
             </span>
         </div>
 
-        <!-- ALERTA PÁGINA COMPLETA -->
-        <div class="alerta-pagina-completa" id="alertaPaginaCompletaGerador">
-            ✅ Todas as 18 linhas desta página foram preenchidas! 
-            <strong>Clique em "📄 + Nova Página" para continuar.</strong>
-        </div>
-
-        <!-- PAGINAÇÃO -->
-        <div class="paginacao-container" id="paginacaoContainerGerador"></div>
-
-        <!-- TABELA -->
+        <!-- TABELA DE HISTÓRICO -->
         <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
             <span>📋</span>
-            Registro de Geradores Mo-99/Tc-99m
-            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualGerador">(Página 1)</span>
+            Histórico de Geradores
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualGerador">(Total: <span id="totalGeradoresModal">0</span> registros)</span>
         </h4>
 
-        <div class="table-gerador-wrapper">
-            <table id="tabelaGeradoresModal">
-                <thead>
-                    <tr>
-                        <th style="min-width: 35px; width: 35px;">#</th>
-                        <th style="min-width: 110px;">📅 Data Recebimento</th>
-                        <th style="min-width: 120px;">⚛️ Data Calibração</th>
-                        <th style="min-width: 100px;">📦 Lote</th>
-                        <th style="min-width: 100px;">📅 Validade</th>
-                        <th style="min-width: 110px;">📅 Data Devolução</th>
-                        <th style="min-width: 130px;">👤 Responsável Recebimento</th>
-                        <th style="min-width: 130px;">📌 Status</th>
-                        <th style="min-width: 130px;">👤 Responsável Liberação</th>
-                        <th style="min-width: 130px;">👤 Responsável Devolução</th>
-                        <th style="min-width: 40px; width: 40px;">Ação</th>
+        <div class="table-gerador-wrapper" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+            <table id="tabelaGeradoresModal" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
+                    <tr style="border-bottom: 2px solid rgba(255,215,0,0.3);">
+                        <th style="min-width: 35px; width: 35px; padding: 8px; color: #ffd700;">#</th>
+                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Recebimento</th>
+                        <th style="min-width: 120px; padding: 8px; color: #ffd700;">⚛️ Data Calibração</th>
+                        <th style="min-width: 100px; padding: 8px; color: #ffd700;">📦 Lote</th>
+                        <th style="min-width: 100px; padding: 8px; color: #ffd700;">📅 Validade</th>
+                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Devolução</th>
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Recebimento</th>
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">📌 Status</th>
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Liberação</th>
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Devolução</th>
+                        <th style="min-width: 40px; width: 40px; padding: 8px; color: #ffd700;">Ação</th>
                     </tr>
                 </thead>
-                <tbody id="corpoTabelaGeradoresModal"></tbody>
+                <tbody id="corpoTabelaGeradoresModal">
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 40px; color: #888;">
+                            Nenhum gerador registrado. Preencha o formulário acima e clique em "📝 Registrar Gerador".
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 
@@ -2084,160 +2305,51 @@
             </div>
         </div>
 
-        <!-- BOTÕES -->
+        <!-- BOTÕES DE AÇÃO -->
         <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-            <button class="btn-salvar-gerador" onclick="salvarTabelaGeradoresModal()">💾 Salvar Registro</button>
-            <button class="btn-excel-gerador" onclick="exportarExcelGeradoresModal()">📊 Exportar Excel</button>
+            <button onclick="exportarExcelGeradoresModal()" style="
+                padding: 10px 25px;
+                background: rgba(0, 210, 255, 0.15);
+                border: 1px solid rgba(0, 210, 255, 0.3);
+                border-radius: 8px;
+                color: #00d2ff;
+                cursor: pointer;
+                font-weight: bold;
+                transition: 0.3s;
+            " onmouseover="this.style.background='rgba(0, 210, 255, 0.25)'" onmouseout="this.style.background='rgba(0, 210, 255, 0.15)'">
+                📊 Exportar Excel
+            </button>
+            <button onclick="limparHistoricoGerador()" style="
+                padding: 10px 25px;
+                background: rgba(255,107,107,0.15);
+                border: 1px solid rgba(255,107,107,0.3);
+                border-radius: 8px;
+                color: #ff6b6b;
+                cursor: pointer;
+                font-weight: bold;
+                transition: 0.3s;
+            " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                🗑️ Limpar Histórico
+            </button>
         </div>
-
-        <!-- HISTÓRICO -->
+                <!-- ===== HISTÓRICO ===== -->
         <div style="margin-top: 25px; border-top: 1px solid rgba(155,89,182,0.15); padding-top: 20px;">
-            <h5 style="color: #aaa; margin-bottom: 10px;">📋 Registros Salvos</h5>
-            <div id="historicoGeradoresContainerModal" style="max-height: 200px; overflow-y: auto;">
-                <div style="color: #666; font-size: 0.8rem; text-align: center; padding: 20px;">
+            <h5 style="color: #aaa; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                📋 Registros Salvos
+                <span style="font-size: 0.6rem; color: #666; font-weight: normal;" id="contadorHistoricoGerador">(0 registros)</span>
+            </h5>
+            <div id="historicoGeradoresContainerModal" style="
+                max-height: 300px; 
+                overflow-y: auto; 
+                background: rgba(255,255,255,0.02); 
+                border-radius: 8px; 
+                padding: 5px;
+                border: 1px solid rgba(155,89,182,0.1);
+            ">
+                <div style="color: #666; font-size: 0.85rem; text-align: center; padding: 30px 20px;">
                     Nenhum registro salvo ainda.
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-<!-- ===== MODAL DE FEEDBACK ===== -->
-<div id="modalFeedback" style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(5px);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
-">
-    <div style="
-        background: #1a1a2e;
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 550px;
-        width: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-        border: 1px solid rgba(255,215,0,0.2);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-        position: relative;
-    ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="color: #ffd700; margin: 0;">💬 Enviar Feedback</h3>
-            <button onclick="fecharFeedback()" style="
-                background: rgba(255,255,255,0.05);
-                border: none;
-                color: #888;
-                font-size: 1.5rem;
-                cursor: pointer;
-                padding: 0 10px;
-                transition: 0.3s;
-            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
-        </div>
-
-        <div class="input-group">
-            <label style="color: #ccc;">Tipo de Feedback</label>
-            <select id="tipoFeedback" style="
-                width: 100%;
-                padding: 10px 14px;
-                border-radius: 10px;
-                border: 1px solid #444;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 0.95rem;
-            ">
-                <option value="sugestao">💡 Sugestão de Melhoria</option>
-                <option value="bug">🐛 Reportar Bug/Erro</option>
-                <option value="radiofarmaco">🧪 Sugerir Radiofármaco</option>
-                <option value="diretriz">📋 Atualizar Diretriz</option>
-                <option value="outro">📝 Outro</option>
-            </select>
-        </div>
-
-        <div style="
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 15px;
-            font-size: 0.8rem;
-            color: #888;
-            border: 1px solid rgba(255,255,255,0.05);
-        ">
-            <strong style="color: #aaa;">📌 Contexto Atual:</strong><br>
-            <span id="contextoFeedback">
-                Aba: <span id="ctxAba">Planejamento</span> · 
-                Isótopo: <span id="ctxIsotopo">Tc-99m</span> · 
-                Pacientes: <span id="ctxPacientes">0</span>
-            </span>
-        </div>
-
-        <div class="input-group">
-            <label style="color: #ccc;">Sua Mensagem</label>
-            <textarea id="descricaoFeedback" rows="5" style="
-                width: 100%;
-                padding: 10px 14px;
-                border-radius: 10px;
-                border: 1px solid #444;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 0.95rem;
-                resize: vertical;
-                min-height: 100px;
-                font-family: inherit;
-            " placeholder="Descreva sua sugestão ou problema em detalhes..."></textarea>
-        </div>
-
-        <div class="input-group">
-            <label style="color: #ccc;">Seu Email (opcional)</label>
-            <input type="email" id="emailFeedback" style="
-                width: 100%;
-                padding: 10px 14px;
-                border-radius: 10px;
-                border: 1px solid #444;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 0.95rem;
-            " placeholder="para que possamos responder">
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button onclick="enviarFeedback()" style="
-                flex: 2;
-                padding: 14px;
-                background: linear-gradient(90deg, #ffd700, #f7971e);
-                border: none;
-                border-radius: 10px;
-                color: #000;
-                font-weight: bold;
-                font-size: 1rem;
-                cursor: pointer;
-                transition: 0.3s;
-            " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                ✉️ Enviar Feedback
-            </button>
-            <button onclick="fecharFeedback()" style="
-                flex: 1;
-                padding: 14px;
-                background: rgba(255,255,255,0.05);
-                border: 1px solid #444;
-                border-radius: 10px;
-                color: #888;
-                cursor: pointer;
-                transition: 0.3s;
-            " onmouseover="this.style.borderColor='#ffd700'" onmouseout="this.style.borderColor='#444'">
-                Cancelar
-            </button>
-        </div>
-
-        <div id="feedbackSuccess" style="display: none; margin-top: 15px; text-align: center; padding: 20px; background: rgba(0,255,100,0.08); border-radius: 10px; border: 1px solid rgba(0,255,100,0.2);">
-            <span style="font-size: 2rem;">✅</span>
-            <h4 style="color: #00ff64; margin: 10px 0 5px 0;">Feedback Enviado!</h4>
-            <p style="color: #aaa; font-size: 0.9rem;">Obrigado por contribuir com a melhoria do RadioCalc.</p>
         </div>
     </div>
 </div>
@@ -2259,8 +2371,7 @@
 </div>
 
 
-<!-- ... todo o conteúdo da página ... -->
-
+<!-- ===== SCRIPTS ===== -->
 <script src="assets/js/config.js"></script>
 <script src="assets/js/traducoes.js"></script>
 <script src="assets/js/utils.js"></script>
@@ -2278,6 +2389,79 @@
 <script src="assets/js/rejeitos.js"></script>
 <script src="assets/js/gerador.js"></script>
 <script src="assets/js/cloud-estoque.js"></script>
+<script src="assets/js/cloud-gerador.js"></script>
+
+<!-- ===== INICIALIZAÇÃO DO GERADOR ===== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 Verificando módulo de gerador...');
+    
+    // Aguardar o usuário estar logado antes de verificar a nuvem
+    function verificarStatusComAtraso() {
+        setTimeout(function() {
+            const funcoes = [
+                'abrirModalGerador',
+                'fecharModalGerador',
+                'registrarGerador',
+                'salvarGeradoresNaNuvem',
+                'carregarGeradoresDaNuvem',
+                'verificarStatusNuvemGerador'
+            ];
+            
+            let todasDisponiveis = true;
+            funcoes.forEach(fn => {
+                if (typeof window[fn] === 'function') {
+                    console.log(`  ✅ ${fn} disponível`);
+                } else {
+                    console.warn(`  ⚠️ ${fn} NÃO disponível`);
+                    todasDisponiveis = false;
+                }
+            });
+            
+            if (!todasDisponiveis) {
+                console.warn('⚠️ Recarregando scripts...');
+                ['assets/js/gerador.js', 'assets/js/cloud-gerador.js'].forEach(src => {
+                    const script = document.createElement('script');
+                    script.src = src + '?v=' + Date.now();
+                    document.head.appendChild(script);
+                });
+            }
+            
+            // Verificar status da nuvem APENAS se o usuário estiver logado
+            if (typeof verificarStatusNuvemGerador === 'function') {
+                // Verificar se o usuário está logado
+                if (typeof getCurrentUser === 'function' && getCurrentUser()) {
+                    setTimeout(verificarStatusNuvemGerador, 500);
+                } else {
+                    console.log('⏳ Aguardando login para verificar status da nuvem...');
+                    // Tentar novamente após 2 segundos
+                    setTimeout(function() {
+                        if (typeof getCurrentUser === 'function' && getCurrentUser()) {
+                            verificarStatusNuvemGerador();
+                        } else {
+                            console.warn('⚠️ Usuário ainda não logado. Status offline.');
+                            if (typeof atualizarIndicadorGeradorNuvem === 'function') {
+                                atualizarIndicadorGeradorNuvem('offline');
+                            }
+                        }
+                    }, 2000);
+                }
+            }
+        }, 500);
+    }
+    
+    // Executar a verificação
+    verificarStatusComAtraso();
+    
+    // Também verificar quando o usuário fizer login
+    document.addEventListener('userLoggedIn', function() {
+        console.log('👤 Usuário logado! Verificando status da nuvem...');
+        if (typeof verificarStatusNuvemGerador === 'function') {
+            setTimeout(verificarStatusNuvemGerador, 1000);
+        }
+    });
+});
+</script>
 
 <!-- ===== FORÇAR Tc-99m COMO PADRÃO ===== -->
 <script>
@@ -2308,7 +2492,7 @@
             }, 300);
         }
     })();
-    
 </script>
+
 </body>
 </html>
