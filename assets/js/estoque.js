@@ -603,3 +603,461 @@ console.log('  - exportarEstoqueExcel()');
 console.log('  - limparHistoricoEstoque()');
 console.log('  - buscarPorLote(lote)');
 console.log('  - getResumoEstoque()');
+// ============================================================
+// ===== PAGINAÇÃO E FILTRO DO ESTOQUE =====
+// ============================================================
+
+// Variáveis de controle
+let paginaAtualEstoque = 1;
+const ITENS_POR_PAGINA = 15; // Itens por página
+let filtroDataInicioEstoque = '';
+let filtroDataFimEstoque = '';
+let estoqueFiltrado = [];
+
+// ============================================================
+// ===== ATUALIZAR TABELA COM PAGINAÇÃO =====
+// ============================================================
+function atualizarTabelaEstoque() {
+    const tbody = document.getElementById('corpoEstoque');
+    if (!tbody) return;
+
+    // Aplicar filtros
+    aplicarFiltrosEstoque();
+
+    // Verificar se há itens
+    if (estoqueFiltrado.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" style="text-align: center; padding: 40px; color: #888;">
+                    ${estoqueItens.length === 0 ? 'Nenhum item cadastrado. Adicione a primeira movimentação!' : 'Nenhum item encontrado com os filtros aplicados.'}
+                </td>
+            </tr>
+        `;
+        atualizarResumoEstoque();
+        atualizarControlesPagina();
+        return;
+    }
+
+    // Calcular paginação
+    const totalPaginas = Math.ceil(estoqueFiltrado.length / ITENS_POR_PAGINA);
+    
+    // Garantir que a página atual é válida
+    if (paginaAtualEstoque > totalPaginas) {
+        paginaAtualEstoque = totalPaginas;
+    }
+    if (paginaAtualEstoque < 1) {
+        paginaAtualEstoque = 1;
+    }
+
+    const inicio = (paginaAtualEstoque - 1) * ITENS_POR_PAGINA;
+    const fim = Math.min(inicio + ITENS_POR_PAGINA, estoqueFiltrado.length);
+    const itensPagina = estoqueFiltrado.slice(inicio, fim);
+
+    // Ordenar por validade (mais próximo primeiro)
+    const itensOrdenados = [...itensPagina].sort((a, b) => {
+        return new Date(a.validade) - new Date(b.validade);
+    });
+
+    let html = '';
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    itensOrdenados.forEach((item, index) => {
+        const validadeDate = new Date(item.validade + 'T00:00:00');
+        const diffDias = Math.ceil((validadeDate - hoje) / (1000 * 60 * 60 * 24));
+        
+        let status = '✅ Válido';
+        let statusColor = '#2ecc71';
+        let bgColor = '';
+
+        if (diffDias < 0) {
+            status = '❌ Vencido';
+            statusColor = '#e74c3c';
+            bgColor = 'rgba(231, 76, 60, 0.1)';
+        } else if (diffDias <= 7) {
+            status = `⚠️ Vence em ${diffDias} dias`;
+            statusColor = '#f1c40f';
+            bgColor = 'rgba(241, 196, 15, 0.1)';
+        }
+
+        // Alerta de estoque baixo
+        if (item.saldo <= 2 && item.saldo > 0) {
+            status += ' 🔴 Estoque baixo';
+        } else if (item.saldo === 0) {
+            status = '⚪ Esgotado';
+            statusColor = '#888';
+        }
+
+        const nomeKit = getNomeKit(item.tipoKit);
+
+        html += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${bgColor};">
+                <td style="padding: 10px;">${inicio + index + 1}</td>
+                <td style="padding: 10px; font-weight: 600; color: #fff;">${nomeKit}</td>
+                <td style="padding: 10px; color: #aaa;">${item.lote}</td>
+                <td style="padding: 10px; color: ${diffDias < 0 ? '#e74c3c' : '#aaa'};">
+                    ${formatarData(item.validade)}
+                </td>
+                <td style="padding: 10px; text-align: center; color: #2ecc71;">${item.entrada}</td>
+                <td style="padding: 10px; text-align: center; color: #e74c3c;">${item.saida}</td>
+                <td style="padding: 10px; text-align: center; font-weight: bold; color: ${item.saldo === 0 ? '#888' : '#ffd700'};">
+                    ${item.saldo}
+                </td>
+                <td style="padding: 10px; text-align: center; color: ${statusColor};">
+                    ${status}
+                </td>
+                <td style="padding: 10px; color: #888; font-size: 0.75rem; max-width: 120px; word-break: break-word;">
+                    ${item.observacao || '-'}
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    <button onclick="removerItemEstoque(${item.id})" style="
+                        background: rgba(255,107,107,0.15);
+                        border: 1px solid rgba(255,107,107,0.2);
+                        color: #ff6b6b;
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 0.7rem;
+                        transition: 0.3s;
+                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                        🗑️
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+    atualizarResumoEstoque();
+    atualizarControlesPagina();
+    atualizarInfoPaginacao();
+}
+
+// ============================================================
+// ===== APLICAR FILTROS =====
+// ============================================================
+function aplicarFiltrosEstoque() {
+    // Se não houver filtros, mostrar todos
+    if (!filtroDataInicioEstoque && !filtroDataFimEstoque) {
+        estoqueFiltrado = [...estoqueItens];
+        return;
+    }
+
+    // Aplicar filtros de data
+    estoqueFiltrado = estoqueItens.filter(item => {
+        // Verificar se o item tem validade
+        if (!item.validade) return false;
+
+        const dataValidade = new Date(item.validade + 'T00:00:00');
+        
+        let atendeFiltro = true;
+
+        if (filtroDataInicioEstoque) {
+            const dataInicio = new Date(filtroDataInicioEstoque + 'T00:00:00');
+            if (dataValidade < dataInicio) {
+                atendeFiltro = false;
+            }
+        }
+
+        if (filtroDataFimEstoque && atendeFiltro) {
+            const dataFim = new Date(filtroDataFimEstoque + 'T00:00:00');
+            if (dataValidade > dataFim) {
+                atendeFiltro = false;
+            }
+        }
+
+        return atendeFiltro;
+    });
+}
+
+// ============================================================
+// ===== ATUALIZAR CONTROLES DE PÁGINA =====
+// ============================================================
+function atualizarControlesPagina() {
+    // Buscar ou criar container de paginação
+    let container = document.getElementById('paginacaoEstoque');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'paginacaoEstoque';
+        container.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            flex-wrap: wrap;
+            gap: 10px;
+        `;
+        
+        // Inserir após a tabela
+        const tabela = document.querySelector('#modalEstoque .table-wrapper');
+        if (tabela && tabela.parentNode) {
+            tabela.parentNode.insertBefore(container, tabela.nextSibling);
+        }
+    }
+
+    const totalPaginas = Math.ceil(estoqueFiltrado.length / ITENS_POR_PAGINA);
+    const inicio = (paginaAtualEstoque - 1) * ITENS_POR_PAGINA + 1;
+    const fim = Math.min(paginaAtualEstoque * ITENS_POR_PAGINA, estoqueFiltrado.length);
+
+    container.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="color: #888; font-size: 0.8rem;">
+                📊 Mostrando <strong style="color: #ffd700;">${estoqueFiltrado.length}</strong> itens 
+                (${inicio} - ${fim} de ${estoqueFiltrado.length})
+            </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <button onclick="irPaginaEstoque(1)" ${paginaAtualEstoque === 1 ? 'disabled' : ''} style="
+                padding: 4px 10px;
+                border: 1px solid ${paginaAtualEstoque === 1 ? '#333' : '#555'};
+                border-radius: 4px;
+                background: ${paginaAtualEstoque === 1 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                color: ${paginaAtualEstoque === 1 ? '#555' : '#9b59b6'};
+                cursor: ${paginaAtualEstoque === 1 ? 'default' : 'pointer'};
+                font-size: 0.75rem;
+                transition: 0.3s;
+            ">
+                ⏮
+            </button>
+            <button onclick="irPaginaEstoque(${paginaAtualEstoque - 1})" ${paginaAtualEstoque === 1 ? 'disabled' : ''} style="
+                padding: 4px 10px;
+                border: 1px solid ${paginaAtualEstoque === 1 ? '#333' : '#555'};
+                border-radius: 4px;
+                background: ${paginaAtualEstoque === 1 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                color: ${paginaAtualEstoque === 1 ? '#555' : '#9b59b6'};
+                cursor: ${paginaAtualEstoque === 1 ? 'default' : 'pointer'};
+                font-size: 0.75rem;
+                transition: 0.3s;
+            ">
+                ◀
+            </button>
+            
+            <span style="color: #aaa; font-size: 0.8rem; padding: 0 8px;">
+                Página <strong style="color: #ffd700;">${paginaAtualEstoque}</strong> de <strong style="color: #ffd700;">${totalPaginas || 1}</strong>
+            </span>
+            
+            <button onclick="irPaginaEstoque(${paginaAtualEstoque + 1})" ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'disabled' : ''} style="
+                padding: 4px 10px;
+                border: 1px solid ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? '#333' : '#555'};
+                border-radius: 4px;
+                background: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                color: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? '#555' : '#9b59b6'};
+                cursor: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'default' : 'pointer'};
+                font-size: 0.75rem;
+                transition: 0.3s;
+            ">
+                ▶
+            </button>
+            <button onclick="irPaginaEstoque(${totalPaginas})" ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'disabled' : ''} style="
+                padding: 4px 10px;
+                border: 1px solid ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? '#333' : '#555'};
+                border-radius: 4px;
+                background: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'transparent' : 'rgba(155,89,182,0.1)'};
+                color: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? '#555' : '#9b59b6'};
+                cursor: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'default' : 'pointer'};
+                font-size: 0.75rem;
+                transition: 0.3s;
+            ">
+                ⏭
+            </button>
+        </div>
+    `;
+}
+
+// ============================================================
+// ===== ATUALIZAR INFO DE PAGINAÇÃO =====
+// ============================================================
+function atualizarInfoPaginacao() {
+    const totalPaginas = Math.ceil(estoqueFiltrado.length / ITENS_POR_PAGINA);
+    const infoEl = document.getElementById('infoPaginacaoEstoque');
+    if (infoEl) {
+        infoEl.textContent = `📋 Página ${paginaAtualEstoque} de ${totalPaginas || 1} · ${estoqueFiltrado.length} itens`;
+    }
+}
+
+// ============================================================
+// ===== IR PARA PÁGINA ESPECÍFICA =====
+// ============================================================
+function irPaginaEstoque(pagina) {
+    const totalPaginas = Math.ceil(estoqueFiltrado.length / ITENS_POR_PAGINA);
+    if (pagina < 1 || pagina > totalPaginas || pagina === paginaAtualEstoque) return;
+    paginaAtualEstoque = pagina;
+    atualizarTabelaEstoque();
+}
+
+// ============================================================
+// ===== APLICAR FILTRO POR DATA =====
+// ============================================================
+function aplicarFiltroDataEstoque() {
+    const dataInicio = document.getElementById('filtroDataInicioEstoque');
+    const dataFim = document.getElementById('filtroDataFimEstoque');
+    
+    filtroDataInicioEstoque = dataInicio ? dataInicio.value : '';
+    filtroDataFimEstoque = dataFim ? dataFim.value : '';
+    
+    paginaAtualEstoque = 1; // Voltar para primeira página
+    atualizarTabelaEstoque();
+    
+    // Atualizar info do filtro
+    const infoEl = document.getElementById('infoFiltroEstoque');
+    if (infoEl) {
+        if (filtroDataInicioEstoque && filtroDataFimEstoque) {
+            infoEl.textContent = `📅 Filtrado: ${formatarData(filtroDataInicioEstoque)} até ${formatarData(filtroDataFimEstoque)}`;
+            infoEl.style.color = '#ffd700';
+        } else if (filtroDataInicioEstoque) {
+            infoEl.textContent = `📅 A partir de: ${formatarData(filtroDataInicioEstoque)}`;
+            infoEl.style.color = '#ffd700';
+        } else if (filtroDataFimEstoque) {
+            infoEl.textContent = `📅 Até: ${formatarData(filtroDataFimEstoque)}`;
+            infoEl.style.color = '#ffd700';
+        } else {
+            infoEl.textContent = '📋 Mostrando todos os registros';
+            infoEl.style.color = '#888';
+        }
+    }
+}
+
+// ============================================================
+// ===== LIMPAR FILTROS =====
+// ============================================================
+function limparFiltrosEstoque() {
+    const dataInicio = document.getElementById('filtroDataInicioEstoque');
+    const dataFim = document.getElementById('filtroDataFimEstoque');
+    
+    if (dataInicio) dataInicio.value = '';
+    if (dataFim) dataFim.value = '';
+    
+    filtroDataInicioEstoque = '';
+    filtroDataFimEstoque = '';
+    paginaAtualEstoque = 1;
+    atualizarTabelaEstoque();
+    
+    const infoEl = document.getElementById('infoFiltroEstoque');
+    if (infoEl) {
+        infoEl.textContent = '📋 Mostrando todos os registros';
+        infoEl.style.color = '#888';
+    }
+}
+
+// ============================================================
+// ===== ADICIONAR FILTROS AO MODAL =====
+// ============================================================
+function adicionarFiltrosEstoque() {
+    // Buscar o cabeçalho do modal de estoque
+    const header = document.querySelector('#modalEstoque > div > div:first-child');
+    if (!header) return;
+
+    // Verificar se os filtros já foram adicionados
+    if (document.getElementById('filtrosEstoqueContainer')) return;
+
+    // Criar container de filtros
+    const filtrosContainer = document.createElement('div');
+    filtrosContainer.id = 'filtrosEstoqueContainer';
+    filtrosContainer.style.cssText = `
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(155,89,182,0.15);
+        border-radius: 10px;
+        padding: 12px 18px;
+        margin: 15px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    `;
+
+    filtrosContainer.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="color: #9b59b6; font-weight: 600; font-size: 0.85rem;">🔍 Filtrar por Validade:</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="color: #888; font-size: 0.75rem;">De:</label>
+                <input type="date" id="filtroDataInicioEstoque" style="
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    border: 1px solid #444;
+                    background: rgba(255,255,255,0.05);
+                    color: #fff;
+                    font-size: 0.85rem;
+                ">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="color: #888; font-size: 0.75rem;">Até:</label>
+                <input type="date" id="filtroDataFimEstoque" style="
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    border: 1px solid #444;
+                    background: rgba(255,255,255,0.05);
+                    color: #fff;
+                    font-size: 0.85rem;
+                ">
+            </div>
+            <button onclick="aplicarFiltroDataEstoque()" style="
+                padding: 4px 16px;
+                background: linear-gradient(90deg, #8e44ad, #9b59b6);
+                border: none;
+                border-radius: 6px;
+                color: #fff;
+                cursor: pointer;
+                font-size: 0.8rem;
+                font-weight: bold;
+                transition: 0.3s;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                🔍 Filtrar
+            </button>
+            <button onclick="limparFiltrosEstoque()" style="
+                padding: 4px 14px;
+                background: rgba(255,255,255,0.05);
+                border: 1px solid #444;
+                border-radius: 6px;
+                color: #888;
+                cursor: pointer;
+                font-size: 0.8rem;
+                transition: 0.3s;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+                ✕ Limpar
+            </button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="infoFiltroEstoque" style="color: #888; font-size: 0.75rem;">📋 Mostrando todos os registros</span>
+            <span id="infoPaginacaoEstoque" style="color: #666; font-size: 0.7rem;">📋 Página 1 de 1</span>
+        </div>
+    `;
+
+    // Inserir após o cabeçalho
+    header.parentNode.insertBefore(filtrosContainer, header.nextSibling);
+}
+
+// ============================================================
+// ===== SOBRESCREVER FUNÇÃO DE ABERTURA DO ESTOQUE =====
+// ============================================================
+
+// Salvar referência da função original
+const abrirEstoqueOriginal = window.abrirModuloEstoque || function() {};
+
+// Sobrescrever para incluir os filtros
+window.abrirModuloEstoque = function() {
+    // Chamar função original se existir
+    if (typeof abrirEstoqueOriginal === 'function') {
+        abrirEstoqueOriginal();
+    }
+    
+    // Adicionar filtros após abrir o modal
+    setTimeout(() => {
+        adicionarFiltrosEstoque();
+        // Resetar para primeira página
+        paginaAtualEstoque = 1;
+        atualizarTabelaEstoque();
+    }, 100);
+};
+
+// ============================================================
+// ===== INICIALIZAÇÃO =====
+// ============================================================
+
+console.log('📊 Paginação e Filtro do Estoque carregados!');
+console.log(`📌 ${ITENS_POR_PAGINA} itens por página`);
+console.log('🔍 Filtros disponíveis: data de validade');
