@@ -123,6 +123,8 @@ function preencherDatasPadrao() {
     const dataCalibracao = document.getElementById('gerDataCalibracao');
     const dataValidade = document.getElementById('gerDataValidade');
     const dataDevolucao = document.getElementById('gerDataDevolucao');
+    const dataLiberacao = document.getElementById('gerDataLiberacao');
+    const dataDevolucaoReal = document.getElementById('gerDataDevolucaoReal');
     
     if (dataRecebimento && !dataRecebimento.value) {
         dataRecebimento.value = hojeStr;
@@ -150,11 +152,13 @@ function registrarGerador() {
     const lote = document.getElementById('gerLote')?.value.trim() || '';
     const validade = document.getElementById('gerDataValidade')?.value || '';
     const dataDevolucao = document.getElementById('gerDataDevolucao')?.value || '';
+    const dataLiberacao = document.getElementById('gerDataLiberacao')?.value || '';
+    const dataDevolucaoReal = document.getElementById('gerDataDevolucaoReal')?.value || '';
     const responsavelRecebimento = document.getElementById('gerResponsavelRecebimento')?.value.trim() || '';
     const status = document.getElementById('gerStatus')?.value || 'aguardando';
     const responsavelLiberacao = document.getElementById('gerResponsavelLiberacao')?.value.trim() || '';
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao')?.value.trim() || '';
-    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || ''; // 🔥 NOVO
+    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || '';
     
     // Validações
     if (!dataRecebimento) {
@@ -189,11 +193,13 @@ function registrarGerador() {
         lote: lote,
         validade: validade,
         dataDevolucao: dataDevolucao,
+        dataLiberacao: dataLiberacao,
+        dataDevolucaoReal: dataDevolucaoReal,
         responsavelRecebimento: responsavelRecebimento,
         status: status,
         responsavelLiberacao: responsavelLiberacao,
         responsavelDevolucao: responsavelDevolucao,
-        taxaExposicaoBalde: taxaExposicaoBalde, // 🔥 NOVO
+        taxaExposicaoBalde: taxaExposicaoBalde,
         dataRegistro: new Date().toISOString()
     };
     
@@ -218,10 +224,12 @@ function limparCamposGerador() {
         'gerLote',
         'gerDataValidade',
         'gerDataDevolucao',
+        'gerDataLiberacao',
+        'gerDataDevolucaoReal',
         'gerResponsavelRecebimento',
         'gerResponsavelLiberacao',
         'gerResponsavelDevolucao',
-        'gerTaxaExposicaoBalde' // 
+        'gerTaxaExposicaoBalde'
     ];
     
     campos.forEach(id => {
@@ -247,7 +255,7 @@ function atualizarTabelaGeradorHistorico() {
     if (registrosGerador.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="13" style="text-align: center; padding: 40px; color: #888;">
+                <td colspan="14" style="text-align: center; padding: 40px; color: #888;">
                     Nenhum gerador registrado. Preencha o formulário acima e clique em "📝 Registrar Gerador".
                 </td>
             </tr>
@@ -280,10 +288,11 @@ function atualizarTabelaGeradorHistorico() {
                     </span>
                 </td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
+                <td style="padding: 10px;">${item.dataLiberacao ? formatarDataBR(item.dataLiberacao) : '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
-                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' cpm' : '-'}</td> <!-- 🔥 NOVO -->
+                <td style="padding: 10px;">${item.dataDevolucaoReal ? formatarDataBR(item.dataDevolucaoReal) : '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' cpm' : '-'}</td>
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
-                    <!-- ✏️ BOTÃO EDITAR (sempre disponível) -->
                     <button onclick="editarGerador(${item.id})" style="
                         background: rgba(0, 210, 255, 0.15);
                         border: 1px solid rgba(0, 210, 255, 0.2);
@@ -297,7 +306,6 @@ function atualizarTabelaGeradorHistorico() {
                     " onmouseover="this.style.background='rgba(0,210,255,0.25)'" onmouseout="this.style.background='rgba(0,210,255,0.15)'" title="Editar registro">
                         ✏️
                     </button>
-                    <!-- 🗑️ BOTÃO EXCLUIR (sempre disponível, mas só admin sincroniza com nuvem) -->
                     <button onclick="removerGerador(${item.id})" style="
                         background: rgba(255,107,107,0.15);
                         border: 1px solid rgba(255,107,107,0.2);
@@ -480,7 +488,7 @@ async function removerGeradorDaNuvem(item) {
 }
 
 // ============================================================
-// ===== EDITAR GERADOR (CORRIGIDO) =====
+// ===== EDITAR GERADOR =====
 // ============================================================
 
 function editarGerador(id) {
@@ -498,22 +506,26 @@ function editarGerador(id) {
     const lote = document.getElementById('gerLote');
     const validade = document.getElementById('gerDataValidade');
     const dataDevolucao = document.getElementById('gerDataDevolucao');
+    const dataLiberacao = document.getElementById('gerDataLiberacao');
+    const dataDevolucaoReal = document.getElementById('gerDataDevolucaoReal');
     const responsavelRecebimento = document.getElementById('gerResponsavelRecebimento');
     const status = document.getElementById('gerStatus');
     const responsavelLiberacao = document.getElementById('gerResponsavelLiberacao');
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao');
-    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde'); // 🔥 NOVO
+    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde');
     
     if (dataRecebimento) dataRecebimento.value = item.dataRecebimento || '';
     if (dataCalibracao) dataCalibracao.value = item.dataCalibracao || '';
     if (lote) lote.value = item.lote || '';
     if (validade) validade.value = item.validade || '';
     if (dataDevolucao) dataDevolucao.value = item.dataDevolucao || '';
+    if (dataLiberacao) dataLiberacao.value = item.dataLiberacao || '';
+    if (dataDevolucaoReal) dataDevolucaoReal.value = item.dataDevolucaoReal || '';
     if (responsavelRecebimento) responsavelRecebimento.value = item.responsavelRecebimento || '';
     if (status) status.value = item.status || 'aguardando';
     if (responsavelLiberacao) responsavelLiberacao.value = item.responsavelLiberacao || '';
     if (responsavelDevolucao) responsavelDevolucao.value = item.responsavelDevolucao || '';
-    if (taxaExposicaoBalde) taxaExposicaoBalde.value = item.taxaExposicaoBalde || ''; // 🔥 NOVO
+    if (taxaExposicaoBalde) taxaExposicaoBalde.value = item.taxaExposicaoBalde || '';
     
     // 🔥 Usando o ID correto que adicionamos no HTML
     const btn = document.getElementById('btnRegistrarGerador');
@@ -568,7 +580,7 @@ function editarGerador(id) {
 }
 
 // ============================================================
-// ===== ATUALIZAR GERADOR (CORRIGIDO) =====
+// ===== ATUALIZAR GERADOR =====
 // ============================================================
 
 async function atualizarGerador(id) {
@@ -580,11 +592,13 @@ async function atualizarGerador(id) {
     const lote = document.getElementById('gerLote')?.value.trim() || '';
     const validade = document.getElementById('gerDataValidade')?.value || '';
     const dataDevolucao = document.getElementById('gerDataDevolucao')?.value || '';
+    const dataLiberacao = document.getElementById('gerDataLiberacao')?.value || '';
+    const dataDevolucaoReal = document.getElementById('gerDataDevolucaoReal')?.value || '';
     const responsavelRecebimento = document.getElementById('gerResponsavelRecebimento')?.value.trim() || '';
     const status = document.getElementById('gerStatus')?.value || 'aguardando';
     const responsavelLiberacao = document.getElementById('gerResponsavelLiberacao')?.value.trim() || '';
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao')?.value.trim() || '';
-    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || ''; // 🔥 NOVO
+    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || '';
     
     // Validações
     if (!dataRecebimento) {
@@ -616,11 +630,13 @@ async function atualizarGerador(id) {
         lote,
         validade,
         dataDevolucao,
+        dataLiberacao,
+        dataDevolucaoReal,
         responsavelRecebimento,
         status,
         responsavelLiberacao,
         responsavelDevolucao,
-        taxaExposicaoBalde, // 🔥 NOVO
+        taxaExposicaoBalde,
         dataAtualizacao: new Date().toISOString()
     };
     
@@ -769,7 +785,6 @@ function atualizarContadoresGerador() {
 // ============================================================
 // ===== FILTROS =====
 // ============================================================
-
 function aplicarFiltroGeradorModal() {
     const dataInicio = document.getElementById('filtroDataInicioGerador')?.value || '';
     const dataFim = document.getElementById('filtroDataFimGerador')?.value || '';
@@ -800,7 +815,7 @@ function aplicarFiltroGeradorModal() {
     if (filtrados.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="13" style="text-align: center; padding: 40px; color: #888;">
+                <td colspan="14" style="text-align: center; padding: 40px; color: #888;">
                     🔍 Nenhum registro encontrado no período selecionado.
                 </td>
             </tr>
@@ -830,8 +845,10 @@ function aplicarFiltroGeradorModal() {
                     </span>
                 </td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
+                <td style="padding: 10px;">${item.dataLiberacao ? formatarDataBR(item.dataLiberacao) : '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
-                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' cmp' : '-'}</td> <!-- 🔥 NOVO -->
+                <td style="padding: 10px;">${item.dataDevolucaoReal ? formatarDataBR(item.dataDevolucaoReal) : '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' cpm' : '-'}</td>
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
                     <button onclick="editarGerador(${item.id})" style="
                         background: rgba(0, 210, 255, 0.15);
@@ -915,12 +932,14 @@ function exportarExcelGeradoresModal() {
             'Data Calibração': formatarDataHoraBR(item.dataCalibracao),
             'Lote': item.lote,
             'Validade': formatarDataBR(item.validade),
-            'Data Devolução': item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-',
+            'Data Devolução Prevista': item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-',
+            'Data Liberação': item.dataLiberacao ? formatarDataBR(item.dataLiberacao) : '-',
+            'Data Devolução Real': item.dataDevolucaoReal ? formatarDataBR(item.dataDevolucaoReal) : '-',
             'Responsável Recebimento': item.responsavelRecebimento || '-',
             'Status': getStatusInfo(item.status).label,
             'Responsável Liberação': item.responsavelLiberacao || '-',
             'Responsável Devolução': item.responsavelDevolucao || '-',
-            'Taxa Exposição Balde (cpm)': item.taxaExposicaoBalde || '-' // 🔥 NOVO
+            'Contaminação Balde (cpm)': item.taxaExposicaoBalde || '-'
         }));
         
         if (typeof XLSX === 'undefined') {
@@ -932,8 +951,9 @@ function exportarExcelGeradoresModal() {
         const ws = XLSX.utils.json_to_sheet(dados);
         const colWidths = [
             { wch: 18 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
-            { wch: 18 }, { wch: 25 }, { wch: 20 }, { wch: 25 }, 
-            { wch: 25 }, { wch: 25 } // 🔥 NOVO - largura para a coluna de taxa
+            { wch: 18 }, { wch: 18 }, { wch: 18 },
+            { wch: 25 }, { wch: 20 }, { wch: 25 },
+            { wch: 25 }, { wch: 20 }
         ];
         ws['!cols'] = colWidths;
         
@@ -1376,7 +1396,7 @@ function invalidarCacheGeradores() {
 }
 
 // ============================================================
-// ===== EXPORTAR FUNÇÕES (CORRIGIDO) =====
+// ===== EXPORTAR FUNÇÕES =====
 // ============================================================
 
 window.abrirModalGerador = abrirModalGerador;
@@ -1399,7 +1419,7 @@ window.exportarExcelGeradoresModal = exportarExcelGeradoresModal;
 window.limparHistoricoGerador = limparHistoricoGerador;
 window.verDetalhesGerador = verDetalhesGerador;
 
-console.log('✅ Módulo de Gerador (v4) carregado com sucesso!');
+console.log('✅ Módulo de Gerador (v5) carregado com sucesso!');
 console.log('📦 Funções disponíveis:');
 console.log('  - abrirModalGerador()');
 console.log('  - fecharModalGerador()');
@@ -1416,3 +1436,4 @@ console.log('  - aplicarFiltroGeradorModal()');
 console.log('  - limparFiltroGeradorModal()');
 console.log('  - carregarGeradoresDaNuvem() (com cache)');
 console.log('  - invalidarCacheGeradores()');
+console.log('📌 Novos campos: dataLiberacao e dataDevolucaoReal');
