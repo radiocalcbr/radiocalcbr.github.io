@@ -281,7 +281,7 @@ function atualizarTabelaGeradorHistorico() {
                 </td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
-                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' μSv/h' : '-'}</td> <!-- 🔥 NOVO -->
+                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.Levantamentocontaminacao + ' cpm' : '-'}</td> <!-- 🔥 NOVO -->
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
                     <!-- ✏️ BOTÃO EDITAR (sempre disponível) -->
                     <button onclick="editarGerador(${item.id})" style="
