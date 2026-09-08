@@ -281,7 +281,7 @@ function atualizarTabelaGeradorHistorico() {
                 </td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
-                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.Levantamentocontaminacao + ' cpm' : '-'}</td> <!-- 🔥 NOVO -->
+                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' cpm' : '-'}</td> <!-- 🔥 NOVO -->
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
                     <!-- ✏️ BOTÃO EDITAR (sempre disponível) -->
                     <button onclick="editarGerador(${item.id})" style="
@@ -831,7 +831,7 @@ function aplicarFiltroGeradorModal() {
                 </td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
-                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' μSv/h' : '-'}</td> <!-- 🔥 NOVO -->
+                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' cmp' : '-'}</td> <!-- 🔥 NOVO -->
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
                     <button onclick="editarGerador(${item.id})" style="
                         background: rgba(0, 210, 255, 0.15);
@@ -920,7 +920,7 @@ function exportarExcelGeradoresModal() {
             'Status': getStatusInfo(item.status).label,
             'Responsável Liberação': item.responsavelLiberacao || '-',
             'Responsável Devolução': item.responsavelDevolucao || '-',
-            'Taxa Exposição Balde (μSv/h)': item.taxaExposicaoBalde || '-' // 🔥 NOVO
+            'Taxa Exposição Balde (cpm)': item.taxaExposicaoBalde || '-' // 🔥 NOVO
         }));
         
         if (typeof XLSX === 'undefined') {
