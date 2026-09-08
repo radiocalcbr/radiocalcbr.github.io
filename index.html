@@ -390,6 +390,7 @@
                             <select id="atividade-nominal-multi" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
                                 <option value="2000">2000 mCi</option>
                                 <option value="1500" selected>1500 mCi</option>
+                                <option value="1250">1250 mCi</option>
                                 <option value="1000">1000 mCi</option>
                                 <option value="750">750 mCi</option>
                                 <option value="500">500 mCi</option>
@@ -1143,121 +1144,65 @@
                 v1.0 beta
             </span>
         </h3>
-        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;">
+        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">
             Selecione uma ferramenta abaixo para abrir seu módulo completo.
         </p>
 
-       <!-- ===== MENU DE FERRAMENTAS (CARDS CLICÁVEIS) ===== -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; justify-content: center; padding: 0 20px;">
-    
-    <!-- Card 1: Registro de Marcação -->
-    <div onclick="abrirPaginaFerramenta('registro-marcacao')" style="
-        background: rgba(155,89,182,0.08);
-        border: 2px solid rgba(155,89,182,0.2);
-        border-radius: 16px;
-        padding: 30px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
-        <div style="font-size: 3rem; margin-bottom: 10px;">📋</div>
-        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Registro de Marcação</h4>
-        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
-            Registre todas as marcações de radiofármacos realizadas.
-        </p>
-        <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
-            Clique para abrir ➜
-        </span>
-    </div>
+        <!-- ===== MENU DE FERRAMENTAS ===== -->
+        <div class="tools-grid">
+            
+            <!-- Card 1: Registro de Marcação -->
+            <div class="tool-card" onclick="abrirPaginaFerramenta('registro-marcacao')">
+                <span class="tool-icon">📋</span>
+                <span class="tool-name">Registro de Marcação</span>
+                <span class="tool-desc">Registre todas as marcações de radiofármacos realizadas.</span>
+                <span class="tool-badge">Clique para abrir ➜</span>
+            </div>
 
-    <!-- Card 2: Gerência de Estoque de Kits -->
-    <div onclick="
-        console.log('🖱️ Card clicado!');
-        var modal = document.getElementById('modalEstoque');
-        if (modal) {
-            modal.style.display = 'flex';
-            modal.classList.add('ativo');
-            modal.style.visibility = 'visible';
-            modal.style.opacity = '1';
-            modal.style.pointerEvents = 'auto';
-            console.log('✅ Modal aberto!');
-            if (typeof carregarEstoqueSalvo === 'function') {
-                carregarEstoqueSalvo();
-            }
-        } else {
-            console.error('❌ Modal não encontrado!');
-            alert('Erro: Modal de estoque não encontrado!');
-        }
-    " style="
-        background: rgba(155,89,182,0.08);
-        border: 2px solid rgba(155,89,182,0.2);
-        border-radius: 16px;
-        padding: 30px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
-        <div style="font-size: 3rem; margin-bottom: 10px;">📦📋</div>
-        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Gerência de Estoque de Kits</h4>
-        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
-            Controle de <strong style="color: #ffd700;">entrada e saída</strong> de frascos
-            <br><br>
-            <span style="color: #666; font-size: 0.7rem;">
-                📦 Kits · 🔢 Lotes · ⏳ Validades · 📊 Saldo automático
-            </span>
-        </p>
-        <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
-            Clique para abrir ➜
-        </span>
-    </div>
+            <!-- Card 2: Gerência de Estoque de Kits -->
+            <div class="tool-card" onclick="
+                console.log('🖱️ Card clicado!');
+                var modal = document.getElementById('modalEstoque');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.add('ativo');
+                    modal.style.visibility = 'visible';
+                    modal.style.opacity = '1';
+                    modal.style.pointerEvents = 'auto';
+                    console.log('✅ Modal aberto!');
+                    if (typeof carregarEstoqueSalvo === 'function') {
+                        carregarEstoqueSalvo();
+                    }
+                } else {
+                    console.error('❌ Modal não encontrado!');
+                    alert('Erro: Modal de estoque não encontrado!');
+                }
+            ">
+                <span class="tool-icon">📦📋</span>
+                <span class="tool-name">Gerência de Estoque de Kits</span>
+                <span class="tool-desc">Controle de <strong style="color: #ffd700;">entrada e saída</strong> de frascos</span>
+                <span class="tool-badge">Clique para abrir ➜</span>
+            </div>
 
-    <!-- Card 3: Registro de Rejeitos -->
-    <div onclick="abrirModalRejeitos()" style="
-        background: rgba(155,89,182,0.08);
-        border: 2px solid rgba(155,89,182,0.2);
-        border-radius: 16px;
-        padding: 30px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
-        <div style="font-size: 3rem; margin-bottom: 10px;">🗑️☢️</div>
-        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Registro de Rejeitos</h4>
-        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
-            Controle e registre todos os rejeitos de radioativos do setor de medicina nuclear.
-        </p>
-        <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
-            Clique para abrir ➜
-        </span>
-    </div>
+            <!-- Card 3: Registro de Rejeitos -->
+            <div class="tool-card" onclick="abrirModalRejeitos()">
+                <span class="tool-icon">🗑️☢️</span>
+                <span class="tool-name">Registro de Rejeitos</span>
+                <span class="tool-desc">Controle todos os rejeitos radioativos do setor.</span>
+                <span class="tool-badge">Clique para abrir ➜</span>
+            </div>
 
-    <!-- Card 4: Registro de Gerador -->
-    <div onclick="abrirModalGerador()" style="
-        background: rgba(155,89,182,0.08);
-        border: 2px solid rgba(155,89,182,0.2);
-        border-radius: 16px;
-        padding: 30px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    " onmouseover="this.style.background='rgba(155,89,182,0.18)';this.style.transform='translateY(-8px)';this.style.borderColor='rgba(155,89,182,0.5)'" onmouseout="this.style.background='rgba(155,89,182,0.08)';this.style.transform='translateY(0)';this.style.borderColor='rgba(155,89,182,0.2)'">
-        <div style="font-size: 3rem; margin-bottom: 10px;">⚛️⬇️</div>
-        <h4 style="color: #fff; margin-bottom: 8px; font-size: 1rem;">Registro de Gerador</h4>
-        <p style="color: #888; font-size: 0.85rem; margin: 0; line-height: 1.5;">
-            Gerencie o ciclo de vida do gerador 
-            <strong style="color: #ffd700;">Mo-99/Tc-99m</strong>
-            <br><br>
-            <span style="color: #666; font-size: 0.7rem;">
-                📅 Calibração · 📦 Lote · ⏳ Validade · 🗑️ Devolução
-            </span>
-        </p>
-         <span style="display: inline-block; margin-top: 12px; color: #9b59b6; font-size: 0.8rem; font-weight: 600;">
-            Clique para abrir ➜
-        </span>
-    </div>  
-</div>      
-</div>      
-</div>      
+            <!-- Card 4: Registro de Gerador -->
+            <div class="tool-card" onclick="abrirModalGerador()">
+                <span class="tool-icon">⚛️⬇️</span>
+                <span class="tool-name">Registro de Gerador</span>
+                <span class="tool-desc">Gerencie o ciclo de vida do gerador <strong style="color: #ffd700;">Mo-99/Tc-99m</strong></span>
+                <span class="tool-badge">Clique para abrir ➜</span>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <!-- ===== CONTEÚDO PRINCIPAL (fim) ===== -->
 <!-- FOOTER -->
@@ -2160,7 +2105,7 @@
                 <!-- Taxa de Exposição do Balde -->
 <div class="input-group">
     <label style="color: #ccc; font-size: 0.85rem;">☢️ Levantamento de contaminação do Balde (cpm)</label>
-    <input type="number" id="gerTaxaExposicaoBalde" placeholder="Ex: 25.5" step="0.1" min="0" style="
+    <input type="number" id="gerTaxaExposicaoBalde" placeholder="Ex: 2500" step="0.1" min="0" style="
         width: 100%;
         padding: 10px 14px;
         border-radius: 8px;
@@ -2218,6 +2163,20 @@
                         font-size: 0.95rem;
                     ">
                 </div>
+                <!-- 🆕 Data de Liberação -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">✅ Data de Liberação</label>
+    <input type="date" id="gerDataLiberacao" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Data em que o gerador foi liberado para transporte</small>
+</div>
 
                 <!-- Responsável Devolução -->
                 <div class="input-group">
@@ -2232,6 +2191,20 @@
                         font-size: 0.95rem;
                     ">
                 </div>
+                <!-- 🆕 Data de Devolução Real -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">📤 Data de Devolução Real</label>
+    <input type="date" id="gerDataDevolucaoReal" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Data em que o gerador foi efetivamente devolvido</small>
+</div>
             </div>
 
             <!-- Botões -->
@@ -2307,11 +2280,13 @@
                         <th style="min-width: 120px; padding: 8px; color: #ffd700;">⚛️ Data Calibração</th>
                         <th style="min-width: 100px; padding: 8px; color: #ffd700;">📦 Lote</th>
                         <th style="min-width: 100px; padding: 8px; color: #ffd700;">📅 Validade</th>
-                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Devolução</th>
+                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Prevista de Devolução</th>
                         <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Recebimento</th>
                         <th style="min-width: 130px; padding: 8px; color: #ffd700;">📌 Status</th>
                         <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Liberação</th>
+                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">✅ Data Liberação</th>           <!-- 🆕 NOVO -->
                         <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Devolução</th>
+                         <th style="min-width: 110px; padding: 8px; color: #ffd700;">📤 Data Devolução Real</th>      <!-- 🆕 NOVO -->
                            <th style="min-width: 110px; padding: 8px; color: #ffd700;">☢️ Contaminação</th> <!-- 🔥 NOVO -->
                         <th style="min-width: 40px; width: 40px; padding: 8px; color: #ffd700;">Ação</th>
                     </tr>
@@ -2362,27 +2337,6 @@
                 🗑️ Limpar Histórico
             </button>
         </div>
-                <!-- ===== HISTÓRICO ===== -->
-        <div style="margin-top: 25px; border-top: 1px solid rgba(155,89,182,0.15); padding-top: 20px;">
-            <h5 style="color: #aaa; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                📋 Registros Salvos
-                <span style="font-size: 0.6rem; color: #666; font-weight: normal;" id="contadorHistoricoGerador">(0 registros)</span>
-            </h5>
-            <div id="historicoGeradoresContainerModal" style="
-                max-height: 300px; 
-                overflow-y: auto; 
-                background: rgba(255,255,255,0.02); 
-                border-radius: 8px; 
-                padding: 5px;
-                border: 1px solid rgba(155,89,182,0.1);
-            ">
-                <div style="color: #666; font-size: 0.85rem; text-align: center; padding: 30px 20px;">
-                    Nenhum registro salvo ainda.
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- ===== PDF CONTENT ===== -->
 <div id="pdfContent" class="pdf-content">
