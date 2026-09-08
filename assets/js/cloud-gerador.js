@@ -43,6 +43,42 @@ async function obterDadosUsuario() {
 }
 
 // ============================================================
+// ===== VERIFICAR E ATUALIZAR STATUS POR DATA DE DEVOLUÇÃO =====
+// ============================================================
+
+function verificarEAtualizarStatusGeradores(registros) {
+    console.log('🔄 Verificando geradores para atualização automática de status...');
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    let alterados = 0;
+    const alteradosLista = [];
+    
+    registros.forEach(item => {
+        // Só processa se estiver "aguardando" e tiver data de devolução
+        if (item.status !== 'aguardando' || !item.dataDevolucao) return;
+        
+        const dataDevolucao = new Date(item.dataDevolucao + 'T00:00:00');
+        
+        // Se a data de devolução chegou ou já passou
+        if (dataDevolucao <= hoje) {
+            console.log(`✅ Gerador ${item.lote} - Data devolução: ${item.dataDevolucao} → Alterando para "pronto"`);
+            item.status = 'pronto';
+            item.dataAtualizacao = new Date().toISOString();
+            item.statusAlteradoAutomaticamente = true;
+            alterados++;
+            alteradosLista.push(item.lote);
+        }
+    });
+    
+    if (alterados > 0) {
+        console.log(`📊 ${alterados} gerador(es) atualizado(s) para "Pronto para liberação": ${alteradosLista.join(', ')}`);
+    }
+    
+    return alterados;
+}
+
+// ============================================================
 // ===== SALVAR GERADORES NA NUVEM (DOCUMENTO ÚNICO) =====
 // ============================================================
 
@@ -153,6 +189,19 @@ async function carregarGeradoresDaNuvem() {
             const registros = data.registros || [];
             
             if (registros.length > 0) {
+                // 🔥 VERIFICAR E ATUALIZAR STATUS BASEADO NA DATA DE DEVOLUÇÃO
+                const alterados = verificarEAtualizarStatusGeradores(registros);
+                
+                // Se houve alterações, salvar na nuvem automaticamente
+                if (alterados > 0) {
+                    await docRef.update({
+                        registros: registros,
+                        total: registros.length,
+                        ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    console.log(`☁️ ${alterados} geradores atualizados na nuvem!`);
+                }
+                
                 registrosGerador = registros;
                 
                 geradorIdCounter = registrosGerador.length > 0 
@@ -163,7 +212,13 @@ async function carregarGeradoresDaNuvem() {
                 atualizarTabelaGeradorHistorico();
                 atualizarContadoresGerador();
                 
-                mostrarFeedbackGerador(`✅ ${registrosGerador.length} geradores carregados da nuvem!`, 'success');
+                // Mensagem de feedback personalizada
+                let mensagem = `✅ ${registrosGerador.length} geradores carregados da nuvem!`;
+                if (alterados > 0) {
+                    mensagem = `✅ ${registrosGerador.length} geradores carregados! ${alterados} atualizado(s) para "Pronto para liberação"!`;
+                }
+                
+                mostrarFeedbackGerador(mensagem, 'success');
                 atualizarIndicadorGeradorNuvem('sincronizado');
                 console.log(`📦 ${registros.length} registros carregados da nuvem`);
                 return;
@@ -177,6 +232,9 @@ async function carregarGeradoresDaNuvem() {
                 const dadosBackup = JSON.parse(backup);
                 if (dadosBackup.registros && dadosBackup.registros.length > 0) {
                     if (confirm('⚠️ Nenhum dado encontrado na nuvem, mas há um backup local. Deseja carregar o backup?')) {
+                        // 🔥 VERIFICAR TAMBÉM NO BACKUP
+                        const alterados = verificarEAtualizarStatusGeradores(dadosBackup.registros);
+                        
                         registrosGerador = dadosBackup.registros;
                         geradorIdCounter = registrosGerador.length > 0 
                             ? Math.max(...registrosGerador.map(item => item.id || 0)) + 1 
@@ -184,7 +242,13 @@ async function carregarGeradoresDaNuvem() {
                         salvarGeradores();
                         atualizarTabelaGeradorHistorico();
                         atualizarContadoresGerador();
-                        mostrarFeedbackGerador(`✅ Backup local carregado! (${dadosBackup.registros.length} geradores)`, 'success');
+                        
+                        let mensagem = `✅ Backup local carregado! (${dadosBackup.registros.length} geradores)`;
+                        if (alterados > 0) {
+                            mensagem = `✅ Backup carregado! ${alterados} atualizado(s) para "Pronto para liberação"!`;
+                        }
+                        
+                        mostrarFeedbackGerador(mensagem, 'success');
                         atualizarIndicadorGeradorNuvem('sincronizado');
                     }
                 }
@@ -418,8 +482,9 @@ window.limparGeradoresDaNuvem = limparGeradoresDaNuvem;
 window.verificarStatusNuvemGerador = verificarStatusNuvemGerador;
 window.atualizarIndicadorGeradorNuvem = atualizarIndicadorGeradorNuvem;
 window.obterDadosUsuario = obterDadosUsuario;
+window.verificarEAtualizarStatusGeradores = verificarEAtualizarStatusGeradores;
 
-console.log('☁️ Módulo de nuvem para geradores carregado! (v2 - Documento Único)');
+console.log('☁️ Módulo de nuvem para geradores carregado! (v3 - Com verificação automática de status)');
 console.log('📦 Funções disponíveis:');
 console.log('  - salvarGeradoresNaNuvem()');
 console.log('  - carregarGeradoresDaNuvem()');
@@ -428,3 +493,4 @@ console.log('  - limparGeradoresDaNuvem()');
 console.log('  - verificarStatusNuvemGerador()');
 console.log('  - atualizarIndicadorGeradorNuvem(status)');
 console.log('  - obterDadosUsuario()');
+console.log('  - verificarEAtualizarStatusGeradores(registros)');

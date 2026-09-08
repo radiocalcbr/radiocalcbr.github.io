@@ -154,6 +154,7 @@ function registrarGerador() {
     const status = document.getElementById('gerStatus')?.value || 'aguardando';
     const responsavelLiberacao = document.getElementById('gerResponsavelLiberacao')?.value.trim() || '';
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao')?.value.trim() || '';
+    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || ''; // 🔥 NOVO
     
     // Validações
     if (!dataRecebimento) {
@@ -192,6 +193,7 @@ function registrarGerador() {
         status: status,
         responsavelLiberacao: responsavelLiberacao,
         responsavelDevolucao: responsavelDevolucao,
+        taxaExposicaoBalde: taxaExposicaoBalde, // 🔥 NOVO
         dataRegistro: new Date().toISOString()
     };
     
@@ -218,7 +220,8 @@ function limparCamposGerador() {
         'gerDataDevolucao',
         'gerResponsavelRecebimento',
         'gerResponsavelLiberacao',
-        'gerResponsavelDevolucao'
+        'gerResponsavelDevolucao',
+        'gerTaxaExposicaoBalde' // 
     ];
     
     campos.forEach(id => {
@@ -244,7 +247,7 @@ function atualizarTabelaGeradorHistorico() {
     if (registrosGerador.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="12" style="text-align: center; padding: 40px; color: #888;">
+                <td colspan="13" style="text-align: center; padding: 40px; color: #888;">
                     Nenhum gerador registrado. Preencha o formulário acima e clique em "📝 Registrar Gerador".
                 </td>
             </tr>
@@ -278,6 +281,7 @@ function atualizarTabelaGeradorHistorico() {
                 </td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' μSv/h' : '-'}</td> <!-- 🔥 NOVO -->
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
                     <!-- ✏️ BOTÃO EDITAR (sempre disponível) -->
                     <button onclick="editarGerador(${item.id})" style="
@@ -498,6 +502,7 @@ function editarGerador(id) {
     const status = document.getElementById('gerStatus');
     const responsavelLiberacao = document.getElementById('gerResponsavelLiberacao');
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao');
+    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde'); // 🔥 NOVO
     
     if (dataRecebimento) dataRecebimento.value = item.dataRecebimento || '';
     if (dataCalibracao) dataCalibracao.value = item.dataCalibracao || '';
@@ -508,6 +513,7 @@ function editarGerador(id) {
     if (status) status.value = item.status || 'aguardando';
     if (responsavelLiberacao) responsavelLiberacao.value = item.responsavelLiberacao || '';
     if (responsavelDevolucao) responsavelDevolucao.value = item.responsavelDevolucao || '';
+    if (taxaExposicaoBalde) taxaExposicaoBalde.value = item.taxaExposicaoBalde || ''; // 🔥 NOVO
     
     // 🔥 Usando o ID correto que adicionamos no HTML
     const btn = document.getElementById('btnRegistrarGerador');
@@ -578,6 +584,7 @@ async function atualizarGerador(id) {
     const status = document.getElementById('gerStatus')?.value || 'aguardando';
     const responsavelLiberacao = document.getElementById('gerResponsavelLiberacao')?.value.trim() || '';
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao')?.value.trim() || '';
+    const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || ''; // 🔥 NOVO
     
     // Validações
     if (!dataRecebimento) {
@@ -613,6 +620,7 @@ async function atualizarGerador(id) {
         status,
         responsavelLiberacao,
         responsavelDevolucao,
+        taxaExposicaoBalde, // 🔥 NOVO
         dataAtualizacao: new Date().toISOString()
     };
     
@@ -792,7 +800,7 @@ function aplicarFiltroGeradorModal() {
     if (filtrados.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="12" style="text-align: center; padding: 40px; color: #888;">
+                <td colspan="13" style="text-align: center; padding: 40px; color: #888;">
                     🔍 Nenhum registro encontrado no período selecionado.
                 </td>
             </tr>
@@ -823,6 +831,7 @@ function aplicarFiltroGeradorModal() {
                 </td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelLiberacao || '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem;">${item.responsavelDevolucao || '-'}</td>
+                <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' μSv/h' : '-'}</td> <!-- 🔥 NOVO -->
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
                     <button onclick="editarGerador(${item.id})" style="
                         background: rgba(0, 210, 255, 0.15);
@@ -910,7 +919,8 @@ function exportarExcelGeradoresModal() {
             'Responsável Recebimento': item.responsavelRecebimento || '-',
             'Status': getStatusInfo(item.status).label,
             'Responsável Liberação': item.responsavelLiberacao || '-',
-            'Responsável Devolução': item.responsavelDevolucao || '-'
+            'Responsável Devolução': item.responsavelDevolucao || '-',
+            'Taxa Exposição Balde (μSv/h)': item.taxaExposicaoBalde || '-' // 🔥 NOVO
         }));
         
         if (typeof XLSX === 'undefined') {
@@ -922,7 +932,8 @@ function exportarExcelGeradoresModal() {
         const ws = XLSX.utils.json_to_sheet(dados);
         const colWidths = [
             { wch: 18 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
-            { wch: 18 }, { wch: 25 }, { wch: 20 }, { wch: 25 }, { wch: 25 }
+            { wch: 18 }, { wch: 25 }, { wch: 20 }, { wch: 25 }, 
+            { wch: 25 }, { wch: 25 } // 🔥 NOVO - largura para a coluna de taxa
         ];
         ws['!cols'] = colWidths;
         
