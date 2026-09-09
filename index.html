@@ -2060,6 +2060,20 @@
                         font-size: 0.95rem;
                     ">
                 </div>
+                <!-- Atividade de Calibração -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">⚛️ ATIVIDADE (mCi)</label>
+    <input type="number" id="gerAtividade" placeholder="Ex: 1500" step="0.1" min="0" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Atividade nominal do Mo-99 na data de calibração (fornecida pelo fabricante)</small>
+</div>
 
                 <!-- Lote -->
                 <div class="input-group">
@@ -2277,7 +2291,8 @@
                     <tr style="border-bottom: 2px solid rgba(255,215,0,0.3);">
                         <th style="min-width: 35px; width: 35px; padding: 8px; color: #ffd700;">#</th>
                         <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Recebimento</th>
-                        <th style="min-width: 120px; padding: 8px; color: #ffd700;">⚛️ Data Calibração</th>
+                        <th style="min-width: 120px; padding: 8px; color: #ffd700;">📅⚛️ Data Calibração</th>
+                        <th style="min-width: 100px; padding: 8px; color: #ffd700;">⚛️ Atividade (mCi)</th>
                         <th style="min-width: 100px; padding: 8px; color: #ffd700;">📦 Lote</th>
                         <th style="min-width: 100px; padding: 8px; color: #ffd700;">📅 Validade</th>
                         <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Prevista de Devolução</th>
@@ -2293,7 +2308,7 @@
                 </thead>
                 <tbody id="corpoTabelaGeradoresModal">
     <tr>
-        <td colspan="13" style="text-align: center; padding: 40px; color: #888;">
+        <td colspan="15" style="text-align: center; padding: 40px; color: #888;">
             Nenhum gerador registrado. Preencha o formulário acima e clique em "📝 Registrar Gerador".
         </td>
     </tr>
