@@ -14,7 +14,23 @@ function carregarEstoqueSalvo() {
     const salvo = localStorage.getItem('estoqueKits');
     if (salvo) {
         try {
-            estoqueItens = JSON.parse(salvo);
+            let dados = JSON.parse(salvo);
+            
+            // 🔥 PADRONIZAR DATAS (converter DD/MM/AAAA para AAAA-MM-DD)
+            dados = dados.map(item => {
+                if (item.validade && typeof item.validade === 'string') {
+                    // Se tiver barras, é DD/MM/AAAA
+                    if (item.validade.includes('/')) {
+                        const partes = item.validade.split('/');
+                        if (partes.length === 3 && partes[0].length === 2) {
+                            item.validade = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                        }
+                    }
+                }
+                return item;
+            });
+            
+            estoqueItens = dados;
             estoqueIdCounter = estoqueItens.length > 0 
                 ? Math.max(...estoqueItens.map(item => item.id || 0)) + 1 
                 : 0;
@@ -102,7 +118,8 @@ function fecharModuloEstoque() {
 function cadastrarMovimentacaoEstoque() {
     // Capturar valores
     const tipoKit = document.getElementById('estoqueTipoKit').value;
-    const lote = document.getElementById('estoqueLote').value.trim();
+    let lote = document.getElementById('estoqueLote').value.trim();
+    lote = lote.toUpperCase(); // 🔥 FORÇAR MAIÚSCULAS
     const validade = document.getElementById('estoqueValidade').value;
     const quantidade = parseInt(document.getElementById('estoqueQuantidade').value) || 0;
     const tipoMovimento = document.getElementById('estoqueTipoMovimento').value;
@@ -125,7 +142,7 @@ function cadastrarMovimentacaoEstoque() {
     // Verificar se já existe um registro com o mesmo lote e kit
     let itemExistente = estoqueItens.find(item => 
         item.tipoKit === tipoKit && 
-        item.lote === lote &&
+        item.lote === lote && // Agora lote já está em maiúsculas
         item.validade === validade
     );
 
@@ -150,7 +167,7 @@ function cadastrarMovimentacaoEstoque() {
         const novoItem = {
             id: estoqueIdCounter++,
             tipoKit: tipoKit,
-            lote: lote,
+            lote: lote, // Já em maiúsculas
             validade: validade,
             entrada: tipoMovimento === 'entrada' ? quantidade : 0,
             saida: tipoMovimento === 'saida' ? quantidade : 0,
