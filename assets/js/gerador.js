@@ -15,7 +15,7 @@ let geradorIdCounter = 0;
 // ============================================================
 
 let paginaAtualHistoricoGerador = 1;
-const ITENS_POR_PAGINA_HISTORICO = 10; // 10 registros por página
+const ITENS_POR_PAGINA_HISTORICO = 10;
 let historicoGeradorFiltrado = [];
 
 // ============================================================
@@ -66,11 +66,7 @@ function abrirModalGerador() {
         carregarGeradoresSalvos();
         preencherDatasPadrao();
         atualizarHistoricoGeradorComPaginacao();
-        
-        // 🔥 VERIFICAR SE É ADMIN E MOSTRAR BADGE
         verificarAdminGerador();
-        
-        
         console.log('✅ Modal de gerador aberto!');
     } else {
         console.error('❌ Modal de gerador não encontrado!');
@@ -146,9 +142,9 @@ function preencherDatasPadrao() {
 function registrarGerador() {
     console.log('📝 Registrando gerador...');
     
-    // Capturar valores do formulário
     const dataRecebimento = document.getElementById('gerDataRecebimento')?.value || '';
     const dataCalibracao = document.getElementById('gerDataCalibracao')?.value || '';
+    const atividade = document.getElementById('gerAtividade')?.value || '';
     const lote = document.getElementById('gerLote')?.value.trim() || '';
     const validade = document.getElementById('gerDataValidade')?.value || '';
     const dataDevolucao = document.getElementById('gerDataDevolucao')?.value || '';
@@ -160,7 +156,6 @@ function registrarGerador() {
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao')?.value.trim() || '';
     const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || '';
     
-    // Validações
     if (!dataRecebimento) {
         mostrarFeedbackGerador('⚠️ Informe a Data de Recebimento!', 'erro');
         return;
@@ -174,7 +169,6 @@ function registrarGerador() {
         return;
     }
     
-    // Verificar se já existe um registro com o mesmo lote
     const existe = registrosGerador.some(item => 
         item.lote === lote && 
         item.dataRecebimento === dataRecebimento
@@ -185,11 +179,11 @@ function registrarGerador() {
         return;
     }
     
-    // Criar novo registro
     const novoRegistro = {
         id: geradorIdCounter++,
         dataRecebimento: dataRecebimento,
         dataCalibracao: dataCalibracao,
+        atividade: atividade,
         lote: lote,
         validade: validade,
         dataDevolucao: dataDevolucao,
@@ -221,6 +215,7 @@ function limparCamposGerador() {
     const campos = [
         'gerDataRecebimento',
         'gerDataCalibracao',
+        'gerAtividade',
         'gerLote',
         'gerDataValidade',
         'gerDataDevolucao',
@@ -240,12 +235,11 @@ function limparCamposGerador() {
     const status = document.getElementById('gerStatus');
     if (status) status.value = 'aguardando';
     
-    // Preencher datas padrão novamente
     preencherDatasPadrao();
 }
 
 // ============================================================
-// ===== ATUALIZAR TABELA DE HISTÓRICO (COM EDIÇÃO) =====
+// ===== ATUALIZAR TABELA DE HISTÓRICO =====
 // ============================================================
 
 function atualizarTabelaGeradorHistorico() {
@@ -255,7 +249,7 @@ function atualizarTabelaGeradorHistorico() {
     if (registrosGerador.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="14" style="text-align: center; padding: 40px; color: #888;">
+                <td colspan="15" style="text-align: center; padding: 40px; color: #888;">
                     Nenhum gerador registrado. Preencha o formulário acima e clique em "📝 Registrar Gerador".
                 </td>
             </tr>
@@ -263,7 +257,6 @@ function atualizarTabelaGeradorHistorico() {
         return;
     }
     
-    // Ordenar por data de recebimento (mais recente primeiro)
     const registrosOrdenados = [...registrosGerador].sort((a, b) => {
         return new Date(b.dataRecebimento) - new Date(a.dataRecebimento);
     });
@@ -278,6 +271,7 @@ function atualizarTabelaGeradorHistorico() {
                 <td style="padding: 10px; text-align: center;">${index + 1}</td>
                 <td style="padding: 10px;">${formatarDataBR(item.dataRecebimento)}</td>
                 <td style="padding: 10px;">${formatarDataHoraBR(item.dataCalibracao)}</td>
+                <td style="padding: 10px; font-weight: 600; color: #00d2ff;">${item.atividade || '-'}</td>
                 <td style="padding: 10px; font-weight: 600; color: #ffd700;">${item.lote}</td>
                 <td style="padding: 10px;">${formatarDataBR(item.validade)}</td>
                 <td style="padding: 10px;">${item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-'}</td>
@@ -341,13 +335,12 @@ function getStatusInfo(status) {
 }
 
 // ============================================================
-// ===== FUNÇÃO PARA RESETAR O BOTÃO =====
+// ===== RESETAR BOTÃO =====
 // ============================================================
 
 function resetarBotaoGerador() {
     console.log('🔄 Resetando botão do gerador...');
     
-    // 🔥 Usando o ID correto que adicionamos no HTML
     const btn = document.getElementById('btnRegistrarGerador');
     
     if (btn) {
@@ -361,7 +354,6 @@ function resetarBotaoGerador() {
         console.log('✅ Botão resetado para "📝 Registrar Gerador"');
     } else {
         console.warn('⚠️ Botão não encontrado!');
-        // Tenta encontrar de outra forma
         const allButtons = document.querySelectorAll('#modalGerador button');
         allButtons.forEach(b => {
             if (b.textContent.includes('Registrar Gerador') || b.textContent.includes('Atualizar Gerador')) {
@@ -379,7 +371,7 @@ function resetarBotaoGerador() {
 }
 
 // ============================================================
-// ===== REMOVER GERADOR (com verificação de admin) =====
+// ===== REMOVER GERADOR =====
 // ============================================================
 
 async function removerGerador(id) {
@@ -388,18 +380,12 @@ async function removerGerador(id) {
     const item = registrosGerador.find(r => r.id === id);
     if (!item) return;
     
-    // 1. Remover do array local (sempre)
     registrosGerador = registrosGerador.filter(r => r.id !== id);
-    
-    // 2. Salvar no localStorage
     salvarGeradores();
-    
-    // 3. Atualizar a interface
     atualizarHistoricoGeradorComPaginacao();
     atualizarTabelaGeradorHistorico();
     atualizarContadoresGerador();
     
-    // 4. 🔥 REMOVER DA NUVEM APENAS SE FOR ADMIN
     const userData = await obterDadosUsuario();
     const isAdmin = userData && userData.role === 'admin';
     
@@ -415,7 +401,6 @@ async function removerGerador(id) {
         }
     } else {
         mostrarFeedbackGerador(`🗑️ Gerador ${item.lote || ''} removido localmente.`, 'info');
-        // Mostrar aviso de que não foi removido da nuvem
         setTimeout(() => {
             mostrarFeedbackGerador('ℹ️ Apenas administradores podem remover da nuvem.', 'info');
         }, 2000);
@@ -441,28 +426,21 @@ async function removerGeradorDaNuvem(item) {
         }
         
         const db = firebase.firestore();
-        
-        // 🔥 Buscar o documento da organização que contém este gerador
         const orgGeradoresRef = db.collection('organizacoes')
             .doc(userData.organizacao)
             .collection('geradores');
         
-        // Buscar documentos que contenham o lote específico
         const snapshot = await orgGeradoresRef
             .where('lote', '==', item.lote)
             .get();
         
         if (!snapshot.empty) {
-            // Para cada documento encontrado, atualizar removendo o registro específico
             for (const doc of snapshot.docs) {
                 const data = doc.data();
                 const registros = data.registros || [];
-                
-                // Filtrar removendo o registro com o ID específico
                 const novosRegistros = registros.filter(r => r.id !== item.id);
                 
                 if (novosRegistros.length < registros.length) {
-                    // Atualizar o documento com a nova lista
                     await doc.ref.update({
                         registros: novosRegistros,
                         total: novosRegistros.length,
@@ -470,7 +448,6 @@ async function removerGeradorDaNuvem(item) {
                     });
                     console.log(`✅ Gerador removido do documento ${doc.id}`);
                 } else {
-                    // Se não encontrou o registro específico, tentar excluir todo o documento
                     if (novosRegistros.length === 0) {
                         await doc.ref.delete();
                         console.log(`🗑️ Documento vazio removido: ${doc.id}`);
@@ -483,7 +460,7 @@ async function removerGeradorDaNuvem(item) {
         
     } catch (error) {
         console.error('❌ Erro ao remover gerador da nuvem:', error);
-        throw error; // Re-lançar para ser capturado pela função chamadora
+        throw error;
     }
 }
 
@@ -500,9 +477,9 @@ function editarGerador(id) {
     
     console.log('✏️ Editando gerador:', item);
     
-    // Preencher o formulário com os dados do registro
     const dataRecebimento = document.getElementById('gerDataRecebimento');
     const dataCalibracao = document.getElementById('gerDataCalibracao');
+    const atividade = document.getElementById('gerAtividade');
     const lote = document.getElementById('gerLote');
     const validade = document.getElementById('gerDataValidade');
     const dataDevolucao = document.getElementById('gerDataDevolucao');
@@ -516,6 +493,7 @@ function editarGerador(id) {
     
     if (dataRecebimento) dataRecebimento.value = item.dataRecebimento || '';
     if (dataCalibracao) dataCalibracao.value = item.dataCalibracao || '';
+    if (atividade) atividade.value = item.atividade || '';
     if (lote) lote.value = item.lote || '';
     if (validade) validade.value = item.validade || '';
     if (dataDevolucao) dataDevolucao.value = item.dataDevolucao || '';
@@ -527,7 +505,6 @@ function editarGerador(id) {
     if (responsavelDevolucao) responsavelDevolucao.value = item.responsavelDevolucao || '';
     if (taxaExposicaoBalde) taxaExposicaoBalde.value = item.taxaExposicaoBalde || '';
     
-    // 🔥 Usando o ID correto que adicionamos no HTML
     const btn = document.getElementById('btnRegistrarGerador');
     
     if (btn) {
@@ -541,7 +518,6 @@ function editarGerador(id) {
         console.log('✅ Botão alterado para "🔄 Atualizar Gerador"');
     } else {
         console.warn('⚠️ Botão não encontrado!');
-        // Tenta encontrar de outra forma
         const allButtons = document.querySelectorAll('#modalGerador button');
         allButtons.forEach(b => {
             if (b.textContent.includes('Registrar Gerador')) {
@@ -557,7 +533,6 @@ function editarGerador(id) {
         });
     }
     
-    // Rolar para o formulário
     const formGerador = document.getElementById('formGerador');
     if (formGerador) {
         formGerador.scrollIntoView({ 
@@ -566,7 +541,6 @@ function editarGerador(id) {
         });
     }
     
-    // Destacar o campo do lote
     if (lote) {
         lote.style.borderColor = '#00d2ff';
         lote.style.boxShadow = '0 0 20px rgba(0, 210, 255, 0.2)';
@@ -586,9 +560,9 @@ function editarGerador(id) {
 async function atualizarGerador(id) {
     console.log('🔄 Atualizando gerador...', id);
     
-    // Capturar valores do formulário
     const dataRecebimento = document.getElementById('gerDataRecebimento')?.value || '';
     const dataCalibracao = document.getElementById('gerDataCalibracao')?.value || '';
+    const atividade = document.getElementById('gerAtividade')?.value || '';
     const lote = document.getElementById('gerLote')?.value.trim() || '';
     const validade = document.getElementById('gerDataValidade')?.value || '';
     const dataDevolucao = document.getElementById('gerDataDevolucao')?.value || '';
@@ -600,7 +574,6 @@ async function atualizarGerador(id) {
     const responsavelDevolucao = document.getElementById('gerResponsavelDevolucao')?.value.trim() || '';
     const taxaExposicaoBalde = document.getElementById('gerTaxaExposicaoBalde')?.value || '';
     
-    // Validações
     if (!dataRecebimento) {
         mostrarFeedbackGerador('⚠️ Informe a Data de Recebimento!', 'erro');
         return;
@@ -614,7 +587,6 @@ async function atualizarGerador(id) {
         return;
     }
     
-    // Encontrar o índice do registro
     const index = registrosGerador.findIndex(r => r.id === id);
     if (index === -1) {
         mostrarFeedbackGerador('❌ Registro não encontrado!', 'erro');
@@ -622,11 +594,11 @@ async function atualizarGerador(id) {
         return;
     }
     
-    // Atualizar o registro
     registrosGerador[index] = {
         ...registrosGerador[index],
         dataRecebimento,
         dataCalibracao,
+        atividade,
         lote,
         validade,
         dataDevolucao,
@@ -640,15 +612,11 @@ async function atualizarGerador(id) {
         dataAtualizacao: new Date().toISOString()
     };
     
-    // Salvar localmente
     salvarGeradores();
-    
-    // Atualizar interface imediatamente (antes da nuvem)
     atualizarHistoricoGeradorComPaginacao();
     atualizarTabelaGeradorHistorico();
     atualizarContadoresGerador();
     
-    // 🔥 SALVAR NA NUVEM (com try/catch)
     try {
         if (typeof atualizarGeradorNaNuvem === 'function') {
             await atualizarGeradorNaNuvem(registrosGerador[index]);
@@ -661,13 +629,9 @@ async function atualizarGerador(id) {
         mostrarFeedbackGerador('⚠️ Atualizado localmente, mas erro na nuvem', 'aviso');
     }
     
-    // 🔥 RESETAR O BOTÃO (SEMPRE)
     resetarBotaoGerador();
-    
-    // Limpar campos
     limparCamposGerador();
     
-    // Invalidar cache
     if (typeof invalidarCacheGeradores === 'function') {
         invalidarCacheGeradores();
     }
@@ -687,7 +651,7 @@ function cancelarEdicaoGerador() {
 }
 
 // ============================================================
-// ===== ATUALIZAR GERADOR NA NUVEM (COM LOGS) =====
+// ===== ATUALIZAR GERADOR NA NUVEM =====
 // ============================================================
 
 async function atualizarGeradorNaNuvem(item) {
@@ -713,7 +677,6 @@ async function atualizarGeradorNaNuvem(item) {
         
         console.log(`🔍 Buscando documento com lote: ${item.lote}`);
         
-        // Buscar documento com o mesmo lote
         const snapshot = await orgGeradoresRef
             .where('lote', '==', item.lote)
             .limit(1)
@@ -726,7 +689,6 @@ async function atualizarGeradorNaNuvem(item) {
             const data = snapshot.docs[0].data();
             const registros = data.registros || [];
             
-            // Encontrar e atualizar o registro específico
             const idx = registros.findIndex(r => r.id === item.id);
             console.log(`🔍 Registro encontrado no índice: ${idx}`);
             
@@ -744,7 +706,6 @@ async function atualizarGeradorNaNuvem(item) {
             console.warn(`⚠️ Nenhum documento encontrado na nuvem para o lote: ${item.lote}`);
             console.log('📌 Criando novo documento na nuvem...');
             
-            // Se não encontrou, criar um novo documento
             await orgGeradoresRef.add({
                 registros: [item],
                 organizacao: userData.organizacao,
@@ -760,7 +721,7 @@ async function atualizarGeradorNaNuvem(item) {
         
     } catch (error) {
         console.error('❌ Erro ao atualizar na nuvem:', error);
-        throw error; // Re-lançar para ser capturado pela função chamadora
+        throw error;
     }
 }
 
@@ -785,6 +746,7 @@ function atualizarContadoresGerador() {
 // ============================================================
 // ===== FILTROS =====
 // ============================================================
+
 function aplicarFiltroGeradorModal() {
     const dataInicio = document.getElementById('filtroDataInicioGerador')?.value || '';
     const dataFim = document.getElementById('filtroDataFimGerador')?.value || '';
@@ -802,7 +764,6 @@ function aplicarFiltroGeradorModal() {
     const tbody = document.getElementById('corpoTabelaGeradoresModal');
     if (!tbody) return;
     
-    // Filtrar registros
     let filtrados = [...registrosGerador];
     
     if (dataInicio) {
@@ -815,7 +776,7 @@ function aplicarFiltroGeradorModal() {
     if (filtrados.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="14" style="text-align: center; padding: 40px; color: #888;">
+                <td colspan="15" style="text-align: center; padding: 40px; color: #888;">
                     🔍 Nenhum registro encontrado no período selecionado.
                 </td>
             </tr>
@@ -824,7 +785,6 @@ function aplicarFiltroGeradorModal() {
         return;
     }
     
-    // Renderizar filtrados
     let html = '';
     filtrados.sort((a, b) => new Date(b.dataRecebimento) - new Date(a.dataRecebimento));
     
@@ -835,6 +795,7 @@ function aplicarFiltroGeradorModal() {
                 <td style="padding: 10px; text-align: center;">${index + 1}</td>
                 <td style="padding: 10px;">${formatarDataBR(item.dataRecebimento)}</td>
                 <td style="padding: 10px;">${formatarDataHoraBR(item.dataCalibracao)}</td>
+                <td style="padding: 10px; font-weight: 600; color: #00d2ff;">${item.atividade || '-'}</td>
                 <td style="padding: 10px; font-weight: 600; color: #ffd700;">${item.lote}</td>
                 <td style="padding: 10px;">${formatarDataBR(item.validade)}</td>
                 <td style="padding: 10px;">${item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-'}</td>
@@ -930,6 +891,7 @@ function exportarExcelGeradoresModal() {
         const dados = registrosGerador.map(item => ({
             'Data Recebimento': formatarDataBR(item.dataRecebimento),
             'Data Calibração': formatarDataHoraBR(item.dataCalibracao),
+            'Atividade (mCi)': item.atividade || '-',
             'Lote': item.lote,
             'Validade': formatarDataBR(item.validade),
             'Data Devolução Prevista': item.dataDevolucao ? formatarDataBR(item.dataDevolucao) : '-',
@@ -951,9 +913,9 @@ function exportarExcelGeradoresModal() {
         const ws = XLSX.utils.json_to_sheet(dados);
         const colWidths = [
             { wch: 18 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
-            { wch: 18 }, { wch: 18 }, { wch: 18 },
-            { wch: 25 }, { wch: 20 }, { wch: 25 },
-            { wch: 25 }, { wch: 20 }
+            { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
+            { wch: 25 }, { wch: 20 }, { wch: 25 }, { wch: 25 },
+            { wch: 20 }
         ];
         ws['!cols'] = colWidths;
         
@@ -968,13 +930,12 @@ function exportarExcelGeradoresModal() {
 }
 
 // ============================================================
-// ===== LIMPAR HISTÓRICO (APENAS LOCAL) =====
+// ===== LIMPAR HISTÓRICO =====
 // ============================================================
 
 async function limparHistoricoGerador() {
     if (!confirm('⚠️ Tem certeza que deseja limpar TODO o histórico de geradores localmente? Esta ação NÃO afeta a nuvem.')) return;
     
-    // 1. Limpar local
     registrosGerador = [];
     geradorIdCounter = 0;
     salvarGeradores();
@@ -983,7 +944,6 @@ async function limparHistoricoGerador() {
     atualizarContadoresGerador();
     mostrarFeedbackGerador('🗑️ Histórico de geradores limpo localmente!', 'info');
     
-    // 2. REMOVER DA NUVEM APENAS SE FOR ADMIN
     const userData = await obterDadosUsuario();
     if (userData && userData.role === 'admin') {
         const confirmarNuvem = confirm('☁️ Você é ADMIN. Deseja também limpar os dados da nuvem?');
@@ -1017,8 +977,6 @@ async function limparGeradoresDaNuvem(registros) {
         }
         
         const db = firebase.firestore();
-        
-        // 🔥 Buscar todos os documentos da organização
         const orgGeradoresRef = db.collection('organizacoes')
             .doc(userData.organizacao)
             .collection('geradores');
@@ -1030,13 +988,11 @@ async function limparGeradoresDaNuvem(registros) {
             return;
         }
         
-        // Excluir cada documento
         for (const doc of snapshot.docs) {
             await doc.ref.delete();
             console.log(`🗑️ Documento removido: ${doc.id}`);
         }
         
-        // Remover o backup local também
         localStorage.removeItem('radiocalc_geradores_nuvem_backup');
         
         console.log('✅ Todos os geradores removidos da nuvem!');
@@ -1049,7 +1005,7 @@ async function limparGeradoresDaNuvem(registros) {
 }
 
 // ============================================================
-// ===== FUNÇÕES PARA FECHAR COM ESC =====
+// ===== FECHAR COM ESC =====
 // ============================================================
 
 document.addEventListener('keydown', function(event) {
@@ -1129,7 +1085,7 @@ function formatarDataHoraBR(dataStr) {
 }
 
 // ============================================================
-// ===== FUNÇÕES DE PAGINAÇÃO DO HISTÓRICO =====
+// ===== PAGINAÇÃO DO HISTÓRICO =====
 // ============================================================
 
 function atualizarHistoricoGeradorComPaginacao() {
@@ -1147,7 +1103,6 @@ function atualizarHistoricoGeradorComPaginacao() {
         return;
     }
     
-    // Calcular paginação
     const totalPaginas = Math.ceil(registros.length / ITENS_POR_PAGINA_HISTORICO);
     
     if (paginaAtualHistoricoGerador > totalPaginas) {
@@ -1188,7 +1143,6 @@ function atualizarHistoricoGeradorComPaginacao() {
         `;
     });
     
-    // Controles de paginação
     html += `
         <div style="
             display: flex;
@@ -1309,7 +1263,7 @@ let cacheGeradores = {
     dados: null,
     timestamp: null,
     organizacao: null,
-    TTL: 60000 // 1 minuto em milissegundos
+    TTL: 60000
 };
 
 async function carregarGeradoresDaNuvemComCache(forceRefresh = false) {
@@ -1321,7 +1275,6 @@ async function carregarGeradoresDaNuvemComCache(forceRefresh = false) {
         return;
     }
     
-    // Verificar se o cache é válido
     const agora = Date.now();
     if (!forceRefresh && 
         cacheGeradores.dados !== null && 
@@ -1340,7 +1293,6 @@ async function carregarGeradoresDaNuvemComCache(forceRefresh = false) {
         return;
     }
     
-    // Cache expirado ou não existe - fazer a leitura
     try {
         if (typeof firebase === 'undefined' || !firebase.firestore) {
             throw new Error('Firestore não está disponível');
@@ -1364,7 +1316,6 @@ async function carregarGeradoresDaNuvemComCache(forceRefresh = false) {
         if (todosRegistros.length > 0) {
             registrosGerador = todosRegistros;
             
-            // Atualizar cache
             cacheGeradores.dados = todosRegistros;
             cacheGeradores.timestamp = agora;
             cacheGeradores.organizacao = userData.organizacao;
@@ -1387,7 +1338,6 @@ async function carregarGeradoresDaNuvemComCache(forceRefresh = false) {
     }
 }
 
-// Função para invalidar o cache (usar após alterações)
 function invalidarCacheGeradores() {
     cacheGeradores.dados = null;
     cacheGeradores.timestamp = null;
@@ -1419,7 +1369,7 @@ window.exportarExcelGeradoresModal = exportarExcelGeradoresModal;
 window.limparHistoricoGerador = limparHistoricoGerador;
 window.verDetalhesGerador = verDetalhesGerador;
 
-console.log('✅ Módulo de Gerador (v5) carregado com sucesso!');
+console.log('✅ Módulo de Gerador (v6) carregado com sucesso!');
 console.log('📦 Funções disponíveis:');
 console.log('  - abrirModalGerador()');
 console.log('  - fecharModalGerador()');
@@ -1436,4 +1386,4 @@ console.log('  - aplicarFiltroGeradorModal()');
 console.log('  - limparFiltroGeradorModal()');
 console.log('  - carregarGeradoresDaNuvem() (com cache)');
 console.log('  - invalidarCacheGeradores()');
-console.log('📌 Novos campos: dataLiberacao e dataDevolucaoReal');
+console.log('📌 Campos: atividade, dataLiberacao e dataDevolucaoReal');
