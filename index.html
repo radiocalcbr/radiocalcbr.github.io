@@ -1037,8 +1037,7 @@
 </div>
             </div>
         </div>
-    </div>
-
+    
     <!-- ===== ABA 4: DOSE PEDIÁTRICA ===== -->
     <div id="aba-pediatrica" class="tab-content" style="text-align: left;">
     <div class="card">
@@ -1205,6 +1204,8 @@
 </div>
 
 <!-- ===== CONTEÚDO PRINCIPAL (fim) ===== -->
+</div>
+
 <!-- FOOTER -->
 <footer class="footer">
     <div class="disclaimer-footer" id="footerDisclaimer">
@@ -1467,7 +1468,7 @@
 
                 <!-- Quantidade de Frascos -->
                 <div class="input-group">
-                    <label style="color: #ccc; font-size: 0.85rem;">📦 Quantidade de Frascos</label>
+                    <label style="color: #ccc; font-size: 0.85rem;">📦 Quant. de Frascos</label>
                     <input type="number" id="estoqueQuantidade" value="1" min="1" step="1" style="
                         width: 100%;
                         padding: 10px 14px;
@@ -1492,13 +1493,13 @@
                         font-size: 0.95rem;
                     ">
                         <option value="entrada" style="color: #2ecc71;">✅ Entrada (Chegou ao setor)</option>
-                        <option value="saida" style="color: #e74c3c;">❌ Saída (Utilizado/Retirado)</option>
+                        <option value="saida" style="color: #e74c3c;" selected>❌ Saída (Utilizado/Retirado)</option>
                     </select>
                 </div>
 
                 <!-- Observação -->
                 <div class="input-group" style="grid-column: span 1;">
-                    <label style="color: #ccc; font-size: 0.85rem;">📝 Observação (opcional)</label>
+                    <label style="color: #ccc; font-size: 0.85rem;">📝 Observação </label>
                     <input type="text" id="estoqueObservacao" placeholder="Ex: Recebido do fornecedor X" style="
                         width: 100%;
                         padding: 10px 14px;
@@ -1607,6 +1608,7 @@
                             <th style="padding: 10px; text-align: center; color: #9b59b6; background: rgba(255,215,0,0.05);">📊 Saldo</th>
                             <th style="padding: 10px; text-align: center; color: #9b59b6;">⚠️ Status</th>
                             <th style="padding: 10px; text-align: center; color: #9b59b6;">📝 Observação</th>
+                             <th style="padding: 10px; text-align: center; color: #9b59b6;">🕐 Data/Hora Mov.</th>
                             <th style="padding: 10px; text-align: center; color: #9b59b6;">Ação</th>
                         </tr>
                     </thead>
@@ -1689,17 +1691,6 @@
                         <option value="DTPA">DTPA (Renal)</option>
                         <option value="FITATO">FITATO (Fígado)</option>
                         <option value="PIRO">PIRO (Pirofosfato)</option>
-                    </optgroup>
-                    <optgroup label="🟢 F-18">
-                        <option value="FDG">FDG</option>
-                        <option value="FES">FES</option>
-                        <option value="F-PSMA">F-PSMA</option>
-                        <option value="NaF">NaF</option>
-                    </optgroup>
-                    <optgroup label="🟡 I-123">
-                        <option value="MIBG">MIBG</option>
-                        <option value="NaI">NaI</option>
-                    </optgroup>
                 </select>
             </div>
 
