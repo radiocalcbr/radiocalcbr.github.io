@@ -117,8 +117,9 @@ body {
 }
 
 .container { 
-    max-width: 1600px; 
+    max-width: 1800px; 
     margin: 0 auto; 
+    padding: 0 10px;
 }
 
 #conteudoPrincipal {
@@ -2583,7 +2584,7 @@ tr:hover {
 
 /* Container principal das ferramentas */
 .tools-container {
-    max-width: 1600px;
+    max-width: 1800px;
     margin: -5px auto 0 auto; /* Reduz espaço superior */
     padding: 0;
 }
@@ -2838,4 +2839,42 @@ tr:hover {
     .tool-card .tool-name {
         font-size: 0.6rem;
     }
+}
+/* ===== CORREÇÃO DEFINITIVA DO ESPAÇO DA ABA FERRAMENTAS ===== */
+
+/* Remove padding da aba */
+#aba-ferramentas {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    width: 100%;
+    align-self: stretch;
+}
+
+/* Ajusta o card para ficar igual aos outros */
+#aba-ferramentas .card {
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-top: 15px !important;
+    padding-bottom: 15px !important;
+    width: 100%;
+    align-self: stretch;
+}
+
+/* Título com a mesma margem das outras abas */
+#aba-ferramentas .card-title {
+    margin-bottom: 15px !important;
+    font-size: 1.2rem !important;
+}
+
+/* Subtítulo com a mesma margem das outras abas */
+#aba-ferramentas .card p {
+    margin-bottom: 15px !important;
+    font-size: 0.9rem !important;
+}
+
+/* Grid com gap consistente */
+#aba-ferramentas .tools-grid,
+#aba-ferramentas > div > div {
+    gap: 15px !important;
 }
