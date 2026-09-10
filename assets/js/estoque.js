@@ -243,12 +243,54 @@ function atualizarTabelaEstoque() {
 
         const nomeKit = getNomeKit(item.tipoKit);
 
-        // 🔥 FORMATAR A DATA/HORA DA ÚLTIMA MOVIMENTAÇÃO
+        // 🔥 FORMATAR A DATA/HORA CORRETAMENTE
         let dataHoraMov = '-';
         if (item.ultimaMovimentacao) {
-            dataHoraMov = item.ultimaMovimentacao;
+            try {
+                if (item.ultimaMovimentacao.includes('T') || item.ultimaMovimentacao.includes('Z')) {
+                    const data = new Date(item.ultimaMovimentacao);
+                    if (!isNaN(data.getTime())) {
+                        dataHoraMov = data.toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                    } else {
+                        dataHoraMov = item.ultimaMovimentacao;
+                    }
+                } else {
+                    dataHoraMov = item.ultimaMovimentacao;
+                }
+            } catch (e) {
+                dataHoraMov = item.ultimaMovimentacao;
+            }
         } else if (item.dataCadastro) {
-            dataHoraMov = item.dataCadastro;
+            try {
+                if (item.dataCadastro.includes('T') || item.dataCadastro.includes('Z')) {
+                    const data = new Date(item.dataCadastro);
+                    if (!isNaN(data.getTime())) {
+                        dataHoraMov = data.toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                    } else {
+                        dataHoraMov = item.dataCadastro;
+                    }
+                } else {
+                    dataHoraMov = item.dataCadastro;
+                }
+            } catch (e) {
+                dataHoraMov = item.dataCadastro;
+            }
+        } else {
+            dataHoraMov = '⚠️ Sem registro';
         }
 
         html += `
@@ -361,12 +403,54 @@ function buscarPorLote(lote) {
 
         const nomeKit = getNomeKit(item.tipoKit);
 
-        // 🔥 FORMATAR A DATA/HORA DA ÚLTIMA MOVIMENTAÇÃO
+        // 🔥 FORMATAR A DATA/HORA CORRETAMENTE
         let dataHoraMov = '-';
         if (item.ultimaMovimentacao) {
-            dataHoraMov = item.ultimaMovimentacao;
+            try {
+                if (item.ultimaMovimentacao.includes('T') || item.ultimaMovimentacao.includes('Z')) {
+                    const data = new Date(item.ultimaMovimentacao);
+                    if (!isNaN(data.getTime())) {
+                        dataHoraMov = data.toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                    } else {
+                        dataHoraMov = item.ultimaMovimentacao;
+                    }
+                } else {
+                    dataHoraMov = item.ultimaMovimentacao;
+                }
+            } catch (e) {
+                dataHoraMov = item.ultimaMovimentacao;
+            }
         } else if (item.dataCadastro) {
-            dataHoraMov = item.dataCadastro;
+            try {
+                if (item.dataCadastro.includes('T') || item.dataCadastro.includes('Z')) {
+                    const data = new Date(item.dataCadastro);
+                    if (!isNaN(data.getTime())) {
+                        dataHoraMov = data.toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                    } else {
+                        dataHoraMov = item.dataCadastro;
+                    }
+                } else {
+                    dataHoraMov = item.dataCadastro;
+                }
+            } catch (e) {
+                dataHoraMov = item.dataCadastro;
+            }
+        } else {
+            dataHoraMov = '⚠️ Sem registro';
         }
 
         html += `
@@ -601,131 +685,6 @@ function getResumoEstoque() {
 function exportarEstoquePDF() {
     alert('📄 Funcionalidade em desenvolvimento. Em breve será possível gerar PDF do estoque!');
 }
-
-// ============================================================
-// ===== FUNÇÃO PARA BUSCAR POR LOTE (COM COLUNA DATA/HORA) =====
-// ============================================================
-function buscarPorLote(lote) {
-    if (!lote || lote.trim() === '') {
-        atualizarTabelaEstoque();
-        return;
-    }
-    
-    const loteBusca = lote.trim().toUpperCase();
-    const itensFiltrados = estoqueItens.filter(item => 
-        item.lote.toUpperCase().includes(loteBusca)
-    );
-    
-    const tbody = document.getElementById('corpoEstoque');
-    if (!tbody) return;
-
-    if (itensFiltrados.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="11" style="text-align: center; padding: 40px; color: #888;">
-                    🔍 Nenhum item encontrado para o lote: ${lote}
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    const itensOrdenados = [...itensFiltrados].sort((a, b) => {
-        return new Date(a.validade) - new Date(b.validade);
-    });
-
-    let html = '';
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    itensOrdenados.forEach((item, index) => {
-        const validadeDate = new Date(item.validade + 'T00:00:00');
-        const diffDias = Math.ceil((validadeDate - hoje) / (1000 * 60 * 60 * 24));
-        
-        let status = '✅ Válido';
-        let statusColor = '#2ecc71';
-        let bgColor = '';
-
-        if (diffDias < 0) {
-            status = '❌ Vencido';
-            statusColor = '#e74c3c';
-            bgColor = 'rgba(231, 76, 60, 0.1)';
-        } else if (diffDias <= 7) {
-            status = `⚠️ Vence em ${diffDias} dias`;
-            statusColor = '#f1c40f';
-            bgColor = 'rgba(241, 196, 15, 0.1)';
-        }
-
-        if (item.saldo <= 2 && item.saldo > 0) {
-            status += ' 🔴 Estoque baixo';
-        } else if (item.saldo === 0) {
-            status = '⚪ Esgotado';
-            statusColor = '#888';
-        }
-
-        const nomeKit = getNomeKit(item.tipoKit);
-
-        // 🔥 FORMATAR A DATA/HORA DA ÚLTIMA MOVIMENTAÇÃO
-        let dataHoraMov = '-';
-        if (item.ultimaMovimentacao) {
-            dataHoraMov = item.ultimaMovimentacao;
-        } else if (item.dataCadastro) {
-            dataHoraMov = item.dataCadastro;
-        }
-
-        html += `
-            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${bgColor};">
-                <td style="padding: 10px;">${index + 1}</td>
-                <td style="padding: 10px; font-weight: 600; color: #fff;">${nomeKit}</td>
-                <td style="padding: 10px; color: #aaa;">${item.lote}</td>
-                <td style="padding: 10px; color: ${diffDias < 0 ? '#e74c3c' : '#aaa'};">
-                    ${formatarData(item.validade)}
-                </td>
-                <td style="padding: 10px; text-align: center; color: #2ecc71;">${item.entrada}</td>
-                <td style="padding: 10px; text-align: center; color: #e74c3c;">${item.saida}</td>
-                <td style="padding: 10px; text-align: center; font-weight: bold; color: ${item.saldo === 0 ? '#888' : '#ffd700'};">
-                    ${item.saldo}
-                </td>
-                <td style="padding: 10px; text-align: center; color: ${statusColor};">
-                    ${status}
-                </td>
-                <td style="padding: 10px; color: #888; font-size: 0.75rem; max-width: 120px; word-break: break-word;">
-                    ${item.observacao || '-'}
-                </td>
-                <!-- 🆕 COLUNA DATA/HORA DA MOVIMENTAÇÃO -->
-                <td style="padding: 10px; text-align: center; color: #00d2ff; font-size: 0.7rem;">
-                    ${dataHoraMov}
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                    <button onclick="removerItemEstoque(${item.id})" style="
-                        background: rgba(255,107,107,0.15);
-                        border: 1px solid rgba(255,107,107,0.2);
-                        color: #ff6b6b;
-                        padding: 4px 10px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        font-size: 0.7rem;
-                        transition: 0.3s;
-                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
-                        🗑️
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-
-    tbody.innerHTML = html;
-}
-
-console.log('✅ Módulo de Estoque carregado com sucesso!');
-console.log('📦 Funções disponíveis:');
-console.log('  - abrirModuloEstoque()');
-console.log('  - fecharModuloEstoque()');
-console.log('  - cadastrarMovimentacaoEstoque()');
-console.log('  - exportarEstoqueExcel()');
-console.log('  - limparHistoricoEstoque()');
-console.log('  - buscarPorLote(lote)');
-console.log('  - getResumoEstoque()');
 
 // ============================================================
 // ===== PAGINAÇÃO E FILTRO DO ESTOQUE =====
