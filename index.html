@@ -1199,6 +1199,14 @@
                 <span class="tool-badge">Clique para abrir ➜</span>
             </div>
 
+            <!-- Card 5: Análise de Custos - Administradores -->
+            <div id="cardCustos" class="tool-card" onclick="abrirModalCustos()" style="display: none;">
+                <span class="tool-icon">💰📊</span>
+                <span class="tool-name">Análise de Custos</span>
+                <span class="tool-desc">Analise os custos e indicadores financeiros do sistema.</span>
+                <span class="tool-badge">👑 Área do Administrador</span>
+            </div>
+
         </div>
     </div>
 </div>
@@ -1226,6 +1234,34 @@
         <a href="#">Voltar ao topo</a>
     </p>
 </footer>
+<!-- ===== TOAST DE NOTIFICAÇÃO ===== -->
+<div id="toastNotificacao" style="
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999999;
+    padding: 16px 24px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border-left: 5px solid #ff6b6b;
+    background: rgba(255, 107, 107, 0.95);
+    color: #fff;
+    max-width: 400px;
+    animation: slideIn 0.3s ease;
+    transition: all 0.3s;
+">
+    <span id="toastMensagem"></span>
+</div>
+
+<style>
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+</style>
 
 <!-- ===== BOTÃO FLUTUANTE DE FEEDBACK ===== -->
 <button class="feedback-button-floating" onclick="abrirFeedback()">
@@ -1511,6 +1547,20 @@
                     ">
                 </div>
             </div>
+            <!-- 👤 Responsável pela Movimentação -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">👤 Responsável pela Movimentação</label>
+    <input type="text" id="estoqueResponsavel" placeholder="Nome de quem está registrando" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Preenchido automaticamente com o usuário logado</small>
+</div>
 
             <!-- Botões -->
             <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
@@ -1594,33 +1644,216 @@
                 </div>
             </div>
 
-            <!-- Tabela de Estoque -->
-            <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
-                <table style="min-width: 900px; font-size: 0.8rem; width: 100%; border-collapse: collapse;">
-                    <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
-                        <tr style="border-bottom: 2px solid rgba(155,89,182,0.3);">
-                            <th style="padding: 10px; text-align: left; color: #9b59b6;">#</th>
-                            <th style="padding: 10px; text-align: left; color: #9b59b6;">🧪 Kit</th>
-                            <th style="padding: 10px; text-align: left; color: #9b59b6;">🔢 Lote</th>
-                            <th style="padding: 10px; text-align: left; color: #9b59b6;">📅 Validade</th>
-                            <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Entrada</th>
-                            <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Saída</th>
-                            <th style="padding: 10px; text-align: center; color: #9b59b6; background: rgba(255,215,0,0.05);">📊 Saldo</th>
-                            <th style="padding: 10px; text-align: center; color: #9b59b6;">⚠️ Status</th>
-                            <th style="padding: 10px; text-align: center; color: #9b59b6;">📝 Observação</th>
-                             <th style="padding: 10px; text-align: center; color: #9b59b6;">🕐 Data/Hora Mov.</th>
-                            <th style="padding: 10px; text-align: center; color: #9b59b6;">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoEstoque">
-                        <tr>
-                            <td colspan="10" style="text-align: center; padding: 40px; color: #888;">
-                                Nenhum item cadastrado. Adicione a primeira movimentação!
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- ===== TABELA DE SALDO ATUAL ===== -->
+<h4 style="color: #00d2ff; margin: 20px 0 10px 0;">📊 Saldo Atual (por Lote)</h4>
+<div class="table-wrapper" style="max-height: 350px; overflow-y: auto;">
+    <table style="min-width: 900px; font-size: 0.8rem; width: 100%; border-collapse: collapse;">
+        <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
+            <tr style="border-bottom: 2px solid rgba(155,89,182,0.3);">
+                <th style="padding: 10px; text-align: left; color: #9b59b6;">#</th>
+                <th style="padding: 10px; text-align: left; color: #9b59b6;">🧪 Kit</th>
+                <th style="padding: 10px; text-align: left; color: #9b59b6;">🔢 Lote</th>
+                <th style="padding: 10px; text-align: left; color: #9b59b6;">📅 Validade</th>
+                <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Entrada</th>
+                <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Saída</th>
+                <th style="padding: 10px; text-align: center; color: #9b59b6; background: rgba(255,215,0,0.05);">📊 Saldo</th>
+                <th style="padding: 10px; text-align: center; color: #9b59b6;">⚠️ Status</th>
+                <th style="padding: 10px; text-align: center; color: #9b59b6;">📝 Observação</th>
+                <th style="padding: 10px; text-align: center; color: #9b59b6;">Ação</th>
+            </tr>
+        </thead>
+        <tbody id="corpoEstoque">
+            <tr>
+                <td colspan="10" style="text-align: center; padding: 40px; color: #888;">
+                    Nenhum item cadastrado. Adicione a primeira movimentação!
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ===== 🆕 HISTÓRICO DE MOVIMENTAÇÕES ===== -->
+<div style="margin-top: 35px; padding-top: 20px; border-top: 2px solid rgba(0,210,255,0.2);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+        <div>
+            <h4 style="color: #00d2ff; margin: 0;">
+                📋 Histórico de Movimentações
+                <span style="font-size: 0.7rem; color: #888; font-weight: normal;">
+                    (Auditoria — quem, quando, quanto, por quê)
+                </span>
+            </h4>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <select id="filtroTipoMovimento" onchange="atualizarTabelaHistorico()" style="
+                padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
+                <option value="">Todos os tipos</option>
+                <option value="entrada">📥 Apenas entradas</option>
+                <option value="saida">📤 Apenas saídas</option>
+            </select>
+            <select id="filtroKitMovimento" onchange="atualizarTabelaHistorico()" style="
+                padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
+                <option value="">Todos os kits</option>
+            </select>
+            <input type="text" id="filtroLoteMovimento" placeholder="Filtrar por lote..."
+                oninput="atualizarTabelaHistorico()" style="
+                padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem; min-width: 140px;">
+        </div>
+    </div>
+
+    <!-- 🆕 FILTRO DE PERÍODO (com preset de 180 dias) -->
+    <div style="background: rgba(0,210,255,0.04); border: 1px solid rgba(0,210,255,0.15); border-radius: 10px; padding: 14px 18px; margin-bottom: 15px;">
+        
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;">
+            <span style="color: #00d2ff; font-weight: 600; font-size: 0.85rem;">🔍 Período:</span>
+
+            <button id="btnPreset180" onclick="aplicarPreset180Dias()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600; transition: 0.3s;
+                background: rgba(0,210,255,0.15); border: 2px solid rgba(0,210,255,0.4); color: #00d2ff;">
+                📅 Últimos 180 dias (padrão)
+            </button>
+
+            <button id="btnPeriodoCustom" onclick="togglePeriodoCustomizado()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600; transition: 0.3s;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: #aaa;">
+                📆 Período Personalizado
+            </button>
+
+            <button onclick="carregarHistoricoDaNuvemPorPeriodo()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600; transition: 0.3s;
+                background: rgba(52,152,219,0.15); border: 1px solid rgba(52,152,219,0.3); color: #3498db;
+                margin-left: auto;">
+                📥 Carregar da Nuvem
+            </button>
+
+            <button onclick="exportarHistoricoExcel()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600;
+                background: rgba(0,210,255,0.15); border: 1px solid rgba(0,210,255,0.3); color: #00d2ff;">
+                📊 Excel
+            </button>
+        </div>
+
+        <div id="periodoCustomizadoCampos" style="
+            display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+            
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+                <input type="date" id="filtroDataInicioHistorico" style="
+                    padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                    background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
             </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+                <input type="date" id="filtroDataFimHistorico" style="
+                    padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                    background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
+            </div>
+
+            <span style="color: #666; font-size: 0.75rem;">Atalhos:</span>
+            <button onclick="aplicarPeriodoRapido(30)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                30 dias
+            </button>
+            <button onclick="aplicarPeriodoRapido(90)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                90 dias
+            </button>
+            <button onclick="aplicarPeriodoRapido(180)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                180 dias
+            </button>
+            <button onclick="aplicarPeriodoRapido(365)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                1 ano
+            </button>
+            <button onclick="aplicarPeriodoRapido(0)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.2); color: #ffd700;">
+                Tudo
+            </button>
+
+            <button onclick="aplicarFiltroHistoricoPersonalizado()" style="
+                padding: 6px 16px; border-radius: 6px; cursor: pointer;
+                background: linear-gradient(90deg, #8e44ad, #9b59b6); border: none;
+                color: #fff; font-weight: bold; font-size: 0.8rem;">
+                🔍 Aplicar Filtro
+            </button>
+
+            <button onclick="limparFiltrosHistorico()" style="
+                padding: 6px 14px; border-radius: 6px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid #444; color: #888; font-size: 0.8rem;">
+                ✕ Limpar
+            </button>
+        </div>
+
+        <div id="indicadorPeriodoHistorico" style="
+            margin-top: 8px; padding: 6px 12px; border-radius: 6px;
+            background: rgba(0,210,255,0.08); border-left: 3px solid #00d2ff;
+            color: #00d2ff; font-size: 0.78rem; display: inline-block;">
+            📅 Mostrando últimos 180 dias
+        </div>
+    </div>
+
+    <div class="table-wrapper" style="max-height: 450px; overflow-y: auto;">
+        <table style="min-width: 1000px; font-size: 0.78rem; width: 100%; border-collapse: collapse;">
+            <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
+                <tr style="border-bottom: 2px solid rgba(0,210,255,0.3);">
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">#</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">🕐 Data/Hora</th>
+                    <th style="padding: 8px; text-align: center; color: #00d2ff;">Tipo</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">🧪 Kit</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">🔢 Lote</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">📅 Validade</th>
+                    <th style="padding: 8px; text-align: center; color: #00d2ff;">📦 Qtd</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">👤 Responsável</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">📝 Motivo/Obs</th>
+                    <th style="padding: 8px; text-align: center; color: #00d2ff;">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoHistoricoEstoque">
+                <tr>
+                    <td colspan="10" style="text-align: center; padding: 30px; color: #888;">
+                        Nenhuma movimentação registrada ainda.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="paginacaoHistorico" style="
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: 12px; padding: 10px 15px; flex-wrap: wrap; gap: 10px;
+        background: rgba(0,210,255,0.03); border-radius: 8px;
+        border: 1px solid rgba(0,210,255,0.1);">
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 12px; padding: 10px 15px; background: rgba(0,210,255,0.05); border-radius: 8px; border: 1px solid rgba(0,210,255,0.1);">
+        <div style="display: flex; gap: 25px; flex-wrap: wrap;">
+            <span style="color: #aaa; font-size: 0.8rem;">
+                📥 Entradas: <strong id="totalEntradasHistorico" style="color: #2ecc71;">0</strong> frascos
+            </span>
+            <span style="color: #aaa; font-size: 0.8rem;">
+                📤 Saídas: <strong id="totalSaidasHistorico" style="color: #e74c3c;">0</strong> frascos
+            </span>
+            <span style="color: #aaa; font-size: 0.8rem;">
+                📋 Total de eventos: <strong id="totalEventosHistorico" style="color: #ffd700;">0</strong>
+            </span>
+        </div>
+        <span id="infoFiltroHistorico" style="color: #666; font-size: 0.75rem;">Mostrando todos os eventos</span>
+    </div>
+</div>
+</div>
 
             <!-- Legendas -->
             <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
@@ -2344,6 +2577,201 @@
             </button>
         </div>
 
+    </div>
+</div>
+
+<!-- ===== MODAL DE ANÁLISE DE CUSTOS ===== -->
+<div id="modalCustos" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(10px);
+    z-index: 99996;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #151f1b;
+        border: 1px solid #2ecc71;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        max-width: 1300px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        padding: 30px;
+        position: relative;
+        color: #fff;
+    ">
+        <!-- CABEÇALHO -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 22px;">
+            <div>
+                <h3 style="color: #2ecc71; margin: 0; font-size: 1.35rem;">💰📊 Análise de Custos</h3>
+                <p style="color: #8fa99a; margin: 6px 0 0; font-size: 0.85rem;">Gestão de preços, gastos e histórico financeiro.</p>
+            </div>
+            <button onclick="fecharModalCustos()" aria-label="Fechar análise de custos" style="
+                background: rgba(255,255,255,0.05);
+                border: none;
+                border-radius: 8px;
+                color: #8fa99a;
+                cursor: pointer;
+                font-size: 1.6rem;
+                line-height: 1;
+                padding: 6px 11px;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#8fa99a'">✕</button>
+        </div>
+
+        <!-- ABAS -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(46,204,113,0.25); margin-bottom: 24px; padding-bottom: 10px;">
+            <button type="button" onclick="trocarAbaCustos('analise')" style="
+                background: rgba(46,204,113,0.2);
+                border: 1px solid #2ecc71;
+                border-radius: 8px;
+                color: #2ecc71;
+                cursor: pointer;
+                font-weight: 700;
+                padding: 10px 15px;
+            ">📊 Análise de Gastos</button>
+            <button type="button" onclick="trocarAbaCustos('precos')" style="
+                background: rgba(255,255,255,0.04);
+                border: 1px solid rgba(255,255,255,0.12);
+                border-radius: 8px;
+                color: #a8b8ae;
+                cursor: pointer;
+                padding: 10px 15px;
+            ">💵 Cadastrar Preços</button>
+            <button type="button" onclick="trocarAbaCustos('historico')" style="
+                background: rgba(255,255,255,0.04);
+                border: 1px solid rgba(255,255,255,0.12);
+                border-radius: 8px;
+                color: #a8b8ae;
+                cursor: pointer;
+                padding: 10px 15px;
+            ">📜 Histórico de Alterações</button>
+        </div>
+
+        <!-- ABA 1: ANÁLISE DE GASTOS -->
+        <div id="abaCustosAnalise" style="display: block;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                <strong style="color: #b9c9bd;">🔍 Período:</strong>
+                <label style="color: #8fa99a; font-size: 0.8rem;">De</label>
+                <input type="date" id="custoDataInicio" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <label style="color: #8fa99a; font-size: 0.8rem;">Até</label>
+                <input type="date" id="custoDataFim" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <button type="button" onclick="calcularCustos()" style="padding: 9px 17px; border: 1px solid #2ecc71; border-radius: 7px; background: rgba(46,204,113,0.18); color: #2ecc71; cursor: pointer; font-weight: 700;">🔍 Calcular</button>
+                <span style="color: #718579; font-size: 0.78rem; margin-left: auto;">Atalhos:</span>
+                <button type="button" onclick="aplicarPeriodoCustos(30)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">30d</button>
+                <button type="button" onclick="aplicarPeriodoCustos(90)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">90d</button>
+                <button type="button" onclick="aplicarPeriodoCustos(180)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">180d</button>
+                <button type="button" onclick="aplicarPeriodoCustos(365)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">1 ano</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 22px;">
+                <div style="background: rgba(52,152,219,0.12); border: 1px solid rgba(52,152,219,0.35); border-radius: 12px; padding: 17px;">
+                    <div style="color: #8fb9d8; font-size: 0.8rem;">📦 Total Kits</div>
+                    <strong id="custoTotalKits" style="color: #5dade2; display: block; font-size: 1.55rem; margin-top: 7px;">R$ 0,00</strong>
+                </div>
+                <div style="background: rgba(155,89,182,0.12); border: 1px solid rgba(155,89,182,0.35); border-radius: 12px; padding: 17px;">
+                    <div style="color: #c6a6d4; font-size: 0.8rem;">⚛️ Total Geradores</div>
+                    <strong id="custoTotalGeradores" style="color: #bb8fce; display: block; font-size: 1.55rem; margin-top: 7px;">R$ 0,00</strong>
+                </div>
+                <div style="background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.4); border-radius: 12px; padding: 17px;">
+                    <div style="color: #8ed5a8; font-size: 0.8rem;">💰 Total Geral</div>
+                    <strong id="custoTotalGeral" style="color: #2ecc71; display: block; font-size: 1.55rem; margin-top: 7px;">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr); gap: 20px; align-items: start;">
+                <div>
+                    <h4 style="color: #2ecc71; margin: 0 0 10px;">📦 Custos com Kits</h4>
+                    <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 560px; font-size: 0.82rem;">
+                            <thead style="background: rgba(46,204,113,0.12);"><tr>
+                                <th style="padding: 11px; text-align: left; color: #9ee5b4;">Kit</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Preço Unit. / Frasco</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Qtd. Frascos</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Subtotal</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">%</th>
+                            </tr></thead>
+                            <tbody id="corpoCustosKits"><tr><td colspan="5" style="padding: 25px; text-align: center; color: #718579;">Nenhum custo de kit no período.</td></tr></tbody>
+                        </table>
+                    </div>
+
+                    <h4 style="color: #2ecc71; margin: 24px 0 10px;">⚛️ Custos com Geradores</h4>
+                    <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 560px; font-size: 0.82rem;">
+                            <thead style="background: rgba(46,204,113,0.12);"><tr>
+                                <th style="padding: 11px; text-align: left; color: #9ee5b4;">Lote</th>
+                                <th style="padding: 11px; text-align: left; color: #9ee5b4;">Recebimento</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Atividade</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Preço</th>
+                            </tr></thead>
+                            <tbody id="corpoCustosGeradores"><tr><td colspan="4" style="padding: 25px; text-align: center; color: #718579;">Nenhum gerador no período.</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px;">
+                    <h4 style="color: #2ecc71; margin: 0 0 12px;">📈 Distribuição dos Custos</h4>
+                    <div style="position: relative; min-height: 250px;"><canvas id="graficoCustos"></canvas></div>
+                </div>
+            </div>
+
+            <button type="button" onclick="exportarCustosExcel()" style="margin-top: 22px; padding: 10px 18px; border: 1px solid rgba(52,152,219,0.5); border-radius: 8px; background: rgba(52,152,219,0.15); color: #5dade2; cursor: pointer; font-weight: 700;">📊 Exportar Excel</button>
+        </div>
+
+        <!-- ABA 2: CADASTRAR PREÇOS -->
+        <div id="abaCustosPrecos" style="display: none;">
+            <h4 style="color: #2ecc71; margin: 0 0 15px;">💵 Preços Unitários dos Kits por Frasco</h4>
+            <div id="listaPrecosKitsEdit" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+                <label style="color: #b9c9bd; font-size: 0.85rem;">MIBI (R$)<input type="number" data-kit="MIBI" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">MDP (R$)<input type="number" data-kit="MDP" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">DMSA (R$)<input type="number" data-kit="DMSA" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">DTPA (R$)<input type="number" data-kit="DTPA" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">FITATO (R$)<input type="number" data-kit="FITATO" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">PIRO (R$)<input type="number" data-kit="PIRO" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">TRODAT (R$)<input type="number" data-kit="TRODAT" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+            </div>
+
+            <div style="border-top: 1px solid rgba(46,204,113,0.2); margin-top: 26px; padding-top: 22px;">
+                <h4 style="color: #2ecc71; margin: 0 0 14px;">⚛️ Preços por Atividade do Gerador</h4>
+                <p style="color: #8fa99a; font-size: 0.8rem; margin: 0 0 14px;">Defina um preço para cada atividade registrada na Gerência de Geradores.</p>
+                <div id="listaPrecosGeradoresEdit" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 25px;">
+                <button type="button" onclick="restaurarPrecosPadrao()" style="padding: 10px 17px; border: 1px solid #718579; border-radius: 8px; background: rgba(255,255,255,0.05); color: #b9c9bd; cursor: pointer;">🔄 Restaurar Padrões</button>
+                <button type="button" onclick="salvarTodosOsPrecos()" style="padding: 10px 17px; border: 1px solid #2ecc71; border-radius: 8px; background: rgba(46,204,113,0.18); color: #2ecc71; cursor: pointer; font-weight: 700;">💾 Salvar Todos os Preços</button>
+                <button type="button" onclick="importarPrecosCustosNuvem()" style="padding: 10px 17px; border: 1px solid rgba(52,152,219,0.5); border-radius: 8px; background: rgba(52,152,219,0.15); color: #5dade2; cursor: pointer; font-weight: 700;">☁️ Importar da Nuvem</button>
+                <button type="button" onclick="salvarPrecosCustosNuvemManual()" style="padding: 10px 17px; border: 1px solid rgba(46,204,113,0.5); border-radius: 8px; background: rgba(46,204,113,0.12); color: #2ecc71; cursor: pointer; font-weight: 700;">☁️ Salvar na Nuvem</button>
+            </div>
+        </div>
+
+        <!-- ABA 3: HISTÓRICO DE ALTERAÇÕES -->
+        <div id="abaCustosHistorico" style="display: none;">
+            <h4 style="color: #2ecc71; margin: 0 0 15px;">📜 Histórico de Alterações de Preços</h4>
+            <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 760px; font-size: 0.82rem;">
+                    <thead style="background: rgba(46,204,113,0.12);"><tr>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Data/Hora</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Usuário</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Item</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Valor Anterior</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Valor Novo</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Variação</th>
+                    </tr></thead>
+                    <tbody id="corpoHistoricoCustos"><tr><td colspan="6" style="padding: 30px; text-align: center; color: #718579;">Nenhuma alteração registrada.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ===== PDF CONTENT ===== -->
 <div id="pdfContent" class="pdf-content">
     <div class="pdf-header">
@@ -2380,109 +2808,65 @@
 <script src="assets/js/gerador.js"></script>
 <script src="assets/js/cloud-estoque.js"></script>
 <script src="assets/js/cloud-gerador.js"></script>
+<script src="assets/js/custos.js"></script>
 
-<!-- ===== INICIALIZAÇÃO DO GERADOR ===== -->
+<!-- ===== INICIALIZAÇÃO DO GERADOR (VERSÃO CORRIGIDA - SEM LOOP) ===== -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔄 Verificando módulo de gerador...');
+(function() {
+    // 🛡️ Guarda contra execução múltipla
+    if (window._geradorInitExecutado) {
+        console.log('⏭️ Inicialização do gerador já executada. Ignorando.');
+        return;
+    }
+    window._geradorInitExecutado = true;
     
-    // Aguardar o usuário estar logado antes de verificar a nuvem
-    function verificarStatusComAtraso() {
-        setTimeout(function() {
-            const funcoes = [
-                'abrirModalGerador',
-                'fecharModalGerador',
-                'registrarGerador',
-                'salvarGeradoresNaNuvem',
-                'carregarGeradoresDaNuvem',
-                'verificarStatusNuvemGerador'
-            ];
-            
-            let todasDisponiveis = true;
-            funcoes.forEach(fn => {
-                if (typeof window[fn] === 'function') {
-                    console.log(`  ✅ ${fn} disponível`);
-                } else {
-                    console.warn(`  ⚠️ ${fn} NÃO disponível`);
-                    todasDisponiveis = false;
+    console.log('🔄 Inicializando módulo de gerador...');
+    
+    // 🛡️ Guarda específica da verificação de status
+    let _verificandoStatusGerador = false;
+    
+    async function verificarStatusGeradorSeguro() {
+        // Evita execuções paralelas
+        if (_verificandoStatusGerador) {
+            console.log('⏭️ Verificação já em andamento. Ignorando.');
+            return;
+        }
+        _verificandoStatusGerador = true;
+        
+        try {
+            // Só verifica se o usuário estiver logado
+            if (typeof getCurrentUser === 'function' && getCurrentUser()) {
+                if (typeof verificarStatusNuvemGerador === 'function') {
+                    await verificarStatusNuvemGerador();
                 }
-            });
-            
-            if (!todasDisponiveis) {
-                console.warn('⚠️ Recarregando scripts...');
-                ['assets/js/gerador.js', 'assets/js/cloud-gerador.js'].forEach(src => {
-                    const script = document.createElement('script');
-                    script.src = src + '?v=' + Date.now();
-                    document.head.appendChild(script);
-                });
-            }
-            
-            // Verificar status da nuvem APENAS se o usuário estiver logado
-            if (typeof verificarStatusNuvemGerador === 'function') {
-                // Verificar se o usuário está logado
-                if (typeof getCurrentUser === 'function' && getCurrentUser()) {
-                    setTimeout(verificarStatusNuvemGerador, 500);
-                } else {
-                    console.log('⏳ Aguardando login para verificar status da nuvem...');
-                    // Tentar novamente após 2 segundos
-                    setTimeout(function() {
-                        if (typeof getCurrentUser === 'function' && getCurrentUser()) {
-                            verificarStatusNuvemGerador();
-                        } else {
-                            console.warn('⚠️ Usuário ainda não logado. Status offline.');
-                            if (typeof atualizarIndicadorGeradorNuvem === 'function') {
-                                atualizarIndicadorGeradorNuvem('offline');
-                            }
-                        }
-                    }, 2000);
+            } else {
+                console.log('⏳ Usuário não logado. Aguardando login...');
+                if (typeof atualizarIndicadorGeradorNuvem === 'function') {
+                    atualizarIndicadorGeradorNuvem('offline');
                 }
             }
-        }, 500);
+        } catch (e) {
+            console.warn('⚠️ Erro ao verificar status do gerador:', e);
+        } finally {
+            _verificandoStatusGerador = false;
+        }
     }
     
-    // Executar a verificação
-    verificarStatusComAtraso();
+    // ✅ Executa 1 única vez após o DOM estar pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(verificarStatusGeradorSeguro, 1500);
+        });
+    } else {
+        setTimeout(verificarStatusGeradorSeguro, 1500);
+    }
     
-    // Também verificar quando o usuário fizer login
-    document.addEventListener('userLoggedIn', function() {
-        console.log('👤 Usuário logado! Verificando status da nuvem...');
-        if (typeof verificarStatusNuvemGerador === 'function') {
-            setTimeout(verificarStatusNuvemGerador, 1000);
-        }
+    // ✅ Verifica novamente quando o usuário fizer login (só 1 vez)
+    document.addEventListener('userLoggedIn', () => {
+        console.log('👤 Usuário logado! Verificando status do gerador...');
+        setTimeout(verificarStatusGeradorSeguro, 1000);
     });
-});
+    
+    console.log('✅ Inicialização do gerador configurada (sem loop)');
+})();
 </script>
-
-<!-- ===== FORÇAR Tc-99m COMO PADRÃO ===== -->
-<script>
-    (function() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', forcarTc99m);
-        } else {
-            forcarTc99m();
-        }
-        
-        function forcarTc99m() {
-            setTimeout(function() {
-                var selectSimp = document.getElementById('planIsotopo');
-                if (selectSimp) {
-                    selectSimp.value = 'tc';
-                    console.log('✅ Tc-99m definido como padrão no Simplificado');
-                }
-                
-                var selectAgenda = document.getElementById('planIsotopoAgenda');
-                if (selectAgenda) {
-                    selectAgenda.value = 'tc';
-                    console.log('✅ Tc-99m definido como padrão na Agenda');
-                }
-                
-                if (typeof calcularPlanejamento === 'function') {
-                    calcularPlanejamento();
-                }
-            }, 300);
-        }
-    })();
-</script>
-
-</body>
-</html>
