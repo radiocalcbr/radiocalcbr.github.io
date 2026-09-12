@@ -1,4 +1,8 @@
 function calcularPlanejamentoSimplificado() {
+    const telaLogin = document.getElementById('telaLogin');
+    const conteudoPrincipal = document.getElementById('conteudoPrincipal');
+    if (telaLogin?.style.display !== 'none' || conteudoPrincipal?.style.display === 'none') return;
+
     const isotopo = document.getElementById('planIsotopo').value;
     const numPacientes = parseInt(document.getElementById('planNumPacientes').value) || 1;
     const dosePorPaciente = parseFloat(document.getElementById('planDosePorPaciente').value) || 0;
@@ -248,6 +252,10 @@ recomendacao.innerHTML = `
 // ====== PLANEJAMENTO - MODO AGENDA (CORRIGIDO) ======
 // ====== PLANEJAMENTO - MODO AGENDA (OTIMIZADO PARA SOBRA MÍNIMA) ======
 function calcularPlanejamentoAgenda() {
+    const telaLogin = document.getElementById('telaLogin');
+    const conteudoPrincipal = document.getElementById('conteudoPrincipal');
+    if (telaLogin?.style.display !== 'none' || conteudoPrincipal?.style.display === 'none') return;
+
     const isotopo = document.getElementById('planIsotopoAgenda').value;
     const dosePorPaciente = parseFloat(document.getElementById('planDosePorPacienteAgenda').value) || 0;
     const margemPercent = parseFloat(document.getElementById('planMargemSegurancaAgenda').value) || 10;
@@ -713,6 +721,10 @@ function atualizarTabelaAgendaResultados(pacientes, distribuicao) {
 
 // ====== FUNÇÃO PRINCIPAL DE PLANEJAMENTO (CORRIGIDA) ======
 function calcularPlanejamento() {
+    const telaLogin = document.getElementById('telaLogin');
+    const conteudoPrincipal = document.getElementById('conteudoPrincipal');
+    if (telaLogin?.style.display !== 'none' || conteudoPrincipal?.style.display === 'none') return;
+
     // Verifica se todas as datas são válidas ANTES de calcular
     const datasParaVerificar = [
         document.getElementById('planHorarioMarcacao')?.value,
