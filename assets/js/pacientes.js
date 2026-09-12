@@ -297,7 +297,7 @@ function calcularPacientes() {
             } 
         }
         atividadeRestanteReal = atividadeRestanteReal - item.doseMedida;
-        resultadosPacientes[item.index] = { ...item, atividadeRestanteReal: Math.max(0, atividadeRestanteReal), posicao: idx + 1 };
+        resultadosPacientes[item.index] = { ...item, atividadeRestanteReal: atividadeRestanteReal, posicao: idx + 1 };
     });
     
     const somaDosesMedidas = horasInjecoes.reduce((sum, item) => sum + item.doseMedida, 0);

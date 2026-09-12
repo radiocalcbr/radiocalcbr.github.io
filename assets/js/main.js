@@ -40,6 +40,9 @@ window.onload = function() {
     iniciarAutoSave();
     
     setTimeout(() => {
+        const conteudoPrincipal = document.getElementById('conteudoPrincipal');
+        if (!conteudoPrincipal || conteudoPrincipal.style.display === 'none') return;
+
         calcularPlanejamento();
         calcularMarcacao();
         calcularPacientes();

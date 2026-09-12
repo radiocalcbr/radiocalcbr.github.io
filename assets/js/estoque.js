@@ -7,6 +7,26 @@
 let estoqueItens = [];
 let estoqueIdCounter = 0;
 
+// ===== HISTÓRICO DE MOVIMENTAÇÕES =====
+let historicoMovimentacoes = [];
+let historicoIdCounter = 0;
+
+// ===== PAGINAÇÃO DO HISTÓRICO =====
+let paginaAtualHistorico = 1;
+const ITENS_POR_PAGINA_HISTORICO = 20;
+let historicoFiltrado = [];
+
+// ===== PERÍODO PADRÃO (180 DIAS) =====
+const DIAS_PADRAO_HISTORICO = 180;
+let periodoAtivoHistorico = 'padrao180';
+
+// ===== PAGINAÇÃO DO ESTOQUE =====
+let paginaAtualEstoque = 1;
+const ITENS_POR_PAGINA = 15;
+let filtroDataInicioEstoque = '';
+let filtroDataFimEstoque = '';
+let estoqueFiltrado = [];
+
 // ============================================================
 // ===== CARREGAR DADOS SALVOS =====
 // ============================================================
@@ -15,8 +35,6 @@ function carregarEstoqueSalvo() {
     if (salvo) {
         try {
             let dados = JSON.parse(salvo);
-            
-            // 🔥 PADRONIZAR DATAS (converter DD/MM/AAAA para AAAA-MM-DD)
             dados = dados.map(item => {
                 if (item.validade && typeof item.validade === 'string') {
                     if (item.validade.includes('/')) {
@@ -28,7 +46,6 @@ function carregarEstoqueSalvo() {
                 }
                 return item;
             });
-            
             estoqueItens = dados;
             estoqueIdCounter = estoqueItens.length > 0 
                 ? Math.max(...estoqueItens.map(item => item.id || 0)) + 1 
@@ -40,6 +57,22 @@ function carregarEstoqueSalvo() {
             estoqueIdCounter = 0;
         }
     }
+    
+    // 🆕 Carregar histórico
+    const historicoSalvo = localStorage.getItem('estoqueHistorico');
+    if (historicoSalvo) {
+        try {
+            historicoMovimentacoes = JSON.parse(historicoSalvo);
+            historicoIdCounter = historicoMovimentacoes.length > 0
+                ? Math.max(...historicoMovimentacoes.map(h => h.id || 0)) + 1
+                : 0;
+            atualizarTabelaHistorico();
+        } catch (e) {
+            console.error('Erro ao carregar histórico:', e);
+            historicoMovimentacoes = [];
+            historicoIdCounter = 0;
+        }
+    }
 }
 
 // ============================================================
@@ -48,6 +81,7 @@ function carregarEstoqueSalvo() {
 function salvarEstoque() {
     try {
         localStorage.setItem('estoqueKits', JSON.stringify(estoqueItens));
+        localStorage.setItem('estoqueHistorico', JSON.stringify(historicoMovimentacoes));
     } catch (e) {
         console.error('Erro ao salvar estoque:', e);
     }
@@ -113,6 +147,7 @@ function cadastrarMovimentacaoEstoque() {
     const quantidade = parseInt(document.getElementById('estoqueQuantidade').value) || 0;
     const tipoMovimento = document.getElementById('estoqueTipoMovimento').value;
     const observacao = document.getElementById('estoqueObservacao').value.trim();
+    const responsavel = document.getElementById('estoqueResponsavel')?.value.trim() || '';
 
     if (!lote) {
         alert('⚠️ Por favor, informe o número do Lote.');
@@ -126,6 +161,11 @@ function cadastrarMovimentacaoEstoque() {
         alert('⚠️ A quantidade deve ser maior que zero.');
         return;
     }
+    if (!responsavel) {
+        alert('⚠️ Por favor, informe o Responsável pela movimentação.');
+        document.getElementById('estoqueResponsavel')?.focus();
+        return;
+    }
 
     let itemExistente = estoqueItens.find(item => 
         item.tipoKit === tipoKit && 
@@ -134,6 +174,7 @@ function cadastrarMovimentacaoEstoque() {
     );
 
     const dataHora = new Date().toLocaleString('pt-BR');
+    const agora = new Date().toISOString();
 
     if (itemExistente) {
         if (tipoMovimento === 'entrada') {
@@ -164,22 +205,43 @@ function cadastrarMovimentacaoEstoque() {
         estoqueItens.push(novoItem);
     }
 
+    // 🆕 REGISTRAR NO HISTÓRICO
+    const eventoHistorico = {
+        id: historicoIdCounter++,
+        timestamp: agora,
+        dataHora: dataHora,
+        tipoMovimento: tipoMovimento,
+        tipoKit: tipoKit,
+        lote: lote,
+        validade: validade,
+        quantidade: quantidade,
+        responsavel: responsavel,
+        observacao: observacao || (tipoMovimento === 'entrada' 
+            ? 'Entrada no estoque' 
+            : 'Saída para uso em marcação'),
+        dataEntrada: tipoMovimento === 'entrada' ? dataHora : null,
+        dataSaida: tipoMovimento === 'saida' ? dataHora : null,
+        motivo: tipoMovimento === 'saida' ? 'Uso em marcação' : 'Recebimento'
+    };
+
+    historicoMovimentacoes.push(eventoHistorico);
+
     salvarEstoque();
     atualizarTabelaEstoque();
+    atualizarTabelaHistorico();
     limparCamposEstoque();
 
     const tipoTexto = tipoMovimento === 'entrada' ? 'entrada' : 'saída';
-    alert(`✅ Movimentação de ${tipoTexto} cadastrada com sucesso!\n\nKit: ${tipoKit}\nLote: ${lote}\nQuantidade: ${quantidade} frascos`);
+    alert(`✅ Movimentação de ${tipoTexto} cadastrada com sucesso!\n\nKit: ${tipoKit}\nLote: ${lote}\nQuantidade: ${quantidade} frascos\nResponsável: ${responsavel}`);
 }
 
 // ============================================================
-// ===== ATUALIZAR TABELA (COM COLUNA DATA/HORA) =====
+// ===== ATUALIZAR TABELA DE ESTOQUE =====
 // ============================================================
 function atualizarTabelaEstoque() {
     const tbody = document.getElementById('corpoEstoque');
     if (!tbody) return;
 
-    // Aplicar filtros
     aplicarFiltrosEstoque();
 
     if (estoqueFiltrado.length === 0) {
@@ -197,20 +259,14 @@ function atualizarTabelaEstoque() {
 
     const totalPaginas = Math.ceil(estoqueFiltrado.length / ITENS_POR_PAGINA);
     
-    if (paginaAtualEstoque > totalPaginas) {
-        paginaAtualEstoque = totalPaginas;
-    }
-    if (paginaAtualEstoque < 1) {
-        paginaAtualEstoque = 1;
-    }
+    if (paginaAtualEstoque > totalPaginas) paginaAtualEstoque = totalPaginas;
+    if (paginaAtualEstoque < 1) paginaAtualEstoque = 1;
 
     const inicio = (paginaAtualEstoque - 1) * ITENS_POR_PAGINA;
     const fim = Math.min(inicio + ITENS_POR_PAGINA, estoqueFiltrado.length);
     const itensPagina = estoqueFiltrado.slice(inicio, fim);
 
-    const itensOrdenados = [...itensPagina].sort((a, b) => {
-        return new Date(a.validade) - new Date(b.validade);
-    });
+    const itensOrdenados = [...itensPagina].sort((a, b) => new Date(a.validade) - new Date(b.validade));
 
     let html = '';
     const hoje = new Date();
@@ -242,56 +298,7 @@ function atualizarTabelaEstoque() {
         }
 
         const nomeKit = getNomeKit(item.tipoKit);
-
-        // 🔥 FORMATAR A DATA/HORA CORRETAMENTE
-        let dataHoraMov = '-';
-        if (item.ultimaMovimentacao) {
-            try {
-                if (item.ultimaMovimentacao.includes('T') || item.ultimaMovimentacao.includes('Z')) {
-                    const data = new Date(item.ultimaMovimentacao);
-                    if (!isNaN(data.getTime())) {
-                        dataHoraMov = data.toLocaleString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
-                    } else {
-                        dataHoraMov = item.ultimaMovimentacao;
-                    }
-                } else {
-                    dataHoraMov = item.ultimaMovimentacao;
-                }
-            } catch (e) {
-                dataHoraMov = item.ultimaMovimentacao;
-            }
-        } else if (item.dataCadastro) {
-            try {
-                if (item.dataCadastro.includes('T') || item.dataCadastro.includes('Z')) {
-                    const data = new Date(item.dataCadastro);
-                    if (!isNaN(data.getTime())) {
-                        dataHoraMov = data.toLocaleString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
-                    } else {
-                        dataHoraMov = item.dataCadastro;
-                    }
-                } else {
-                    dataHoraMov = item.dataCadastro;
-                }
-            } catch (e) {
-                dataHoraMov = item.dataCadastro;
-            }
-        } else {
-            dataHoraMov = '⚠️ Sem registro';
-        }
+        const dataHoraMov = item.ultimaMovimentacao || item.dataCadastro || '⚠️ Sem registro';
 
         html += `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${bgColor};">
@@ -312,7 +319,6 @@ function atualizarTabelaEstoque() {
                 <td style="padding: 10px; color: #888; font-size: 0.75rem; max-width: 120px; word-break: break-word;">
                     ${item.observacao || '-'}
                 </td>
-                <!-- 🆕 COLUNA DATA/HORA DA MOVIMENTAÇÃO -->
                 <td style="padding: 10px; text-align: center; color: #00d2ff; font-size: 0.7rem;">
                     ${dataHoraMov}
                 </td>
@@ -325,7 +331,6 @@ function atualizarTabelaEstoque() {
                         border-radius: 6px;
                         cursor: pointer;
                         font-size: 0.7rem;
-                        transition: 0.3s;
                     " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
                         🗑️
                     </button>
@@ -341,7 +346,368 @@ function atualizarTabelaEstoque() {
 }
 
 // ============================================================
-// ===== BUSCAR POR LOTE (COM COLUNA DATA/HORA) =====
+// ===== ATUALIZAR TABELA DE HISTÓRICO (COM PERÍODO) =====
+// ============================================================
+function atualizarTabelaHistorico() {
+    const tbody = document.getElementById('corpoHistoricoEstoque');
+    if (!tbody) return;
+
+    // Popular filtro de kits (uma única vez)
+    const selectKit = document.getElementById('filtroKitMovimento');
+    if (selectKit && selectKit.options.length <= 1) {
+        const kitsUnicos = [...new Set(historicoMovimentacoes.map(h => h.tipoKit))];
+        kitsUnicos.forEach(kit => {
+            const opt = document.createElement('option');
+            opt.value = kit;
+            opt.textContent = getNomeKit(kit);
+            selectKit.appendChild(opt);
+        });
+    }
+
+    const filtroTipo = document.getElementById('filtroTipoMovimento')?.value || '';
+    const filtroKit = document.getElementById('filtroKitMovimento')?.value || '';
+    const filtroLote = document.getElementById('filtroLoteMovimento')?.value.trim().toUpperCase() || '';
+
+    historicoFiltrado = [...historicoMovimentacoes];
+
+    const filtroDataInicio = document.getElementById('filtroDataInicioHistorico')?.value || '';
+    const filtroDataFim = document.getElementById('filtroDataFimHistorico')?.value || '';
+
+    let dataInicioEfetiva = filtroDataInicio;
+    let dataFimEfetiva = filtroDataFim;
+
+    if (periodoAtivoHistorico === 'padrao180' && !filtroDataInicio) {
+        const hoje = new Date();
+        const inicio180 = new Date();
+        inicio180.setDate(hoje.getDate() - DIAS_PADRAO_HISTORICO);
+        dataInicioEfetiva = inicio180.toISOString().split('T')[0];
+        dataFimEfetiva = hoje.toISOString().split('T')[0];
+
+        const inputIni = document.getElementById('filtroDataInicioHistorico');
+        const inputFim = document.getElementById('filtroDataFimHistorico');
+        if (inputIni && !inputIni.value) inputIni.value = dataInicioEfetiva;
+        if (inputFim && !inputFim.value) inputFim.value = dataFimEfetiva;
+    }
+
+    if (dataInicioEfetiva) {
+        const dtInicio = new Date(dataInicioEfetiva + 'T00:00:00');
+        historicoFiltrado = historicoFiltrado.filter(h => new Date(h.timestamp) >= dtInicio);
+    }
+    if (dataFimEfetiva) {
+        const dtFim = new Date(dataFimEfetiva + 'T23:59:59');
+        historicoFiltrado = historicoFiltrado.filter(h => new Date(h.timestamp) <= dtFim);
+    }
+
+    if (filtroTipo) historicoFiltrado = historicoFiltrado.filter(h => h.tipoMovimento === filtroTipo);
+    if (filtroKit) historicoFiltrado = historicoFiltrado.filter(h => h.tipoKit === filtroKit);
+    if (filtroLote) historicoFiltrado = historicoFiltrado.filter(h => h.lote.includes(filtroLote));
+
+    historicoFiltrado.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const totalEntradas = historicoFiltrado.filter(h => h.tipoMovimento === 'entrada')
+        .reduce((s, h) => s + h.quantidade, 0);
+    const totalSaidas = historicoFiltrado.filter(h => h.tipoMovimento === 'saida')
+        .reduce((s, h) => s + h.quantidade, 0);
+
+    const elEntradas = document.getElementById('totalEntradasHistorico');
+    const elSaidas = document.getElementById('totalSaidasHistorico');
+    const elEventos = document.getElementById('totalEventosHistorico');
+    const elInfo = document.getElementById('infoFiltroHistorico');
+
+    if (elEntradas) elEntradas.textContent = totalEntradas;
+    if (elSaidas) elSaidas.textContent = totalSaidas;
+    if (elEventos) elEventos.textContent = historicoFiltrado.length;
+
+    if (elInfo) {
+        const temFiltro = filtroTipo || filtroKit || filtroLote || filtroDataInicio || filtroDataFim;
+        if (temFiltro) {
+            elInfo.textContent = `🔍 ${historicoFiltrado.length} de ${historicoMovimentacoes.length} evento(s)`;
+            elInfo.style.color = '#ffd700';
+        } else {
+            elInfo.textContent = `Mostrando ${historicoFiltrado.length} de ${historicoMovimentacoes.length} eventos`;
+            elInfo.style.color = '#666';
+        }
+    }
+
+    atualizarIndicadorPeriodo(dataInicioEfetiva, dataFimEfetiva);
+
+    const totalPaginas = Math.ceil(historicoFiltrado.length / ITENS_POR_PAGINA_HISTORICO) || 1;
+    if (paginaAtualHistorico > totalPaginas) paginaAtualHistorico = totalPaginas;
+    if (paginaAtualHistorico < 1) paginaAtualHistorico = 1;
+
+    const inicio = (paginaAtualHistorico - 1) * ITENS_POR_PAGINA_HISTORICO;
+    const fim = Math.min(inicio + ITENS_POR_PAGINA_HISTORICO, historicoFiltrado.length);
+    const itensPagina = historicoFiltrado.slice(inicio, fim);
+
+    if (itensPagina.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" style="text-align: center; padding: 30px; color: #888;">
+                    ${historicoMovimentacoes.length === 0 
+                        ? 'Nenhuma movimentação registrada ainda.' 
+                        : '📭 Nenhum evento no período selecionado. Clique em "📆 Período Personalizado" para ampliar ou em "📥 Carregar da Nuvem".'}
+                </td>
+            </tr>
+        `;
+        renderizarPaginacaoHistorico(totalPaginas);
+        return;
+    }
+
+    let html = '';
+    itensPagina.forEach((h, index) => {
+        const isEntrada = h.tipoMovimento === 'entrada';
+        const icone = isEntrada ? '📥' : '📤';
+        const cor = isEntrada ? '#2ecc71' : '#e74c3c';
+        const bgCor = isEntrada ? 'rgba(46,204,113,0.05)' : 'rgba(231,76,60,0.05)';
+        const nomeKit = getNomeKit(h.tipoKit);
+        const numSequencial = inicio + index + 1;
+
+        html += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${bgCor};">
+                <td style="padding: 8px; color: #888;">${numSequencial}</td>
+                <td style="padding: 8px; color: #00d2ff; font-size: 0.72rem; white-space: nowrap;">${h.dataHora}</td>
+                <td style="padding: 8px; text-align: center;">
+                    <span style="color: ${cor}; font-weight: 600;">${icone} ${isEntrada ? 'Entrada' : 'Saída'}</span>
+                </td>
+                <td style="padding: 8px; color: #fff; font-weight: 600;">${nomeKit}</td>
+                <td style="padding: 8px; color: #aaa;">${h.lote}</td>
+                <td style="padding: 8px; color: #aaa;">${formatarData(h.validade)}</td>
+                <td style="padding: 8px; text-align: center; color: ${cor}; font-weight: bold;">
+                    ${isEntrada ? '+' : '-'}${h.quantidade}
+                </td>
+                <td style="padding: 8px; color: #ffd700;">${h.responsavel || '-'}</td>
+                <td style="padding: 8px; color: #888; font-size: 0.72rem; max-width: 180px; word-break: break-word;">
+                    ${h.observacao || '-'}
+                </td>
+                <td style="padding: 8px; text-align: center;">
+                    <button onclick="removerEventoHistoricoNaNuvem(${h.id})" style="
+                        background: rgba(255,107,107,0.1);
+                        border: 1px solid rgba(255,107,107,0.2);
+                        color: #ff6b6b;
+                        padding: 3px 8px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 0.65rem;
+                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" 
+                       onmouseout="this.style.background='rgba(255,107,107,0.1)'"
+                       title="Remover evento (não altera o saldo)">
+                        🗑️
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+    renderizarPaginacaoHistorico(totalPaginas);
+}
+
+// ============================================================
+// ===== PAGINAÇÃO DO HISTÓRICO =====
+// ============================================================
+function renderizarPaginacaoHistorico(totalPaginas) {
+    const container = document.getElementById('paginacaoHistorico');
+    if (!container) return;
+
+    const total = historicoFiltrado.length;
+    const inicio = total === 0 ? 0 : (paginaAtualHistorico - 1) * ITENS_POR_PAGINA_HISTORICO + 1;
+    const fim = Math.min(paginaAtualHistorico * ITENS_POR_PAGINA_HISTORICO, total);
+
+    container.innerHTML = `
+        <span style="color: #888; font-size: 0.8rem;">
+            📊 Mostrando <strong style="color: #ffd700;">${inicio}-${fim}</strong> de 
+            <strong style="color: #ffd700;">${total}</strong> eventos
+        </span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <button onclick="irPaginaHistorico(1)" ${paginaAtualHistorico === 1 ? 'disabled' : ''} style="
+                padding: 4px 10px; border: 1px solid ${paginaAtualHistorico === 1 ? '#333' : '#555'};
+                border-radius: 4px; background: ${paginaAtualHistorico === 1 ? 'transparent' : 'rgba(0,210,255,0.1)'};
+                color: ${paginaAtualHistorico === 1 ? '#555' : '#00d2ff'}; 
+                cursor: ${paginaAtualHistorico === 1 ? 'default' : 'pointer'}; font-size: 0.75rem;">
+                ⏮
+            </button>
+            <button onclick="irPaginaHistorico(${paginaAtualHistorico - 1})" ${paginaAtualHistorico === 1 ? 'disabled' : ''} style="
+                padding: 4px 10px; border: 1px solid ${paginaAtualHistorico === 1 ? '#333' : '#555'};
+                border-radius: 4px; background: ${paginaAtualHistorico === 1 ? 'transparent' : 'rgba(0,210,255,0.1)'};
+                color: ${paginaAtualHistorico === 1 ? '#555' : '#00d2ff'};
+                cursor: ${paginaAtualHistorico === 1 ? 'default' : 'pointer'}; font-size: 0.75rem;">
+                ◀
+            </button>
+            <span style="color: #aaa; font-size: 0.8rem; padding: 0 8px;">
+                Página <strong style="color: #ffd700;">${paginaAtualHistorico}</strong> 
+                de <strong style="color: #ffd700;">${totalPaginas}</strong>
+            </span>
+            <button onclick="irPaginaHistorico(${paginaAtualHistorico + 1})" ${paginaAtualHistorico === totalPaginas ? 'disabled' : ''} style="
+                padding: 4px 10px; border: 1px solid ${paginaAtualHistorico === totalPaginas ? '#333' : '#555'};
+                border-radius: 4px; background: ${paginaAtualHistorico === totalPaginas ? 'transparent' : 'rgba(0,210,255,0.1)'};
+                color: ${paginaAtualHistorico === totalPaginas ? '#555' : '#00d2ff'};
+                cursor: ${paginaAtualHistorico === totalPaginas ? 'default' : 'pointer'}; font-size: 0.75rem;">
+                ▶
+            </button>
+            <button onclick="irPaginaHistorico(${totalPaginas})" ${paginaAtualHistorico === totalPaginas ? 'disabled' : ''} style="
+                padding: 4px 10px; border: 1px solid ${paginaAtualHistorico === totalPaginas ? '#333' : '#555'};
+                border-radius: 4px; background: ${paginaAtualHistorico === totalPaginas ? 'transparent' : 'rgba(0,210,255,0.1)'};
+                color: ${paginaAtualHistorico === totalPaginas ? '#555' : '#00d2ff'};
+                cursor: ${paginaAtualHistorico === totalPaginas ? 'default' : 'pointer'}; font-size: 0.75rem;">
+                ⏭
+            </button>
+        </div>
+    `;
+}
+
+function irPaginaHistorico(pagina) {
+    const totalPaginas = Math.ceil(historicoFiltrado.length / ITENS_POR_PAGINA_HISTORICO) || 1;
+    if (pagina < 1 || pagina > totalPaginas || pagina === paginaAtualHistorico) return;
+    paginaAtualHistorico = pagina;
+    atualizarTabelaHistorico();
+}
+
+function limparFiltrosHistorico() {
+    const ids = ['filtroTipoMovimento', 'filtroKitMovimento', 'filtroLoteMovimento', 
+                 'filtroDataInicioHistorico', 'filtroDataFimHistorico'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    periodoAtivoHistorico = 'padrao180';
+    atualizarBotoesPeriodo('padrao180');
+    
+    const campos = document.getElementById('periodoCustomizadoCampos');
+    if (campos) campos.style.display = 'none';
+    
+    paginaAtualHistorico = 1;
+    atualizarTabelaHistorico();
+}
+
+// ============================================================
+// ===== PRESET 180 DIAS =====
+// ============================================================
+function aplicarPreset180Dias() {
+    periodoAtivoHistorico = 'padrao180';
+    
+    const hoje = new Date();
+    const inicio180 = new Date();
+    inicio180.setDate(hoje.getDate() - DIAS_PADRAO_HISTORICO);
+    
+    const inputIni = document.getElementById('filtroDataInicioHistorico');
+    const inputFim = document.getElementById('filtroDataFimHistorico');
+    if (inputIni) inputIni.value = inicio180.toISOString().split('T')[0];
+    if (inputFim) inputFim.value = hoje.toISOString().split('T')[0];
+    
+    atualizarBotoesPeriodo('padrao180');
+    
+    const campos = document.getElementById('periodoCustomizadoCampos');
+    if (campos) campos.style.display = 'none';
+    
+    paginaAtualHistorico = 1;
+    atualizarTabelaHistorico();
+}
+
+function togglePeriodoCustomizado() {
+    const campos = document.getElementById('periodoCustomizadoCampos');
+    if (!campos) return;
+    
+    const visivel = campos.style.display === 'flex';
+    campos.style.display = visivel ? 'none' : 'flex';
+    
+    if (!visivel) {
+        periodoAtivoHistorico = 'custom';
+        atualizarBotoesPeriodo('custom');
+    }
+}
+
+function atualizarBotoesPeriodo(ativo) {
+    const btn180 = document.getElementById('btnPreset180');
+    const btnCustom = document.getElementById('btnPeriodoCustom');
+    
+    if (!btn180 || !btnCustom) return;
+    
+    if (ativo === 'padrao180') {
+        btn180.style.background = 'rgba(0,210,255,0.15)';
+        btn180.style.borderColor = 'rgba(0,210,255,0.4)';
+        btn180.style.color = '#00d2ff';
+        
+        btnCustom.style.background = 'rgba(255,255,255,0.05)';
+        btnCustom.style.borderColor = 'rgba(255,255,255,0.15)';
+        btnCustom.style.color = '#aaa';
+    } else {
+        btn180.style.background = 'rgba(255,255,255,0.05)';
+        btn180.style.borderColor = 'rgba(255,255,255,0.15)';
+        btn180.style.color = '#aaa';
+        
+        btnCustom.style.background = 'rgba(0,210,255,0.15)';
+        btnCustom.style.borderColor = 'rgba(0,210,255,0.4)';
+        btnCustom.style.color = '#00d2ff';
+    }
+}
+
+function aplicarPeriodoRapido(dias) {
+    const inputIni = document.getElementById('filtroDataInicioHistorico');
+    const inputFim = document.getElementById('filtroDataFimHistorico');
+    
+    if (dias === 0) {
+        if (inputIni) inputIni.value = '';
+        if (inputFim) inputFim.value = '';
+        periodoAtivoHistorico = 'tudo';
+    } else {
+        const hoje = new Date();
+        const inicio = new Date();
+        inicio.setDate(hoje.getDate() - dias);
+        
+        if (inputIni) inputIni.value = inicio.toISOString().split('T')[0];
+        if (inputFim) inputFim.value = hoje.toISOString().split('T')[0];
+        
+        periodoAtivoHistorico = dias === 180 ? 'padrao180' : 'custom';
+    }
+    
+    atualizarBotoesPeriodo(periodoAtivoHistorico);
+    paginaAtualHistorico = 1;
+    atualizarTabelaHistorico();
+}
+
+function aplicarFiltroHistoricoPersonalizado() {
+    periodoAtivoHistorico = 'custom';
+    atualizarBotoesPeriodo('custom');
+    paginaAtualHistorico = 1;
+    atualizarTabelaHistorico();
+}
+
+function atualizarIndicadorPeriodo(dataInicio, dataFim) {
+    const el = document.getElementById('indicadorPeriodoHistorico');
+    if (!el) return;
+    
+    if (periodoAtivoHistorico === 'tudo' || (!dataInicio && !dataFim)) {
+        el.textContent = '📅 Mostrando todos os eventos';
+        el.style.borderLeftColor = '#ffd700';
+        el.style.color = '#ffd700';
+        el.style.background = 'rgba(255,215,0,0.08)';
+    } else if (periodoAtivoHistorico === 'padrao180') {
+        el.textContent = `📅 Últimos 180 dias (${formatarData(dataInicio)} → ${formatarData(dataFim)})`;
+        el.style.borderLeftColor = '#00d2ff';
+        el.style.color = '#00d2ff';
+        el.style.background = 'rgba(0,210,255,0.08)';
+    } else {
+        el.textContent = `📆 Período: ${formatarData(dataInicio)} → ${formatarData(dataFim)}`;
+        el.style.borderLeftColor = '#9b59b6';
+        el.style.color = '#9b59b6';
+        el.style.background = 'rgba(155,89,182,0.08)';
+    }
+}
+
+// ============================================================
+// ===== REMOVER EVENTO DO HISTÓRICO =====
+// ============================================================
+function removerEventoHistorico(id) {
+    if (!confirm('⚠️ Remover este evento do histórico?\n\nObservação: o saldo atual NÃO será alterado. Esta ação é apenas para corrigir registros duplicados ou incorretos.')) return;
+    
+    historicoMovimentacoes = historicoMovimentacoes.filter(h => h.id !== id);
+    salvarEstoque();
+    atualizarTabelaHistorico();
+}
+
+// ============================================================
+// ===== BUSCAR POR LOTE =====
 // ============================================================
 function buscarPorLote(lote) {
     if (!lote || lote.trim() === '') {
@@ -368,9 +734,7 @@ function buscarPorLote(lote) {
         return;
     }
 
-    const itensOrdenados = [...itensFiltrados].sort((a, b) => {
-        return new Date(a.validade) - new Date(b.validade);
-    });
+    const itensOrdenados = [...itensFiltrados].sort((a, b) => new Date(a.validade) - new Date(b.validade));
 
     let html = '';
     const hoje = new Date();
@@ -402,56 +766,7 @@ function buscarPorLote(lote) {
         }
 
         const nomeKit = getNomeKit(item.tipoKit);
-
-        // 🔥 FORMATAR A DATA/HORA CORRETAMENTE
-        let dataHoraMov = '-';
-        if (item.ultimaMovimentacao) {
-            try {
-                if (item.ultimaMovimentacao.includes('T') || item.ultimaMovimentacao.includes('Z')) {
-                    const data = new Date(item.ultimaMovimentacao);
-                    if (!isNaN(data.getTime())) {
-                        dataHoraMov = data.toLocaleString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
-                    } else {
-                        dataHoraMov = item.ultimaMovimentacao;
-                    }
-                } else {
-                    dataHoraMov = item.ultimaMovimentacao;
-                }
-            } catch (e) {
-                dataHoraMov = item.ultimaMovimentacao;
-            }
-        } else if (item.dataCadastro) {
-            try {
-                if (item.dataCadastro.includes('T') || item.dataCadastro.includes('Z')) {
-                    const data = new Date(item.dataCadastro);
-                    if (!isNaN(data.getTime())) {
-                        dataHoraMov = data.toLocaleString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
-                    } else {
-                        dataHoraMov = item.dataCadastro;
-                    }
-                } else {
-                    dataHoraMov = item.dataCadastro;
-                }
-            } catch (e) {
-                dataHoraMov = item.dataCadastro;
-            }
-        } else {
-            dataHoraMov = '⚠️ Sem registro';
-        }
+        const dataHoraMov = item.ultimaMovimentacao || item.dataCadastro || '-';
 
         html += `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${bgColor};">
@@ -472,7 +787,6 @@ function buscarPorLote(lote) {
                 <td style="padding: 10px; color: #888; font-size: 0.75rem; max-width: 120px; word-break: break-word;">
                     ${item.observacao || '-'}
                 </td>
-                <!-- 🆕 COLUNA DATA/HORA DA MOVIMENTAÇÃO -->
                 <td style="padding: 10px; text-align: center; color: #00d2ff; font-size: 0.7rem;">
                     ${dataHoraMov}
                 </td>
@@ -485,8 +799,7 @@ function buscarPorLote(lote) {
                         border-radius: 6px;
                         cursor: pointer;
                         font-size: 0.7rem;
-                        transition: 0.3s;
-                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                    ">
                         🗑️
                     </button>
                 </td>
@@ -527,7 +840,6 @@ function atualizarResumoEstoque() {
 // ============================================================
 // ===== UTILITÁRIOS =====
 // ============================================================
-
 function getNomeKit(codigo) {
     const nomes = {
         'MIBI': 'MIBI (Miocárdio)',
@@ -543,7 +855,8 @@ function getNomeKit(codigo) {
         'F-PSMA': 'F-PSMA (F-18)',
         'NaF': 'NaF (F-18)',
         'MIBG': 'MIBG (I-123)',
-        'NaI': 'NaI (I-123)'
+        'NaI': 'NaI (I-123)',
+        'TRODAT': 'TRODAT (Transp. Dopaminérgico)'
     };
     return nomes[codigo] || codigo;
 }
@@ -551,6 +864,7 @@ function getNomeKit(codigo) {
 function formatarData(data) {
     if (!data) return '-';
     const partes = data.split('-');
+    if (partes.length !== 3) return data;
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
@@ -564,6 +878,7 @@ function limparCamposEstoque() {
     if (quantidadeInput) quantidadeInput.value = '1';
     if (observacaoInput) observacaoInput.value = '';
     if (tipoMovimentoSelect) tipoMovimentoSelect.value = 'entrada';
+    // NÃO limpa o responsável (geralmente é o mesmo usuário)
 }
 
 // ============================================================
@@ -580,15 +895,18 @@ function removerItemEstoque(id) {
 // ===== LIMPAR HISTÓRICO =====
 // ============================================================
 function limparHistoricoEstoque() {
-    if (!confirm('⚠️ Tem certeza que deseja limpar TODO o histórico de estoque? Esta ação não pode ser desfeita!')) return;
+    if (!confirm('⚠️ Tem certeza que deseja limpar TODO o histórico de estoque e movimentações? Esta ação não pode ser desfeita!')) return;
     estoqueItens = [];
+    historicoMovimentacoes = [];
     estoqueIdCounter = 0;
+    historicoIdCounter = 0;
     salvarEstoque();
     atualizarTabelaEstoque();
+    atualizarTabelaHistorico();
 }
 
 // ============================================================
-// ===== EXPORTAR PARA EXCEL (COM COLUNA DATA/HORA) =====
+// ===== EXPORTAR ESTOQUE PARA EXCEL =====
 // ============================================================
 function exportarEstoqueExcel() {
     if (estoqueItens.length === 0) {
@@ -611,26 +929,17 @@ function exportarEstoqueExcel() {
 
     try {
         if (typeof XLSX === 'undefined') {
-            alert('❌ A biblioteca XLSX não está carregada. Verifique a conexão com a internet.');
+            alert('❌ A biblioteca XLSX não está carregada.');
             return;
         }
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(dados);
         
-        const colWidths = [
-            { wch: 20 }, // Kit
-            { wch: 15 }, // Lote
-            { wch: 12 }, // Validade
-            { wch: 18 }, // Entrada
-            { wch: 18 }, // Saída
-            { wch: 18 }, // Saldo
-            { wch: 30 }, // Observação
-            { wch: 22 }, // Data/Hora Movimentação 🆕
-            { wch: 20 }, // Data Cadastro
-            { wch: 20 }  // Última Movimentação
+        ws['!cols'] = [
+            { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 18 },
+            { wch: 18 }, { wch: 30 }, { wch: 22 }, { wch: 20 }, { wch: 20 }
         ];
-        ws['!cols'] = colWidths;
 
         XLSX.utils.book_append_sheet(wb, ws, 'Estoque Kits');
         XLSX.writeFile(wb, `Estoque_Kits_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -638,66 +947,58 @@ function exportarEstoqueExcel() {
         alert('✅ Arquivo Excel exportado com sucesso!');
     } catch (e) {
         console.error('Erro ao exportar Excel:', e);
-        alert('❌ Erro ao gerar arquivo Excel. Verifique o console para mais detalhes.');
+        alert('❌ Erro ao gerar arquivo Excel.');
     }
 }
 
 // ============================================================
-// ===== INICIALIZAR =====
+// ===== EXPORTAR HISTÓRICO PARA EXCEL =====
 // ============================================================
-document.addEventListener('DOMContentLoaded', function() {
-    carregarEstoqueSalvo();
-});
+function exportarHistoricoExcel() {
+    if (historicoMovimentacoes.length === 0) {
+        alert('⚠️ Nenhuma movimentação no histórico para exportar.');
+        return;
+    }
 
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        const modal = document.getElementById('modalEstoque');
-        if (modal && modal.style.display === 'flex') {
-            fecharModuloEstoque();
+    const dados = historicoMovimentacoes
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        .map(h => ({
+            'Data/Hora': h.dataHora,
+            'Tipo': h.tipoMovimento === 'entrada' ? 'Entrada' : 'Saída',
+            'Kit': getNomeKit(h.tipoKit),
+            'Lote': h.lote,
+            'Validade': formatarData(h.validade),
+            'Quantidade': h.quantidade,
+            'Responsável': h.responsavel || '',
+            'Motivo/Obs': h.observacao || '',
+            'Data Entrada': h.dataEntrada || '',
+            'Data Saída (uso)': h.dataSaida || '',
+            'Motivo': h.motivo || ''
+        }));
+
+    try {
+        if (typeof XLSX === 'undefined') {
+            alert('❌ Biblioteca XLSX não carregada.');
+            return;
         }
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(dados);
+        ws['!cols'] = [
+            { wch: 18 }, { wch: 10 }, { wch: 20 }, { wch: 15 },
+            { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 30 },
+            { wch: 18 }, { wch: 18 }, { wch: 18 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'Histórico');
+        XLSX.writeFile(wb, `Historico_Estoque_${new Date().toISOString().split('T')[0]}.xlsx`);
+        alert('✅ Histórico exportado com sucesso!');
+    } catch (e) {
+        console.error('Erro ao exportar histórico:', e);
+        alert('❌ Erro ao gerar Excel.');
     }
-});
-
-function temDadosEstoque() {
-    return estoqueItens.length > 0;
-}
-
-function getResumoEstoque() {
-    const totalFrascos = estoqueItens.reduce((sum, item) => sum + item.saldo, 0);
-    const totalKits = new Set(estoqueItens.map(item => item.tipoKit)).size;
-    const baixoEstoque = estoqueItens.filter(item => item.saldo > 0 && item.saldo <= 2).length;
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const vencidos = estoqueItens.filter(item => {
-        const validadeDate = new Date(item.validade + 'T00:00:00');
-        return validadeDate < hoje;
-    }).length;
-    
-    return {
-        totalFrascos,
-        totalKits,
-        baixoEstoque,
-        vencidos,
-        totalItens: estoqueItens.length
-    };
-}
-
-function exportarEstoquePDF() {
-    alert('📄 Funcionalidade em desenvolvimento. Em breve será possível gerar PDF do estoque!');
 }
 
 // ============================================================
 // ===== PAGINAÇÃO E FILTRO DO ESTOQUE =====
-// ============================================================
-
-let paginaAtualEstoque = 1;
-const ITENS_POR_PAGINA = 15;
-let filtroDataInicioEstoque = '';
-let filtroDataFimEstoque = '';
-let estoqueFiltrado = [];
-
-// ============================================================
-// ===== APLICAR FILTROS =====
 // ============================================================
 function aplicarFiltrosEstoque() {
     if (!filtroDataInicioEstoque && !filtroDataFimEstoque) {
@@ -724,9 +1025,6 @@ function aplicarFiltrosEstoque() {
     });
 }
 
-// ============================================================
-// ===== ATUALIZAR CONTROLES DE PÁGINA =====
-// ============================================================
 function atualizarControlesPagina() {
     let container = document.getElementById('paginacaoEstoque');
     if (!container) {
@@ -770,7 +1068,6 @@ function atualizarControlesPagina() {
                 color: ${paginaAtualEstoque === 1 ? '#555' : '#9b59b6'};
                 cursor: ${paginaAtualEstoque === 1 ? 'default' : 'pointer'};
                 font-size: 0.75rem;
-                transition: 0.3s;
             ">
                 ⏮
             </button>
@@ -782,7 +1079,6 @@ function atualizarControlesPagina() {
                 color: ${paginaAtualEstoque === 1 ? '#555' : '#9b59b6'};
                 cursor: ${paginaAtualEstoque === 1 ? 'default' : 'pointer'};
                 font-size: 0.75rem;
-                transition: 0.3s;
             ">
                 ◀
             </button>
@@ -797,7 +1093,6 @@ function atualizarControlesPagina() {
                 color: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? '#555' : '#9b59b6'};
                 cursor: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'default' : 'pointer'};
                 font-size: 0.75rem;
-                transition: 0.3s;
             ">
                 ▶
             </button>
@@ -809,7 +1104,6 @@ function atualizarControlesPagina() {
                 color: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? '#555' : '#9b59b6'};
                 cursor: ${paginaAtualEstoque === totalPaginas || totalPaginas === 0 ? 'default' : 'pointer'};
                 font-size: 0.75rem;
-                transition: 0.3s;
             ">
                 ⏭
             </button>
@@ -934,8 +1228,7 @@ function adicionarFiltrosEstoque() {
                 cursor: pointer;
                 font-size: 0.8rem;
                 font-weight: bold;
-                transition: 0.3s;
-            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            ">
                 🔍 Filtrar
             </button>
             <button onclick="limparFiltrosEstoque()" style="
@@ -946,8 +1239,7 @@ function adicionarFiltrosEstoque() {
                 color: #888;
                 cursor: pointer;
                 font-size: 0.8rem;
-                transition: 0.3s;
-            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+            ">
                 ✕ Limpar
             </button>
         </div>
@@ -963,7 +1255,6 @@ function adicionarFiltrosEstoque() {
 // ============================================================
 // ===== SOBRESCREVER FUNÇÃO DE ABERTURA =====
 // ============================================================
-
 const abrirEstoqueOriginal = window.abrirModuloEstoque || function() {};
 
 window.abrirModuloEstoque = function() {
@@ -978,6 +1269,80 @@ window.abrirModuloEstoque = function() {
     }, 100);
 };
 
-console.log('📊 Paginação e Filtro do Estoque carregados!');
-console.log(`📌 ${ITENS_POR_PAGINA} itens por página`);
-console.log('🔍 Filtros disponíveis: data de validade');
+// ============================================================
+// ===== INICIALIZAR =====
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    carregarEstoqueSalvo();
+    
+    // 🆕 Preencher responsável com usuário logado
+    setTimeout(() => {
+        const respInput = document.getElementById('estoqueResponsavel');
+        if (respInput && !respInput.value) {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    respInput.value = user.displayName || user.email?.split('@')[0] || '';
+                }
+            }
+        }
+    }, 1500);
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('modalEstoque');
+        if (modal && modal.style.display === 'flex') {
+            fecharModuloEstoque();
+        }
+    }
+});
+
+function temDadosEstoque() {
+    return estoqueItens.length > 0;
+}
+
+function getResumoEstoque() {
+    const totalFrascos = estoqueItens.reduce((sum, item) => sum + item.saldo, 0);
+    const totalKits = new Set(estoqueItens.map(item => item.tipoKit)).size;
+    const baixoEstoque = estoqueItens.filter(item => item.saldo > 0 && item.saldo <= 2).length;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const vencidos = estoqueItens.filter(item => {
+        const validadeDate = new Date(item.validade + 'T00:00:00');
+        return validadeDate < hoje;
+    }).length;
+    
+    return {
+        totalFrascos,
+        totalKits,
+        baixoEstoque,
+        vencidos,
+        totalItens: estoqueItens.length
+    };
+}
+
+function exportarEstoquePDF() {
+    alert('📄 Funcionalidade em desenvolvimento. Em breve será possível gerar PDF do estoque!');
+}
+
+// ============================================================
+// ===== EXPORTS GLOBAIS =====
+// ============================================================
+window.atualizarTabelaHistorico = atualizarTabelaHistorico;
+window.exportarHistoricoExcel = exportarHistoricoExcel;
+window.irPaginaHistorico = irPaginaHistorico;
+window.limparFiltrosHistorico = limparFiltrosHistorico;
+window.aplicarPreset180Dias = aplicarPreset180Dias;
+window.togglePeriodoCustomizado = togglePeriodoCustomizado;
+window.aplicarPeriodoRapido = aplicarPeriodoRapido;
+window.aplicarFiltroHistoricoPersonalizado = aplicarFiltroHistoricoPersonalizado;
+window.atualizarBotoesPeriodo = atualizarBotoesPeriodo;
+window.renderizarPaginacaoHistorico = renderizarPaginacaoHistorico;
+window.irPaginaEstoque = irPaginaEstoque;
+window.aplicarFiltroDataEstoque = aplicarFiltroDataEstoque;
+window.limparFiltrosEstoque = limparFiltrosEstoque;
+
+console.log('📊 Módulo Estoque carregado com sucesso!');
+console.log(`📌 ${ITENS_POR_PAGINA} itens por página (estoque) | ${ITENS_POR_PAGINA_HISTORICO} eventos por página (histórico)`);
+console.log('🔍 Histórico com filtro padrão de 180 dias');

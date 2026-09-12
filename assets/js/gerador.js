@@ -11,11 +11,11 @@ let registrosGerador = [];
 let geradorIdCounter = 0;
 
 // ============================================================
-// ===== VARIÁVEIS DE PAGINAÇÃO DO HISTÓRICO =====
+// ===== VARIÁVEIS DE PAGINAÇÃO DO HISTÓRICO (RENOMEADAS) =====
 // ============================================================
 
 let paginaAtualHistoricoGerador = 1;
-const ITENS_POR_PAGINA_HISTORICO = 10;
+const ITENS_POR_PAGINA_HISTORICO_GERADOR = 10;   // 🔥 RENOMEADO
 let historicoGeradorFiltrado = [];
 
 // ============================================================
@@ -1103,7 +1103,8 @@ function atualizarHistoricoGeradorComPaginacao() {
         return;
     }
     
-    const totalPaginas = Math.ceil(registros.length / ITENS_POR_PAGINA_HISTORICO);
+    // 🔥 USA CONSTANTE RENOMEADA
+    const totalPaginas = Math.ceil(registros.length / ITENS_POR_PAGINA_HISTORICO_GERADOR);
     
     if (paginaAtualHistoricoGerador > totalPaginas) {
         paginaAtualHistoricoGerador = totalPaginas;
@@ -1112,8 +1113,9 @@ function atualizarHistoricoGeradorComPaginacao() {
         paginaAtualHistoricoGerador = 1;
     }
     
-    const inicio = (paginaAtualHistoricoGerador - 1) * ITENS_POR_PAGINA_HISTORICO;
-    const fim = Math.min(inicio + ITENS_POR_PAGINA_HISTORICO, registros.length);
+    // 🔥 USA CONSTANTE RENOMEADA
+    const inicio = (paginaAtualHistoricoGerador - 1) * ITENS_POR_PAGINA_HISTORICO_GERADOR;
+    const fim = Math.min(inicio + ITENS_POR_PAGINA_HISTORICO_GERADOR, registros.length);
     const registrosPagina = registros.slice(inicio, fim);
     
     let html = '';
@@ -1223,7 +1225,8 @@ function atualizarHistoricoGeradorComPaginacao() {
 
 function irPaginaHistoricoGerador(pagina) {
     const registros = JSON.parse(localStorage.getItem('radiocalc_geradores_historico') || '[]');
-    const totalPaginas = Math.ceil(registros.length / ITENS_POR_PAGINA_HISTORICO);
+    // 🔥 USA CONSTANTE RENOMEADA
+    const totalPaginas = Math.ceil(registros.length / ITENS_POR_PAGINA_HISTORICO_GERADOR);
     
     if (pagina < 1 || pagina > totalPaginas || pagina === paginaAtualHistoricoGerador) return;
     

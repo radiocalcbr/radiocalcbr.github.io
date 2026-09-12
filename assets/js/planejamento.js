@@ -91,8 +91,12 @@ function calcularPlanejamentoSimplificado() {
         atividadeRestante = Math.max(0, atividadeRestante - p.doseAlvo);
     }
 
-    // Se não atendeu todos, aumenta em 0.5 mCi até atender
-    while (!todosAtendidos) {
+    // Se não atendeu todos, aumenta em 0.5 mCi até atender.
+    // O limite evita travar quando o decaimento torna a meta impossível.
+    let tentativasOtimizacao = 0;
+    const maxTentativasOtimizacao = 10000;
+    while (!todosAtendidos && tentativasOtimizacao < maxTentativasOtimizacao) {
+        tentativasOtimizacao++;
         atividadeSugerida += 0.5;
         atividadeRestante = atividadeSugerida;
         todosAtendidos = true;
@@ -117,6 +121,11 @@ function calcularPlanejamentoSimplificado() {
             }
             atividadeRestante = Math.max(0, atividadeRestante - p.doseAlvo);
         }
+    }
+
+    if (!todosAtendidos) {
+        alert('Não foi possível encontrar uma atividade válida para esses horários. Verifique as datas e os intervalos entre os pacientes.');
+        return;
     }
 
     // Usa o valor otimizado
@@ -346,8 +355,12 @@ function calcularPlanejamentoAgenda() {
         atividadeRestante = Math.max(0, atividadeRestante - p.doseAlvo);
     }
 
-    // Se não atendeu todos, aumenta em 0.5 mCi até atender
-    while (!todosAtendidos) {
+    // Se não atendeu todos, aumenta em 0.5 mCi até atender.
+    // O limite evita travar quando o decaimento torna a meta impossível.
+    let tentativasOtimizacao = 0;
+    const maxTentativasOtimizacao = 10000;
+    while (!todosAtendidos && tentativasOtimizacao < maxTentativasOtimizacao) {
+        tentativasOtimizacao++;
         atividadeSugerida += 0.5;
         atividadeRestante = atividadeSugerida;
         todosAtendidos = true;
@@ -372,6 +385,11 @@ function calcularPlanejamentoAgenda() {
             }
             atividadeRestante = Math.max(0, atividadeRestante - p.doseAlvo);
         }
+    }
+
+    if (!todosAtendidos) {
+        alert('Não foi possível encontrar uma atividade válida para esses horários. Verifique as datas e os intervalos entre os pacientes.');
+        return;
     }
 
     // Usa o valor otimizado

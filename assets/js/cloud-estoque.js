@@ -97,6 +97,48 @@ async function verificarUsuarioLogado() {
 }
 
 // ============================================
+// 🔑 CACHE DE ADMIN (evita consultas repetidas)
+// ============================================
+
+let _cacheIsAdmin = null;      // null = não verificado, true/false = resultado
+let _cacheIsAdminExpira = 0;   // timestamp de expiração
+
+/**
+ * Verifica se é admin COM CACHE (válido por 5 minutos)
+ */
+async function verificarAdminComCache() {
+    const agora = Date.now();
+    
+    // Se o cache ainda é válido, retorna
+    if (_cacheIsAdmin !== null && agora < _cacheIsAdminExpira) {
+        return _cacheIsAdmin;
+    }
+    
+    // Senão, consulta e atualiza o cache
+    _cacheIsAdmin = await verificarAdmin();
+    _cacheIsAdminExpira = agora + (5 * 60 * 1000); // 5 minutos
+    return _cacheIsAdmin;
+}
+
+/**
+ * Invalida o cache (chamar ao fazer logout ou trocar de usuário)
+ */
+function invalidarCacheAdmin() {
+    _cacheIsAdmin = null;
+    _cacheIsAdminExpira = 0;
+    console.log('🔄 Cache de admin invalidado');
+}
+
+async function atualizarVisibilidadeCardCustos() {
+    const cardCustos = document.querySelector('.tool-card[onclick="abrirModalCustos()"]');
+    if (!cardCustos) return;
+
+    const isAdmin = await verificarAdminComCache();
+    cardCustos.style.display = isAdmin ? '' : 'none';
+    console.log(isAdmin ? '👑 Card de custos liberado para administrador' : '👤 Card de custos oculto para usuário comum');
+}
+
+// ============================================
 // 💾 SALVAR ESTOQUE (VERSÃO CORRIGIDA)
 // ============================================
 
@@ -106,7 +148,6 @@ async function verificarUsuarioLogado() {
  */
 async function salvarEstoqueNaNuvem() {
     try {
-        // Verifica autenticação
         if (typeof firebase === 'undefined' || !firebase.auth) {
             mostrarToastEstoque('⚠️ Firebase não inicializado', 'erro');
             return;
@@ -117,15 +158,11 @@ async function salvarEstoqueNaNuvem() {
             mostrarToastEstoque('⚠️ Faça login para salvar na nuvem', 'erro');
             return;
         }
-
         if (!userInfo.organizacao) {
             mostrarToastEstoque('⚠️ Usuário não vinculado a uma organização', 'erro');
             return;
         }
-
-        if (!dbEstoque) {
-            await inicializarFirestore();
-        }
+        if (!dbEstoque) await inicializarFirestore();
         if (!dbEstoque) {
             mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
             return;
@@ -133,26 +170,17 @@ async function salvarEstoqueNaNuvem() {
 
         mostrarToastEstoque('💾 Salvando estoque na nuvem...', 'carregando');
 
-        // 🔥 Coletar dados do estoque (ARRAY global, não a tabela)
+        // ===== 1) SALVAR SALDO ATUAL =====
         const dadosEstoque = coletarDadosEstoque();
-
-        if (!dadosEstoque || dadosEstoque.length === 0) {
-            mostrarToastEstoque('⚠️ Nenhum item para salvar!', 'erro');
-            return;
-        }
-
-        // 🔥 SALVAR CADA ITEM INDIVIDUALMENTE
         const estoqueRef = dbEstoque.collection('organizacoes')
             .doc(userInfo.organizacao)
             .collection('estoque');
 
         let salvos = 0;
         let erros = 0;
-        let itensSalvos = [];
 
         for (const item of dadosEstoque) {
             try {
-                // 🔥 Buscar se já existe este item (pelo lote + tipoKit + validade)
                 const querySnapshot = await estoqueRef
                     .where('tipoKit', '==', item.kit)
                     .where('lote', '==', item.lote)
@@ -174,67 +202,68 @@ async function salvarEstoqueNaNuvem() {
                 };
 
                 if (!querySnapshot.empty) {
-                    // ✅ ATUALIZAR item existente
-                    const docRef = querySnapshot.docs[0].ref;
-                    await docRef.update(dadosItem);
-                    itensSalvos.push({
-                        id: docRef.id,
-                        ...dadosItem
-                    });
-                    console.log('✅ Item atualizado:', item.kit, item.lote);
+                    await querySnapshot.docs[0].ref.update(dadosItem);
                 } else {
-                    // ✅ CRIAR novo item
                     dadosItem.criadoPor = userInfo.uid;
                     dadosItem.criadoPorEmail = userInfo.email;
                     dadosItem.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
-                    const novoDoc = await estoqueRef.add(dadosItem);
-                    itensSalvos.push({
-                        id: novoDoc.id,
-                        ...dadosItem
-                    });
-                    console.log('✅ Novo item criado:', item.kit, item.lote);
+                    await estoqueRef.add(dadosItem);
                 }
                 salvos++;
-
             } catch (error) {
-                console.error('❌ Erro ao salvar item:', item.kit, item.lote, error);
+                console.error('❌ Erro ao salvar item:', error);
                 erros++;
             }
         }
 
-        // 🔥 SALVAR RESUMO (para consulta rápida)
-        if (salvos > 0) {
-            const resumoRef = dbEstoque.collection('organizacoes')
+        // ===== 2) SALVAR HISTÓRICO DE MOVIMENTAÇÕES =====
+        let historicoSalvos = 0;
+        if (typeof historicoMovimentacoes !== 'undefined' && historicoMovimentacoes.length > 0) {
+            const historicoRef = dbEstoque.collection('organizacoes')
                 .doc(userInfo.organizacao)
-                .collection('estoque')
-                .doc('_resumo');
+                .collection('estoque_historico');
 
+            for (const evento of historicoMovimentacoes) {
+                try {
+                    // Usa um ID determinístico para evitar duplicatas
+                    const docId = `mov_${evento.id}`;
+                    await historicoRef.doc(docId).set({
+                        ...evento,
+                        organizacao: userInfo.organizacao,
+                        registradoPor: userInfo.uid,
+                        registradoPorEmail: userInfo.email,
+                        sincronizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    historicoSalvos++;
+                } catch (error) {
+                    console.error('❌ Erro ao salvar evento histórico:', error);
+                }
+            }
+        }
+
+        // ===== 3) SALVAR RESUMO =====
+        if (salvos > 0) {
+            const resumoRef = estoqueRef.doc('_resumo');
             const totalFrascos = dadosEstoque.reduce((sum, item) => sum + parseInt(item.saldo || 0), 0);
-
             await resumoRef.set({
                 totalItens: salvos,
                 totalFrascos: totalFrascos,
+                totalEventosHistorico: historicoSalvos,
                 ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp(),
                 atualizadoPor: userInfo.uid,
-                atualizadoPorEmail: userInfo.email,
-                itens: itensSalvos.map(item => ({
-                    tipoKit: item.tipoKit,
-                    lote: item.lote,
-                    validade: item.validade,
-                    saldo: item.saldo
-                }))
+                atualizadoPorEmail: userInfo.email
             }, { merge: true });
         }
 
-        console.log(`✅ ${salvos} itens salvos, ${erros} erros`);
+        console.log(`✅ Estoque: ${salvos} itens, ${erros} erros`);
+        console.log(`✅ Histórico: ${historicoSalvos} eventos`);
         
         if (erros > 0) {
             mostrarToastEstoque(`⚠️ ${salvos} itens salvos, ${erros} erros!`, 'aviso');
         } else {
-            mostrarToastEstoque(`✅ ${salvos} itens salvos na nuvem!`, 'sucesso');
+            mostrarToastEstoque(`✅ ${salvos} itens + ${historicoSalvos} eventos salvos!`, 'sucesso');
         }
         
-        // Atualizar indicador visual
         atualizarIndicadorEstoqueNuvem(true);
 
     } catch (error) {
@@ -290,7 +319,7 @@ function coletarDadosEstoque() {
     return itens;
 }
 
-/// ============================================
+// ============================================
 // 📥 CARREGAR ESTOQUE (VERSÃO CORRIGIDA - COM KIT)
 // ============================================
 
@@ -305,23 +334,19 @@ async function carregarEstoqueDaNuvem() {
             mostrarToastEstoque('⚠️ Faça login para carregar dados', 'erro');
             return;
         }
-
         if (!userInfo.organizacao) {
             mostrarToastEstoque('⚠️ Usuário não vinculado a uma organização', 'erro');
             return;
         }
-
-        if (!dbEstoque) {
-            await inicializarFirestore();
-        }
+        if (!dbEstoque) await inicializarFirestore();
         if (!dbEstoque) {
             mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
             return;
         }
 
-        mostrarToastEstoque(`📥 Carregando estoque da organização...`, 'carregando');
+        mostrarToastEstoque(`📥 Carregando estoque...`, 'carregando');
 
-        // 🔥 CARREGAR TODOS OS ITENS DA COLEÇÃO
+        // ===== 1) CARREGAR SALDO ATUAL =====
         const estoqueRef = dbEstoque.collection('organizacoes')
             .doc(userInfo.organizacao)
             .collection('estoque');
@@ -331,26 +356,12 @@ async function carregarEstoqueDaNuvem() {
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            // Pular o documento de resumo
             if (doc.id === '_resumo') return;
-            
-            // 🔥 IMPORTANTE: Usar 'tipoKit' OU 'kit' - verificar qual campo existe
             const nomeKit = data.tipoKit || data.kit || '';
-            
-            console.log('📦 Item encontrado:', {
-                id: doc.id,
-                tipoKit: data.tipoKit,
-                kit: data.kit,
-                nomeKit: nomeKit,
-                lote: data.lote,
-                validade: data.validade,
-                saldo: data.saldo
-            });
-            
             itens.push({
                 firebaseId: doc.id,
-                tipoKit: nomeKit,        // Mantém consistência
-                kit: nomeKit,            // 🔥 ADICIONA O CAMPO 'kit' para compatibilidade
+                tipoKit: nomeKit,
+                kit: nomeKit,
                 lote: data.lote || '',
                 validade: data.validade || '',
                 entrada: data.entrada || 0,
@@ -363,25 +374,178 @@ async function carregarEstoqueDaNuvem() {
             });
         });
 
+        // ===== 2) CARREGAR HISTÓRICO =====
+        const historicoRef = dbEstoque.collection('organizacoes')
+            .doc(userInfo.organizacao)
+            .collection('estoque_historico');
+
+        const historicoSnapshot = await historicoRef.get();
+        const eventos = [];
+
+        historicoSnapshot.forEach(doc => {
+            const data = doc.data();
+            eventos.push({
+                id: data.id || 0,
+                timestamp: data.timestamp || '',
+                dataHora: data.dataHora || '',
+                tipoMovimento: data.tipoMovimento || '',
+                tipoKit: data.tipoKit || '',
+                lote: data.lote || '',
+                validade: data.validade || '',
+                quantidade: data.quantidade || 0,
+                responsavel: data.responsavel || '',
+                observacao: data.observacao || '',
+                dataEntrada: data.dataEntrada || null,
+                dataSaida: data.dataSaida || null,
+                motivo: data.motivo || ''
+            });
+        });
+
+        // ===== 3) ATUALIZAR ARRAYS GLOBAIS =====
         if (itens.length > 0) {
-            // 🔥 ATUALIZAR O ARRAY GLOBAL
             if (typeof estoqueItens !== 'undefined') {
                 estoqueItens = itens;
-                console.log('📊 Array estoqueItens atualizado:', estoqueItens.length, 'itens');
-                console.log('📊 Primeiro item:', estoqueItens[0]);
             }
-            
-            // Atualizar a tabela
             await preencherEstoqueNaInterface(itens);
-            mostrarToastEstoque(`✅ Carregados ${itens.length} itens do estoque!`, 'sucesso');
             atualizarIndicadorEstoqueNuvem(true);
-        } else {
-            mostrarToastEstoque('📭 Nenhum item de estoque encontrado', 'info');
         }
+
+        if (eventos.length > 0) {
+            if (typeof historicoMovimentacoes !== 'undefined') {
+                historicoMovimentacoes = eventos;
+                historicoMovimentacoes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                if (typeof historicoIdCounter !== 'undefined') {
+                    historicoIdCounter = Math.max(...eventos.map(e => e.id || 0)) + 1;
+                }
+                if (typeof atualizarTabelaHistorico === 'function') {
+                    atualizarTabelaHistorico();
+                }
+            }
+        }
+
+        mostrarToastEstoque(
+            `✅ ${itens.length} itens + ${eventos.length} eventos carregados!`,
+            'sucesso'
+        );
 
     } catch (error) {
         console.error('❌ Erro ao carregar estoque:', error);
         mostrarToastEstoque('❌ Erro ao carregar: ' + error.message, 'erro');
+    }
+}
+
+// ============================================
+// 📥 CARREGAR HISTÓRICO DA NUVEM POR PERÍODO
+// ============================================
+async function carregarHistoricoDaNuvemPorPeriodo() {
+    try {
+        const userInfo = await verificarUsuarioLogado();
+        if (!userInfo || !userInfo.organizacao) {
+            mostrarToastEstoque('⚠️ Faça login para carregar dados', 'erro');
+            return;
+        }
+        if (!dbEstoque) await inicializarFirestore();
+        if (!dbEstoque) {
+            mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
+            return;
+        }
+
+        // Descobre o período ativo
+        const inputIni = document.getElementById('filtroDataInicioHistorico');
+        const inputFim = document.getElementById('filtroDataFimHistorico');
+        
+        let dataInicio, dataFim;
+        
+        if (inputIni && inputIni.value) {
+            dataInicio = new Date(inputIni.value + 'T00:00:00');
+        } else {
+            dataInicio = new Date();
+            dataInicio.setDate(dataInicio.getDate() - 180);
+        }
+        
+        if (inputFim && inputFim.value) {
+            dataFim = new Date(inputFim.value + 'T23:59:59');
+        } else {
+            dataFim = new Date();
+        }
+
+        mostrarToastEstoque(
+            `📥 Carregando eventos de ${dataInicio.toLocaleDateString('pt-BR')} até ${dataFim.toLocaleDateString('pt-BR')}...`,
+            'carregando'
+        );
+
+        // Query com filtro de período
+        const LIMITE_MAXIMO = 5000;
+        const historicoRef = dbEstoque.collection('organizacoes')
+            .doc(userInfo.organizacao)
+            .collection('estoque_historico')
+            .where('timestamp', '>=', dataInicio.toISOString())
+            .where('timestamp', '<=', dataFim.toISOString())
+            .orderBy('timestamp', 'desc')
+            .limit(LIMITE_MAXIMO);
+
+        const snapshot = await historicoRef.get();
+        const eventos = [];
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            eventos.push({
+                id: data.id || 0,
+                timestamp: data.timestamp || '',
+                dataHora: data.dataHora || '',
+                tipoMovimento: data.tipoMovimento || '',
+                tipoKit: data.tipoKit || '',
+                lote: data.lote || '',
+                validade: data.validade || '',
+                quantidade: data.quantidade || 0,
+                responsavel: data.responsavel || '',
+                observacao: data.observacao || '',
+                dataEntrada: data.dataEntrada || null,
+                dataSaida: data.dataSaida || null,
+                motivo: data.motivo || ''
+            });
+        });
+
+        // MERGE: junta com eventos locais sem duplicar (pelo id)
+        if (typeof historicoMovimentacoes !== 'undefined') {
+            const idsExistentes = new Set(historicoMovimentacoes.map(h => h.id));
+            const novosEventos = eventos.filter(e => !idsExistentes.has(e.id));
+            
+            historicoMovimentacoes = [...historicoMovimentacoes, ...novosEventos];
+            historicoMovimentacoes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (typeof historicoIdCounter !== 'undefined' && eventos.length > 0) {
+                historicoIdCounter = Math.max(
+                    historicoIdCounter,
+                    ...eventos.map(e => (e.id || 0) + 1)
+                );
+            }
+            
+            if (typeof salvarEstoque === 'function') salvarEstoque();
+            
+            console.log(`✅ ${novosEventos.length} novos eventos (${eventos.length - novosEventos.length} já existiam)`);
+        }
+
+        if (typeof atualizarTabelaHistorico === 'function') {
+            if (typeof paginaAtualHistorico !== 'undefined') paginaAtualHistorico = 1;
+            atualizarTabelaHistorico();
+        }
+
+        mostrarToastEstoque(
+            `✅ ${eventos.length} evento(s) carregado(s)! ${eventos.length === LIMITE_MAXIMO ? '(limite atingido — refine o período)' : ''}`,
+            'sucesso'
+        );
+
+    } catch (error) {
+        console.error('❌ Erro ao carregar histórico:', error);
+        
+        let msg = '❌ Erro ao carregar: ' + error.message;
+        if (error.code === 'permission-denied') {
+            msg = '🔒 Permissão negada! Verifique suas regras do Firestore.';
+        } else if (error.code === 'failed-precondition') {
+            msg = '⚠️ Falta um índice no Firestore. Clique no link do console para criar.';
+        }
+        mostrarToastEstoque(msg, 'erro');
     }
 }
 
@@ -446,7 +610,7 @@ async function preencherEstoqueNaInterface(itens) {
     }
 
     // 🔥 Verifica se é admin (APENAS ADMIN VÊ OS BOTÕES!)
-    const isAdmin = await verificarAdmin();
+    const isAdmin = await verificarAdminComCache();
 
     // Adiciona cada item
     itens.forEach((item, index) => {
@@ -563,8 +727,8 @@ function atualizarResumoEstoque(itens) {
  * 🔥 CORRIGIDO: Remove também do Firestore
  */
 async function removerItemEstoque(index) {
-    // 🔥 Verifica se é ADMIN
-    const isAdmin = await verificarAdmin();
+    // 🔥 Verifica se é ADMIN (com cache)
+    const isAdmin = await verificarAdminComCache();
     
     if (!isAdmin) {
         mostrarToastEstoque('⚠️ Apenas administradores podem remover itens permanentemente do estoque!', 'erro');
@@ -583,16 +747,12 @@ async function removerItemEstoque(index) {
         }
 
         // 🔥 PEGA O ID DO FIREBASE DO ITEM
-        const cols = rows[index].querySelectorAll('td');
-        // O ID do Firebase está armazenado como atributo data-firebase-id ou no array global
         let firebaseId = null;
         
-        // Tenta pegar do array global estoqueItens
         if (typeof estoqueItens !== 'undefined' && estoqueItens[index]) {
             firebaseId = estoqueItens[index].firebaseId;
         }
         
-        // Se não tiver firebaseId, tenta pegar do atributo da linha
         if (!firebaseId) {
             firebaseId = rows[index].getAttribute('data-firebase-id');
         }
@@ -610,7 +770,6 @@ async function removerItemEstoque(index) {
                 console.log('🗑️ Item removido do Firestore:', firebaseId);
             }
         } else {
-            // Se não tiver ID, tenta remover pela query (lote + tipoKit + validade)
             const cols = rows[index].querySelectorAll('td');
             const kitNome = cols[1]?.textContent?.trim() || '';
             const lote = cols[2]?.textContent?.trim() || '';
@@ -629,10 +788,10 @@ async function removerItemEstoque(index) {
                         .where('validade', '==', validade)
                         .get();
                     
-                    querySnapshot.forEach(async (doc) => {
+                    for (const doc of querySnapshot.docs) {
                         await doc.ref.delete();
                         console.log('🗑️ Item removido do Firestore por query:', doc.id);
-                    });
+                    }
                 }
             }
         }
@@ -668,6 +827,87 @@ async function removerItemEstoque(index) {
 }
 
 // ============================================
+// 🗑️ REMOVER EVENTO DO HISTÓRICO (APENAS ADMIN)
+// ============================================
+
+/**
+ * Remove um evento do histórico DEFINITIVAMENTE (local + nuvem)
+ * 🔒 APENAS ADMINISTRADORES podem excluir
+ * 🔥 Remove da coleção estoque_historico no Firestore E do localStorage
+ */
+async function removerEventoHistoricoNaNuvem(id) {
+    try {
+        // 1) Verifica se é admin (com cache)
+        const isAdmin = await verificarAdminComCache();
+        if (!isAdmin) {
+            mostrarToastEstoque('⚠️ Apenas administradores podem excluir eventos do histórico!', 'erro');
+            return;
+        }
+
+        // 2) Confirmação dupla (ação destrutiva e irreversível)
+        if (!confirm(
+            '⚠️ ATENÇÃO: Este evento será excluído PERMANENTEMENTE da nuvem\n' +
+            'para TODOS os usuários da organização.\n\n' +
+            'Esta ação NÃO pode ser desfeita.\n\n' +
+            'Deseja continuar?'
+        )) {
+            return;
+        }
+
+        // 3) Verifica usuário e organização
+        const userInfo = await verificarUsuarioLogado();
+        if (!userInfo || !userInfo.organizacao) {
+            mostrarToastEstoque('⚠️ Usuário não vinculado a uma organização', 'erro');
+            return;
+        }
+
+        if (!dbEstoque) await inicializarFirestore();
+        if (!dbEstoque) {
+            mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
+            return;
+        }
+
+        mostrarToastEstoque('🗑️ Excluindo evento da nuvem...', 'carregando');
+
+        // 4) Remove do Firestore (ID determinístico: mov_<id>)
+        const docId = `mov_${id}`;
+        const docRef = dbEstoque
+            .collection('organizacoes')
+            .doc(userInfo.organizacao)
+            .collection('estoque_historico')
+            .doc(docId);
+
+        // Verifica se o documento existe antes de deletar
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) {
+            console.warn('⚠️ Evento não encontrado na nuvem. Removendo apenas localmente.');
+            mostrarToastEstoque('⚠️ Evento não existia na nuvem. Removido apenas localmente.', 'aviso');
+        } else {
+            await docRef.delete();
+            console.log('🗑️ Evento removido do Firestore:', docId);
+        }
+
+        // 5) Remove localmente (array + localStorage + interface)
+        if (typeof historicoMovimentacoes !== 'undefined') {
+            historicoMovimentacoes = historicoMovimentacoes.filter(h => h.id !== id);
+        }
+        if (typeof salvarEstoque === 'function') salvarEstoque();
+        if (typeof atualizarTabelaHistorico === 'function') atualizarTabelaHistorico();
+
+        mostrarToastEstoque('✅ Evento excluído da nuvem com sucesso!', 'sucesso');
+
+    } catch (error) {
+        console.error('❌ Erro ao excluir evento do histórico:', error);
+
+        let msg = '❌ Erro ao excluir: ' + error.message;
+        if (error.code === 'permission-denied') {
+            msg = '🔒 Permissão negada! Verifique se você é admin e as regras do Firestore.';
+        }
+        mostrarToastEstoque(msg, 'erro');
+    }
+}
+
+// ============================================
 // ✏️ EDIÇÃO DE ITEM (APENAS ADMIN)
 // ============================================
 
@@ -675,15 +915,13 @@ async function removerItemEstoque(index) {
  * Abre o modal de edição para um item
  */
 async function editarItemEstoque(index) {
-    // 🔥 Verifica se é ADMIN
-    const isAdmin = await verificarAdmin();
+    const isAdmin = await verificarAdminComCache();
     
     if (!isAdmin) {
         mostrarToastEstoque('⚠️ Apenas administradores podem editar itens!', 'erro');
         return;
     }
     
-    // Obtém os dados atuais do item
     const tbody = document.getElementById('corpoEstoque');
     const rows = tbody.querySelectorAll('tr');
     
@@ -692,17 +930,13 @@ async function editarItemEstoque(index) {
         return;
     }
     
-    // Extrai os dados da linha
     const cols = rows[index].querySelectorAll('td');
     
-    // Preenche o formulário de edição
     document.getElementById('editarIndex').value = index;
     
-    // 🔥 IMPORTANTE: Mapeia o nome do kit para o valor do select
     const kitNome = cols[1]?.textContent?.trim() || '';
     const selectKit = document.getElementById('editarKit');
     
-    // Tenta encontrar o kit no select
     let kitEncontrado = false;
     for (let option of selectKit.options) {
         if (option.text === kitNome || option.value === kitNome) {
@@ -712,7 +946,6 @@ async function editarItemEstoque(index) {
         }
     }
     if (!kitEncontrado) {
-        // Se não encontrar, tenta por partes do nome
         for (let option of selectKit.options) {
             if (kitNome.includes(option.value) || option.text.includes(kitNome)) {
                 selectKit.value = option.value;
@@ -728,7 +961,6 @@ async function editarItemEstoque(index) {
     document.getElementById('editarSaida').value = parseInt(cols[5]?.textContent?.trim()) || 0;
     document.getElementById('editarObservacao').value = cols[8]?.textContent?.trim() || '';
     
-    // Mostra o modal
     document.getElementById('modalEditarEstoque').style.display = 'flex';
 }
 
@@ -746,14 +978,12 @@ async function salvarEdicaoItem() {
     try {
         const index = parseInt(document.getElementById('editarIndex').value);
         
-        // 🔥 Verifica se é ADMIN
-        const isAdmin = await verificarAdmin();
+        const isAdmin = await verificarAdminComCache();
         if (!isAdmin) {
             mostrarToastEstoque('⚠️ Apenas administradores podem editar itens!', 'erro');
             return;
         }
         
-        // Coleta os dados do formulário
         const dadosEditados = {
             kit: document.getElementById('editarKit').value,
             lote: document.getElementById('editarLote').value.trim(),
@@ -763,7 +993,6 @@ async function salvarEdicaoItem() {
             observacao: document.getElementById('editarObservacao').value.trim()
         };
         
-        // Validações
         if (!dadosEditados.lote) {
             mostrarToastEstoque('⚠️ O campo Lote é obrigatório!', 'erro');
             return;
@@ -773,22 +1002,18 @@ async function salvarEdicaoItem() {
             return;
         }
         
-        // Atualiza a tabela
         const tbody = document.getElementById('corpoEstoque');
         const rows = tbody.querySelectorAll('tr');
         
         if (rows[index]) {
             const cols = rows[index].querySelectorAll('td');
             
-            // Atualiza os dados na tabela
-            // Pega o nome do kit selecionado
             const selectKit = document.getElementById('editarKit');
             const kitNome = selectKit.options[selectKit.selectedIndex]?.text || dadosEditados.kit;
             
             cols[1].textContent = kitNome;
             cols[2].textContent = dadosEditados.lote;
             
-            // Formata a data para DD/MM/AAAA
             const dataParts = dadosEditados.validade.split('-');
             const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
             cols[3].textContent = dataFormatada;
@@ -796,12 +1021,10 @@ async function salvarEdicaoItem() {
             cols[4].textContent = dadosEditados.entrada;
             cols[5].textContent = dadosEditados.saida;
             
-            // Recalcula o saldo
             const saldo = dadosEditados.entrada - dadosEditados.saida;
             cols[6].textContent = saldo;
             cols[6].style.color = saldo === 0 ? '#888' : '#ffd700';
             
-            // Atualiza o status
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
             const validadeDate = new Date(dadosEditados.validade + 'T00:00:00');
@@ -829,14 +1052,11 @@ async function salvarEdicaoItem() {
             cols[8].textContent = dadosEditados.observacao;
         }
         
-        // Atualiza o resumo
         const itensAtuais = coletarDadosEstoque();
         atualizarResumoEstoque(itensAtuais);
         
-        // 🔥 Salva automaticamente na nuvem após editar
         await salvarEstoqueNaNuvem();
         
-        // Fecha o modal
         fecharModalEdicao();
         
         mostrarToastEstoque('✅ Item editado com sucesso!', 'sucesso');
@@ -885,7 +1105,6 @@ function mostrarToastEstoque(mensagem, tipo = 'info') {
         return;
     }
 
-    // Criar toast dentro do modal
     const toast = document.createElement('div');
     toast.style.cssText = `
         position: fixed;
@@ -904,7 +1123,6 @@ function mostrarToastEstoque(mensagem, tipo = 'info') {
     `;
     toast.textContent = mensagem;
     
-    // Estilo para carregando
     if (tipo === 'carregando') {
         toast.innerHTML = `<span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> ${mensagem}`;
     }
@@ -934,7 +1152,6 @@ function exportarEstoqueExcel() {
             return;
         }
 
-        // Preparar dados para Excel
         const dadosExcel = itens.map(item => ({
             'Kit': item.kit,
             'Lote': item.lote,
@@ -946,12 +1163,10 @@ function exportarEstoqueExcel() {
             'Observação': item.observacao
         }));
 
-        // Criar workbook
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(dadosExcel);
         XLSX.utils.book_append_sheet(wb, ws, 'Estoque');
         
-        // Gerar arquivo
         const dataAtual = new Date().toISOString().slice(0, 10);
         XLSX.writeFile(wb, `estoque_${dataAtual}.xlsx`);
         
@@ -964,11 +1179,11 @@ function exportarEstoqueExcel() {
 }
 
 // ============================================
-// 📜 HISTÓRICO
+// 📜 HISTÓRICO DE AUDITORIA
 // ============================================
 
 /**
- * Salva no histórico do estoque (ORGANIZAÇÃO)
+ * Salva no histórico do estoque (ORGANIZAÇÃO) - AUDITORIA
  */
 async function salvarHistoricoEstoqueNuvem(dados, userInfo) {
     try {
@@ -998,12 +1213,10 @@ async function salvarHistoricoEstoqueNuvem(dados, userInfo) {
 // 🚀 INICIALIZAÇÃO
 // ============================================
 
-// Inicializa Firestore quando o Firebase estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(async () => {
         await inicializarFirestore();
         
-        // Verificar se tem dados salvos
         const temDados = await verificarEstoqueNaNuvem();
         if (temDados) {
             atualizarIndicadorEstoqueNuvem(true);
@@ -1012,16 +1225,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 2000);
 });
 
+document.addEventListener('userLoggedIn', atualizarVisibilidadeCardCustos);
+document.addEventListener('userLoggedOut', function() {
+    invalidarCacheAdmin();
+    const cardCustos = document.querySelector('.tool-card[onclick="abrirModalCustos()"]');
+    if (cardCustos) cardCustos.style.display = 'none';
+});
+
 // ============================================
 // 📦 EXPORTA FUNÇÕES PARA USO GLOBAL
 // ============================================
 window.salvarEstoqueNaNuvem = salvarEstoqueNaNuvem;
 window.carregarEstoqueDaNuvem = carregarEstoqueDaNuvem;
+window.carregarHistoricoDaNuvemPorPeriodo = carregarHistoricoDaNuvemPorPeriodo;
 window.exportarEstoqueExcel = exportarEstoqueExcel;
 window.removerItemEstoque = removerItemEstoque;
 window.verificarEstoqueNaNuvem = verificarEstoqueNaNuvem;
 window.atualizarIndicadorEstoqueNuvem = atualizarIndicadorEstoqueNuvem;
 window.verificarAdmin = verificarAdmin;
+window.verificarAdminComCache = verificarAdminComCache;
+window.invalidarCacheAdmin = invalidarCacheAdmin;
 window.editarItemEstoque = editarItemEstoque;
 window.fecharModalEdicao = fecharModalEdicao;
 window.salvarEdicaoItem = salvarEdicaoItem;
@@ -1029,3 +1252,5 @@ window.salvarEdicaoItem = salvarEdicaoItem;
 console.log('☁️ Módulo Cloud Estoque carregado com sucesso!');
 console.log('🔒 Proteção: Apenas ADMIN pode remover itens');
 console.log('✏️ Edição: Apenas ADMIN pode editar itens');
+console.log('📥 Carregamento por período: disponível');
+console.log('🗑️☁️ Exclusão de histórico na nuvem: apenas ADMIN');

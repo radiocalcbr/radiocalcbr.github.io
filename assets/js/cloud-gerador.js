@@ -470,27 +470,33 @@ async function verificarStatusNuvemGerador() {
         atualizarIndicadorGeradorNuvem('offline');
     }
 }
-
-// ============================================================
-// ===== EXPORTAR FUNÇÕES =====
-// ============================================================
-
-window.salvarGeradoresNaNuvem = salvarGeradoresNaNuvem;
-window.carregarGeradoresDaNuvem = carregarGeradoresDaNuvem;
-window.removerGeradorDaNuvem = removerGeradorDaNuvem;
-window.limparGeradoresDaNuvem = limparGeradoresDaNuvem;
-window.verificarStatusNuvemGerador = verificarStatusNuvemGerador;
-window.atualizarIndicadorGeradorNuvem = atualizarIndicadorGeradorNuvem;
-window.obterDadosUsuario = obterDadosUsuario;
-window.verificarEAtualizarStatusGeradores = verificarEAtualizarStatusGeradores;
-
-console.log('☁️ Módulo de nuvem para geradores carregado! (v3 - Com verificação automática de status)');
-console.log('📦 Funções disponíveis:');
-console.log('  - salvarGeradoresNaNuvem()');
-console.log('  - carregarGeradoresDaNuvem()');
-console.log('  - removerGeradorDaNuvem(item)');
-console.log('  - limparGeradoresDaNuvem()');
-console.log('  - verificarStatusNuvemGerador()');
-console.log('  - atualizarIndicadorGeradorNuvem(status)');
-console.log('  - obterDadosUsuario()');
-console.log('  - verificarEAtualizarStatusGeradores(registros)');
+// 🛡️ GUARDA CONTRA MÚLTIPLAS EXECUÇÕES E CONTRA LOOP
+if (window._cloudGeradorJaCarregado) {
+    console.warn('⚠️ cloud-gerador.js já estava carregado. Ignorando redefinições.');
+} else {
+    window._cloudGeradorJaCarregado = true;
+    
+    // ============================================================
+    // ===== EXPORTAR FUNÇÕES =====
+    // ============================================================
+    
+    window.salvarGeradoresNaNuvem = salvarGeradoresNaNuvem;
+    window.carregarGeradoresDaNuvem = carregarGeradoresDaNuvem;
+    window.removerGeradorDaNuvem = removerGeradorDaNuvem;
+    window.limparGeradoresDaNuvem = limparGeradoresDaNuvem;
+    window.verificarStatusNuvemGerador = verificarStatusNuvemGerador;
+    window.atualizarIndicadorGeradorNuvem = atualizarIndicadorGeradorNuvem;
+    window.obterDadosUsuario = obterDadosUsuario;
+    window.verificarEAtualizarStatusGeradores = verificarEAtualizarStatusGeradores;
+    
+    console.log('☁️ Módulo de nuvem para geradores carregado! (v3 - Com verificação automática de status)');
+    console.log('📦 Funções disponíveis:');
+    console.log('  - salvarGeradoresNaNuvem()');
+    console.log('  - carregarGeradoresDaNuvem()');
+    console.log('  - removerGeradorDaNuvem(item)');
+    console.log('  - limparGeradoresDaNuvem()');
+    console.log('  - verificarStatusNuvemGerador()');
+    console.log('  - atualizarIndicadorGeradorNuvem(status)');
+    console.log('  - obterDadosUsuario()');
+    console.log('  - verificarEAtualizarStatusGeradores(registros)');
+}
