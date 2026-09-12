@@ -283,7 +283,8 @@ function calcularCustosKits(dtIni, dtFim) {
         : [];
 
     historico.forEach(evento => {
-        if (evento.tipoMovimento !== 'entrada') return;
+        // O custo deve refletir o consumo real dos frascos, portanto considera saídas.
+        if (evento.tipoMovimento !== 'saida') return;
 
         const dataEvento = obterDataTimestamp(evento.timestamp || evento.dataHora);
         const timestamp = dataEvento?.getTime();
