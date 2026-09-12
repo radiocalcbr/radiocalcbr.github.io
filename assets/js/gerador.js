@@ -179,11 +179,15 @@ function registrarGerador() {
         return;
     }
     
+    const precoAplicado = typeof precosGeradores !== 'undefined'
+        ? Number(precosGeradores[Number.parseFloat(atividade)]) || 0
+        : 0;
     const novoRegistro = {
         id: geradorIdCounter++,
         dataRecebimento: dataRecebimento,
         dataCalibracao: dataCalibracao,
         atividade: atividade,
+        precoAplicado: precoAplicado,
         lote: lote,
         validade: validade,
         dataDevolucao: dataDevolucao,

@@ -291,7 +291,10 @@ function calcularCustosKits(dtIni, dtFim) {
         if (!dataEvento || Number.isNaN(timestamp) || timestamp < dtIni || timestamp > dtFim) return;
 
         const kit = evento.tipoKit || 'Não informado';
-        const precoUnit = Number(precosKits[kit]) || 0;
+        const precoUnit = evento.precoUnitarioAplicado !== null
+            && evento.precoUnitarioAplicado !== undefined
+            ? Number(evento.precoUnitarioAplicado) || 0
+            : Number(precosKits[kit]) || 0;
         const quantidade = Number(evento.quantidade) || 0;
         if (precoUnit <= 0 || quantidade <= 0) return;
 
@@ -326,7 +329,10 @@ function calcularCustosGeradores(dtIni, dtFim) {
         if (!dataRecebimento || Number.isNaN(timestamp) || timestamp < dtIni || timestamp > dtFim) return;
 
         const atividade = Number.parseFloat(registro.atividade) || 0;
-        const preco = Number.parseFloat(precosGeradores[atividade]) || 0;
+        const preco = registro.precoAplicado !== null
+            && registro.precoAplicado !== undefined
+            ? Number.parseFloat(registro.precoAplicado) || 0
+            : Number.parseFloat(precosGeradores[atividade]) || 0;
         if (atividade <= 0 || preco <= 0) return;
 
         detalhes.push({

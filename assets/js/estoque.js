@@ -206,6 +206,10 @@ function cadastrarMovimentacaoEstoque() {
     }
 
     // 🆕 REGISTRAR NO HISTÓRICO
+    const precoUnitarioAplicado = tipoMovimento === 'saida'
+        && typeof precosKits !== 'undefined'
+        ? Number(precosKits[tipoKit]) || 0
+        : null;
     const eventoHistorico = {
         id: historicoIdCounter++,
         timestamp: agora,
@@ -215,6 +219,7 @@ function cadastrarMovimentacaoEstoque() {
         lote: lote,
         validade: validade,
         quantidade: quantidade,
+        precoUnitarioAplicado: precoUnitarioAplicado,
         responsavel: responsavel,
         observacao: observacao || (tipoMovimento === 'entrada' 
             ? 'Entrada no estoque' 
