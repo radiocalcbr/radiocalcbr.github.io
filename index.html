@@ -32,208 +32,90 @@
 <body>
 
 <!-- ===== TELA DE LOGIN ===== -->
-<div id="telaLogin" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #0a0a1a, #1a1a2e);
-    z-index: 99999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-">
-    <div style="
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,215,0,0.15);
-        border-radius: 24px;
-        padding: 40px 50px;
-        max-width: 400px;
-        width: 90%;
-    ">
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="font-size: 4rem;">☢️🩺</div>
-            <h1 style="color: #ffd700;">RadioCalc BR</h1>
-            <p style="color: #888;">Sistema de Planejamento de Radiofármacos</p>
+<div id="telaLogin" class="auth-screen">
+    <div class="auth-panel">
+        <div class="auth-header">
+            <div class="auth-icon">☢️🩺</div>
+            <h1 class="auth-title">RadioCalc BR</h1>
+            <p class="auth-subtitle">Sistema de Planejamento de Radiofármacos</p>
         </div>
-        
-        <div style="margin-bottom: 15px;">
-            <label style="color: #aaa; display: block; margin-bottom: 5px;">📧 Email</label>
-            <input type="email" id="emailLogin" placeholder="seu@email.com" style="
-                width: 100%;
-                padding: 12px;
-                border-radius: 10px;
-                border: 1px solid #333;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 1rem;
-            ">
+
+        <div class="auth-field">
+            <label class="auth-label">📧 Email</label>
+            <input type="email" id="emailLogin" class="auth-input" placeholder="seu@email.com">
         </div>
-        
-        <div style="margin-bottom: 20px;">
-            <label style="color: #aaa; display: block; margin-bottom: 5px;">🔑 Senha</label>
-            <input type="password" id="senhaLogin" placeholder="Digite sua senha" style="
-                width: 100%;
-                padding: 12px;
-                border-radius: 10px;
-                border: 1px solid #333;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 1rem;
-            " onkeypress="if(event.key==='Enter') fazerLogin()">
+
+        <div class="auth-field compact">
+            <label class="auth-label">🔑 Senha</label>
+            <input type="password" id="senhaLogin" class="auth-input" placeholder="Digite sua senha" onkeypress="if(event.key==='Enter') fazerLogin()">
         </div>
-        
-        <button onclick="fazerLogin()" style="
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(90deg, #ffd700, #f7971e);
-            border: none;
-            border-radius: 10px;
-            color: #000;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.3s;
-        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+
+        <button class="auth-button" onclick="fazerLogin()">
             🔓 Entrar
         </button>
-        <!-- DEPOIS do botão "Entrar" -->
-<div style="margin-top: 10px; text-align: center;">
-    <a href="#" onclick="esqueciSenha()" style="color: #888; text-decoration: none; font-size: 0.8rem;">
-        🔑 Esqueci minha senha
-    </a>
-</div>
-        
-        <div id="erroLogin" style="color: #ff6b6b; text-align: center; margin-top: 15px; display: none;"></div>
-        <!-- Link para criar conta -->
-<div style="margin-top: 15px; text-align: center;">
-    <span style="color: #555; font-size: 0.85rem;">
-        Não tem uma conta?
-        <a href="#" onclick="mostrarCadastro()" style="color: #ffd700; text-decoration: none; font-weight: bold;">
-            📝 Criar conta
-        </a>
-    </span>
-</div>
-        <div style="margin-top: 20px; text-align: center; font-size: 0.7rem; color: #555;">
-            🔒 Acesso restrito
+
+        <div class="auth-link-row">
+            <a href="#" class="auth-link" onclick="esqueciSenha()">
+                🔑 Esqueci minha senha
+            </a>
         </div>
+
+        <div id="erroLogin" class="auth-message"></div>
+
+        <div class="auth-footer">
+            <span class="auth-footer-muted">Não tem uma conta?</span>
+            <a href="#" class="auth-switch-link" onclick="mostrarCadastro()">
+                📝 Criar conta
+            </a>
+        </div>
+
+        <div class="auth-access-note">🔒 Acesso restrito</div>
     </div>
 </div>
 <!-- ===== TELA DE CADASTRO ===== -->
-<div id="telaCadastro" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #0a0a1a, #1a1a2e);
-    z-index: 99999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-">
-    <div style="
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,215,0,0.15);
-        border-radius: 24px;
-        padding: 40px 50px;
-        max-width: 400px;
-        width: 90%;
-    ">
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="font-size: 4rem;">📝</div>
-            <h1 style="color: #ffd700;">Criar Conta</h1>
-            <p style="color: #888; font-size: 0.9rem;">Preencha os dados para se cadastrar</p>
+<div id="telaCadastro" class="auth-screen hidden">
+    <div class="auth-panel">
+        <div class="auth-header">
+            <div class="auth-icon">📝</div>
+            <h1 class="auth-title">Criar Conta</h1>
+            <p class="auth-subtitle">Preencha os dados para se cadastrar</p>
         </div>
-        
-        <div style="margin-bottom: 15px;">
-            <label style="color: #aaa; display: block; margin-bottom: 5px;">📧 Email</label>
-            <input type="email" id="emailCadastro" placeholder="seu@email.com" style="
-                width: 100%;
-                padding: 12px;
-                border-radius: 10px;
-                border: 1px solid #333;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 1rem;
-            ">
+
+        <div class="auth-field">
+            <label class="auth-label">📧 Email</label>
+            <input type="email" id="emailCadastro" class="auth-input" placeholder="seu@email.com">
         </div>
-        
-        <div style="margin-bottom: 15px;">
-            <label style="color: #aaa; display: block; margin-bottom: 5px;">🔑 Senha</label>
-            <input type="password" id="senhaCadastro" placeholder="Mínimo 6 caracteres" style="
-                width: 100%;
-                padding: 12px;
-                border-radius: 10px;
-                border: 1px solid #333;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 1rem;
-            ">
+
+        <div class="auth-field">
+            <label class="auth-label">🔑 Senha</label>
+            <input type="password" id="senhaCadastro" class="auth-input" placeholder="Mínimo 6 caracteres">
         </div>
-        
-        <div style="margin-bottom: 20px;">
-            <label style="color: #aaa; display: block; margin-bottom: 5px;">🔑 Confirmar Senha</label>
-            <input type="password" id="confirmarSenhaCadastro" placeholder="Digite a senha novamente" style="
-                width: 100%;
-                padding: 12px;
-                border-radius: 10px;
-                border: 1px solid #333;
-                background: rgba(255,255,255,0.05);
-                color: #fff;
-                font-size: 1rem;
-            ">
+
+        <div class="auth-field compact">
+            <label class="auth-label">🔑 Confirmar Senha</label>
+            <input type="password" id="confirmarSenhaCadastro" class="auth-input" placeholder="Digite a senha novamente">
         </div>
-        
-        <button onclick="fazerCadastro()" style="
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(90deg, #ffd700, #f7971e);
-            border: none;
-            border-radius: 10px;
-            color: #000;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.3s;
-        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+
+        <button class="auth-button" onclick="fazerCadastro()">
             📝 Criar Conta
         </button>
-        
-        <div id="erroCadastro" style="color: #ff6b6b; text-align: center; margin-top: 15px; display: none;"></div>
-        
-        <div style="margin-top: 15px; text-align: center; font-size: 0.85rem;">
-            <span style="color: #555;">Já tem uma conta?</span>
-            <a href="#" onclick="mostrarLogin()" style="color: #ffd700; text-decoration: none;">Fazer login</a>
+
+        <div id="erroCadastro" class="auth-message"></div>
+
+        <div class="auth-footer">
+            <span class="auth-footer-muted">Já tem uma conta?</span>
+            <a href="#" class="auth-switch-link" onclick="mostrarLogin()">Fazer login</a>
         </div>
     </div>
 </div>
 <!-- ===== CONTEÚDO PRINCIPAL (começo) ===== -->
 <div id="conteudoPrincipal" style="display: none;">
      <!-- Banner do usuário -->
-    <div style="
-        background: rgba(255,215,0,0.05);
-        padding: 10px 20px;
-        border-radius: 8px;
-        border: 1px solid rgba(255,215,0,0.1);
-        margin: 10px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-    ">
-        <span style="color: #aaa;">
-            👤 <strong id="nomeUsuarioLogado" style="color: #ffd700;">Carregando...</strong>
+    <div class="user-banner">
+        <span>
+            👤 <strong id="nomeUsuarioLogado">Carregando...</strong>
         </span>
-        <button onclick="fazerLogout()" style="
-            background: rgba(255,107,107,0.1);
-            border: 1px solid rgba(255,107,107,0.2);
-            color: #ff6b6b;
-            padding: 5px 15px;
-            border-radius: 15px;
-            cursor: pointer;
-        ">
+        <button class="logout-btn" onclick="fazerLogout()">
             🚪 Sair
         </button>
     </div>
@@ -254,75 +136,20 @@
             </div>
         </h1>
         <p class="subtitle" data-translate="subtitulo">Planejamento de Radiofármacos · Tc-99m · F-18 · I-123</p>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 8px; flex-wrap: wrap;">
-            <!-- BOTÃO SALVAR DADOS -->
-            <button onclick="salvarTodosOsDados()" style="
-                background: rgba(0,210,255,0.15);
-                border: 1px solid rgba(0,210,255,0.3);
-                color: #00d2ff;
-                padding: 6px 16px;
-                border-radius: 20px;
-                cursor: pointer;
-                font-size: 0.75rem;
-                font-weight: 600;
-                transition: 0.3s;
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-            " onmouseover="this.style.background='rgba(0,210,255,0.25)'" onmouseout="this.style.background='rgba(0,210,255,0.15)'">
+        <div class="header-actions">
+            <button class="header-action-btn primary" onclick="salvarTodosOsDados()">
                 💾 Salvar Dados
             </button>
-            
-            <!-- BOTÃO LIMPAR DADOS -->
-            <button onclick="limparDadosSalvos()" style="
-                background: rgba(255,107,107,0.15);
-                border: 1px solid rgba(255,107,107,0.3);
-                color: #ff6b6b;
-                padding: 6px 16px;
-                border-radius: 20px;
-                cursor: pointer;
-                font-size: 0.75rem;
-                font-weight: 600;
-                transition: 0.3s;
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-            " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+
+            <button class="header-action-btn danger" onclick="limparDadosSalvos()">
                 🗑️ Limpar Dados
             </button>
-            
-            <!-- BOTÃO SOBRE -->
-            <button onclick="abrirSobre()" style="
-                background: rgba(255,255,255,0.05);
-                border: 1px solid rgba(255,255,255,0.1);
-                color: #aaa;
-                padding: 4px 14px;
-                border-radius: 20px;
-                cursor: pointer;
-                font-size: 0.75rem;
-                transition: 0.3s;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            " onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.color='#aaa';this.style.borderColor='rgba(255,255,255,0.1)'">
+
+            <button class="header-action-btn secondary" onclick="abrirSobre()">
                 ℹ️ Sobre
             </button>
-            
-            <!-- BOTÃO IDIOMA -->
-            <button onclick="toggleLanguage()" style="
-                background: rgba(255,255,255,0.08);
-                border: 1px solid rgba(255,215,0,0.3);
-                color: #ffd700;
-                padding: 4px 16px;
-                border-radius: 20px;
-                cursor: pointer;
-                font-size: 0.8rem;
-                font-weight: 600;
-                transition: 0.3s;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            " onmouseover="this.style.background='rgba(255,215,0,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+
+            <button class="header-action-btn lang" onclick="toggleLanguage()">
                 🌐 <span id="langLabel">PT</span> <span style="font-size: 0.6rem; opacity: 0.6;">▼</span>
             </button>
         </div>
@@ -352,7 +179,7 @@
         <button class="tab-btn" onclick="trocarAba('marcacao')" data-translate="aba_marcacao">🧪 Marcação</button>
         <button class="tab-btn" onclick="trocarAba('pacientes')" data-translate="aba_pacientes">👥 Pacientes</button>
         <button class="tab-btn" onclick="trocarAba('pediatrica')" data-translate="aba_pediatrica">👶 Dose Pediátrica</button>
-         <button class="tab-btn" onclick="trocarAba('ferramentas')" style="color: #9b59b6; border-color: #9b59b6;">
+         <button class="tab-btn tab-btn-tools" onclick="trocarAba('ferramentas')">
         🔧 Outras Ferramentas
     </button>
     </div>
@@ -360,34 +187,32 @@
        <!-- ===== ABA 1: PLANEJAMENTO OTIMIZADO ===== -->
     <div id="aba-planejamento" class="tab-content active">
         <div class="card">
-            <h3 class="card-title" style="color: #ff6b9d;" data-translate="plan_title">📋 Planejamento de Atividade</h3>
-            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;" data-translate="plan_desc">
-                <strong style="color: #ffd700;">Calcule a atividade necessária para marcar o kit</strong> considerando o número de pacientes, 
+            <h3 class="card-title card-title-pink" data-translate="plan_title">📋 Planejamento de Atividade</h3>
+            <p class="section-intro" data-translate="plan_desc">
+                <strong class="highlight-text">Calcule a atividade necessária para marcar o kit</strong> considerando o número de pacientes, 
                 dose por paciente e o decaimento do isótopo ao longo do tempo.
-                <span style="display: inline-block; margin-left: 10px; font-size: 0.7rem; color: #888;">
+                <span class="inline-support">
                     Suporte para Tc-99m, F-18 e I-123
                 </span>
-                <span style="display: inline-block; margin-left: 10px; font-size: 0.7rem; color: #00ff64; background: rgba(0,255,100,0.1); padding: 2px 10px; border-radius: 10px;">
+                <span class="inline-badge success">
                     ⚡ Otimizado para sobra mínima
                 </span>
             </p>
 
             <!-- ===== CALCULADORA DE MÚLTIPLAS ELUIÇÕES (DENTRO DO CARD) ===== -->
-            <div id="calculadora-multi-eluicoes" style="margin-top: 20px; margin-bottom: 30px; border: 1px solid rgba(155, 89, 182, 0.3); border-radius: 12px; padding: 20px; background: rgba(155, 89, 182, 0.05);">
-                <h3 style="color: #9b59b6; margin-bottom: 10px;">🔄 Calculadora de Múltiplas Eluições</h3>
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">
+            <div id="calculadora-multi-eluicoes" class="calculator-panel">
+                <h3 class="multi-eluicao-title">🔄 Calculadora de Múltiplas Eluições</h3>
+                <p class="multi-eluicao-desc">
                     Calcule a atividade de <strong style="color: #00d2ff;">Tc-99m</strong> disponível para uma <strong style="color: #ffd700;">nova eluição</strong>, 
                     considerando o tempo de recrescimento após a <strong style="color: #ff6b6b;">última eluição</strong> realizada.
                 </p>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-
-                    <!-- Coluna 1: Dados do Gerador -->
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 10px;">
-                        <h4 style="margin-top: 0; color: #00d2ff; font-size: 0.95rem;">⚛️⬇️ Dados do Gerador</h4>
-                        <div class="input-group">
-                            <label style="color: #ccc; font-size: 0.85rem;">Atividade nominal do Mo-99 (mCi):</label>
-                            <select id="atividade-nominal-multi" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
+                <div class="multi-eluicao-grid">
+                    <div class="multi-eluicao-column gerador">
+                        <h4>⚛️⬇️ Dados do Gerador</h4>
+                        <div class="input-group multi-eluicao-field">
+                            <label>Atividade nominal do Mo-99 (mCi):</label>
+                            <select id="atividade-nominal-multi" class="multi-eluicao-select">
                                 <option value="2000">2000 mCi</option>
                                 <option value="1500" selected>1500 mCi</option>
                                 <option value="1250">1250 mCi</option>
@@ -396,42 +221,38 @@
                                 <option value="500">500 mCi</option>
                                 <option value="250">250 mCi</option>
                             </select>
-                            <small style="color: #888; font-size: 0.75rem;">Atividade do Mo-99 no momento da calibração</small>
+                            <small>Atividade do Mo-99 no momento da calibração</small>
                         </div>
-                        <div class="input-group" style="margin-top: 12px;">
-                            <label style="color: #ccc; font-size: 0.85rem;">Data/Hora da calibração:</label>
-                            <input type="datetime-local" id="data-calibracao-multi" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
-                            <small style="color: #888; font-size: 0.75rem;">Data e hora fornecidas pelo fabricante</small>
+                        <div class="input-group multi-eluicao-field" style="margin-top: 12px;">
+                            <label>Data/Hora da calibração:</label>
+                            <input type="datetime-local" id="data-calibracao-multi" class="multi-eluicao-input">
+                            <small>Data e hora fornecidas pelo fabricante</small>
                         </div>
                     </div>
 
-                    <!-- Coluna 2: Última e Nova Eluição -->
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 10px;">
-                        <h4 style="margin-top: 0; color: #ffd700; font-size: 0.95rem;">⏰ Eluições</h4>
-                        <div class="input-group">
-                            <label style="color: #ccc; font-size: 0.85rem;">Data/Hora da Última Eluição:</label>
-                            <input type="datetime-local" id="data-ultima-eluicao-multi" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
-                            <small style="color: #888; font-size: 0.75rem;">Quando você eluiu pela última vez</small>
+                    <div class="multi-eluicao-column elucao">
+                        <h4>⏰ Eluições</h4>
+                        <div class="input-group multi-eluicao-field">
+                            <label>Data/Hora da Última Eluição:</label>
+                            <input type="datetime-local" id="data-ultima-eluicao-multi" class="multi-eluicao-input">
+                            <small>Quando você eluiu pela última vez</small>
                         </div>
-                        <div class="input-group" style="margin-top: 12px;">
-                            <label style="color: #ccc; font-size: 0.85rem;">Data/Hora da Nova Eluição:</label>
-                            <input type="datetime-local" id="data-nova-eluicao-multi" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
-                            <small style="color: #888; font-size: 0.75rem;">Quando você quer eluir agora</small>
+                        <div class="input-group multi-eluicao-field" style="margin-top: 12px;">
+                            <label>Data/Hora da Nova Eluição:</label>
+                            <input type="datetime-local" id="data-nova-eluicao-multi" class="multi-eluicao-input">
+                            <small>Quando você quer eluir agora</small>
                         </div>
-                        <button onclick="calcularMultiEluicao()" style="margin-top: 15px; padding: 12px 20px; background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1em; font-weight: bold; transition: 0.3s;">
+                        <button class="multi-eluicao-button" onclick="calcularMultiEluicao()">
                             ⚡ Calcular Nova Eluição
                         </button>
                     </div>
-
                 </div>
 
-                <!-- Resultados -->
-                <div id="resultado-multi-eluicoes" style="margin-top: 20px;"></div>
+                <div id="resultado-multi-eluicoes" class="multi-eluicao-result"></div>
             </div>
 
-            <!-- Seletor de modo -->
             <div class="mode-selector" id="modeSelector">
-                <span style="color: #888; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 10px;">Modo:</span>
+                <span class="mode-selector-title">Modo:</span>
                 <label class="active" id="labelModoSimplificado">
                     <input type="radio" name="modoPlanejamento" value="simplificado" checked onchange="toggleModoPlanejamento()">
                     📊 Simplificado (intervalo fixo)
@@ -483,18 +304,7 @@
     </div>
 </div>
 <!-- ===== ALERTA DE INTERVALO DE DATAS ===== -->
-<div id="alertaIntervalo" style="
-    margin: 15px 0;
-    padding: 12px 18px;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    background: rgba(0, 255, 100, 0.05);
-    border: 2px solid rgba(0, 255, 100, 0.2);
-    color: #00ff64;
-    text-align: center;
-    transition: 0.3s;
-">
+<div id="alertaIntervalo" class="status-alert">
     ✅ Intervalo adequado
 </div>
 
@@ -580,24 +390,23 @@
             </div>
 
             <!-- Botões de ação -->
-            <div class="grid-2" style="margin-top: 10px;">
-                <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                    <button class="btn-primary" onclick="calcularPlanejamentoComValidacao()" style="margin-top: 0; flex: 1; min-width: 120px;" data-translate="plan_btn_calcular">🎯 Calcular Atividade do Kit</button>
-                    <button class="btn-success" onclick="aplicarPlanejamento()" style="flex: 1; padding: 14px; min-width: 120px;" data-translate="plan_btn_aplicar">⚡ Aplicar à Marcação</button>
+            <div class="grid-2 action-row">
+                <div class="action-stack left">
+                    <button class="btn-primary action-btn-primary" onclick="calcularPlanejamentoComValidacao()" data-translate="plan_btn_calcular">🎯 Calcular Atividade do Kit</button>
+                    <button class="btn-success action-btn-success" onclick="aplicarPlanejamento()" data-translate="plan_btn_aplicar">⚡ Aplicar à Marcação</button>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                   <button class="btn-pdf" onclick="gerarExcelPlanejamento()" style="flex: 1; padding: 14px; min-width: 100px; background: rgba(0, 210, 255, 0.15); border: 1px solid rgba(0, 210, 255, 0.3); color: #00d2ff;">
+                <div class="action-stack right">
+                   <button class="btn-pdf btn-pdf-cyan" onclick="gerarExcelPlanejamento()">
     📊 Excel
 </button>
-                    <button class="btn-secondary" onclick="limparHistorico()" style="flex: 0.5; padding: 14px; text-align: center;" data-translate="plan_btn_limpar">🗑️</button>
+                    <button class="btn-secondary action-btn-clear" onclick="limparHistorico()" data-translate="plan_btn_limpar">🗑️</button>
                 </div>
             </div>
 
-            <div id="resultadoPlanejamento" style="display: none;">
+            <div id="resultadoPlanejamento" class="plan-result-section">
                 <div id="alertContainer"></div>
 
-                <!-- Cards de Resultado com Sobra Mínima -->
-                <div class="grid-3" style="margin-top: 15px;">
+                <div class="grid-3 plan-result-grid">
                     <div class="stat-card destaque" style="border-color: rgba(255,215,0,0.4);">
                         <div class="rotulo" data-translate="plan_atividade_kit">🎯 Atividade de Marcação</div>
                         <div class="valor" id="planAtividadeFinal" style="font-size: 2.3rem; color: #ffd700;">--</div>
@@ -621,18 +430,17 @@
                     <div class="stat-card" id="planStatusCard"><div class="rotulo" data-translate="plan_status">Status</div><div class="valor" id="planStatus" style="font-size: 1.2rem;">--</div></div>
                 </div>
 
-                <!-- Info Box de Otimização -->
-                <div class="info-box otimizacao" style="margin-top: 15px;">
+                <div class="info-box otimizacao plan-info-box">
                     <strong style="color: #00ff64;">⚡ Otimização Ativa:</strong>
                     <span id="infoOtimizacao" style="color: #aaa;">
                         A atividade de marcação foi calculada para que o último paciente receba a dose correta e sobre o mínimo possível no frasco.
                     </span>
                 </div>
 
-                <div class="card" style="margin-top: 15px; border-color: rgba(255, 107, 157, 0.2);">
-                    <h4 style="color: #ff6b9d; margin-bottom: 10px;" data-translate="plan_grafico_titulo">
+                <div class="card plan-graph-card">
+                    <h4 class="plan-graph-title" data-translate="plan_grafico_titulo">
                         📉 Curva de Decaimento do Kit
-                        <span id="isotopoLegenda" class="badge-tc" style="margin-left: 10px;">Tc-99m</span>
+                        <span id="isotopoLegenda" class="badge-tc plan-legend-tag">Tc-99m</span>
                     </h4>
                     <div class="grafico-wrapper"><canvas id="graficoDecaimento"></canvas></div>
                     <div class="legenda-grafico">
@@ -642,10 +450,10 @@
                     </div>
                 </div>
 
-                <div class="card" style="margin-top: 15px; border-color: rgba(255, 107, 157, 0.2);">
-                    <h4 style="color: #ff6b9d; margin-bottom: 10px;" data-translate="plan_tabela_titulo">📋 Distribuição por Paciente</h4>
+                <div class="card plan-graph-card">
+                    <h4 class="plan-table-title" data-translate="plan_tabela_titulo">📋 Distribuição por Paciente</h4>
                     <div class="table-wrapper">
-                        <table style="min-width: 700px; font-size: 0.75rem;">
+                        <table class="table-compact">
                             <thead>
                                 <tr>
                                     <th data-translate="plan_tabela_num">#</th>
@@ -662,22 +470,22 @@
                     </div>
                 </div>
 
-                <div class="info-box planejamento" style="margin-top: 15px;">
+                <div class="info-box planejamento plan-info-box">
                     <strong style="color: #ff6b9d;" data-translate="plan_recomendacao">💡 Recomendação:</strong> 
                     <span id="recomendacaoPlanejamento" data-translate="plan_recomendacao_texto">Preencha os dados e clique em "Calcular".</span>
                 </div>
 
-                <div class="card" style="margin-top: 15px; border-color: rgba(255, 215, 0, 0.2);">
-                    <h4 style="color: #ffd700; margin-bottom: 10px;" data-translate="plan_historico">📜 Histórico de Cálculos</h4>
+                <div class="card plan-history-card">
+                    <h4 class="plan-history-title" data-translate="plan_historico">📜 Histórico de Cálculos</h4>
                     <div id="historicoContainer">
                         <div style="color: #888; font-size: 0.85rem; text-align: center; padding: 20px;" data-translate="plan_historico_vazio">Nenhum cálculo salvo ainda.</div>
                     </div>
                 </div>
             </div>
 
-            <div class="info-box planejamento" style="margin-top: 15px; text-align: left !important;">
-                <strong style="color: #ff6b9d; display: block;" data-translate="plan_exemplo">📌 Exemplo Prático:</strong>
-                <span style="color: #aaa; font-size: 0.85rem; display: block;" data-translate="plan_exemplo_texto">
+            <div class="info-box planejamento example-box">
+                <strong data-translate="plan_exemplo">📌 Exemplo Prático:</strong>
+                <span data-translate="plan_exemplo_texto">
                     <strong>15 pacientes</strong> · Dose: <strong>15 mCi</strong> cada · 1ª injeção: <strong>07:30</strong> · Última: <strong>14:30</strong><br>
                     Tc-99m (meia-vida: 362 min) · Margem: 10%<br>
                     → Atividade de marcação otimizada: <strong style="color: #ffd700;">~405 mCi</strong> (sobra mínima!)
@@ -744,7 +552,7 @@
         </div>
 
         <!-- ===== NOVOS CAMPOS MANUAIS PARA ETIQUETA ===== -->
-<div class="grid-2" style="margin-top: 15px; border-top: 1px solid rgba(255,215,0,0.15); padding-top: 15px;">
+<div class="grid-2 marcacao-top-fields">
     <div class="input-group">
         <label>📦 Lote do Frasco</label>
         <input type="text" id="loteFrasco" placeholder="Ex: L12345678" value="">
@@ -779,93 +587,49 @@
     </div>
 </div>
 
-    <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-    <button class="btn-primary" onclick="calcularMarcacao()" style="flex: 2; min-width: 150px;" data-translate="marc_btn_calcular">📊 Calcular Marcação</button>
+    <div class="marcacao-button-row">
+    <button class="btn-primary marcacao-main-btn" onclick="calcularMarcacao()" data-translate="marc_btn_calcular">📊 Calcular Marcação</button>
     
 </div>
 
 <!-- STATUS E BOTÃO ZEBRA -->
 <!-- STATUS E BOTÃO ZEBRA -->
-<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
-    <button class="btn-zebra" onclick="imprimirEtiquetaZebra()" id="btnZebra" style="
-        flex: 1; 
-        min-width: 160px; 
-        background: linear-gradient(90deg, #1a237e, #0d1442); 
-        color: #fff; 
-        border: none; 
-        border-radius: 10px; 
-        padding: 14px; 
-        font-weight: bold; 
-        cursor: pointer; 
-        transition: 0.3s;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        opacity: 0.5;
-    " disabled>
-        <span style="font-size: 1.1em;">🏷️</span> Imprimir Zebra
+<div class="zebra-actions">
+    <button class="btn-zebra zebra-print-btn" onclick="imprimirEtiquetaZebra()" id="btnZebra" disabled>
+        <span class="icon">🏷️</span> Imprimir Zebra
     </button>
     
-    <div id="statusZebraContainer" style="
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 8px;
-        padding: 8px 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
-        min-width: 200px;
-    ">
-        <span style="font-size: 1.1rem;">🖨️</span>
-        <span id="statusZebra" style="color: #ffd700; font-size: 0.8rem; font-weight: 600;">Verificando...</span>
-        <button onclick="verificarStatusImpressoraZebra()" style="
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
-            padding: 2px 10px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 0.65rem;
-            transition: 0.3s;
-        " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+    <div id="statusZebraContainer" class="zebra-status-container">
+        <span class="zebra-status-icon">🖨️</span>
+        <span id="statusZebra" class="zebra-status-text">Verificando...</span>
+        <button class="zebra-refresh-btn" onclick="verificarStatusImpressoraZebra()">
             🔄
         </button>
     </div>
 </div>
 
 <!-- MENSAGEM INFORMATIVA (aparece quando não tem Browser Print) -->
-<div id="mensagemZebraInfo" style="
-    display: none;
-    margin-top: 8px;
-    padding: 8px 15px;
-    background: rgba(255, 215, 0, 0.05);
-    border: 1px solid rgba(255, 215, 0, 0.15);
-    border-radius: 6px;
-    font-size: 0.75rem;
-    color: #aaa;
-">
+<div id="mensagemZebraInfo" class="zebra-info">
     ℹ️ Para imprimir na Zebra, é necessário instalar o software 
-    <strong style="color: #ffd700;">Browser Print da Zebra</strong>.
+    <strong>Browser Print da Zebra</strong>.
 </div>
 
 
     </div>
     <!-- ===== EFICIÊNCIA DE MARCAÇÃO ===== -->
-<div id="secaoEficienciaMarcacao" style="margin-top: 25px; border-top: 2px solid rgba(255,215,0,0.2); padding-top: 20px;">
-    <h4 style="color: #ffd700; margin-bottom: 15px;">🧪 Eficiência de Marcação</h4>
-    <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 15px;">
+<div id="secaoEficienciaMarcacao" class="efficiency-section">
+    <h4>🧪 Eficiência de Marcação</h4>
+    <p class="efficiency-note">
         Calcule a pureza radioquímica do radiofármaco marcado com base nas atividades das frações cromatográficas.
-        <span style="display: inline-block; margin-left: 10px; background: rgba(0,210,255,0.1); padding: 2px 12px; border-radius: 12px; color: #00d2ff; font-size: 0.75rem;">
+        <span class="efficiency-badge">
             Referência: USP 40 e bulas dos fabricantes
         </span>
     </p>
 
-    <div class="grid-3" style="align-items: end;">
+    <div class="grid-3 efficiency-grid">
         <div class="input-group">
-            <label style="color: #ccc; font-size: 0.85rem;">Radiofármaco / Kit</label>
-            <select id="kitMarcacao" onchange="atualizarCamposEficiencia()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
+            <label class="efficiency-input-label">Radiofármaco / Kit</label>
+            <select id="kitMarcacao" class="efficiency-select" onchange="atualizarCamposEficiencia()">
                 <option value="eluato" selected>Eluato</option>
                 <option value="kardia">MIBI</option>
                 <option value="osteo">MDP</option>
@@ -874,97 +638,97 @@
                 <option value="nefro">DTPA</option>
                 <option value="piro">PIRO</option>
             </select>
-            <small style="color: #888; font-size: 0.75rem;">Selecione o kit para ver as fórmulas específicas</small>
+            <small>Selecione o kit para ver as fórmulas específicas</small>
         </div>
 
         <!-- ===== DADOS DA PLACA 1 ===== -->
-        <div style="background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.2); padding: 15px; border-radius: 8px;">
-            <h5 style="color: #2ecc71; margin: 0 0 10px 0; font-size: 0.9rem;">📊 Placa 1</h5>
-            <div class="input-group" style="margin-bottom: 8px;">
-                <label style="color: #ccc; font-size: 0.8rem;">Atividade Fração 1 (cpm/mCi)</label>
-                <input type="number" id="placa1Fracao1" value="95" step="any" min="0" oninput="calcularEficienciaMarcacao()" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
+        <div class="efficiency-panel success">
+            <h5>📊 Placa 1</h5>
+            <div class="input-group mb-8">
+                <label class="efficiency-input-label">Atividade Fração 1 (cpm/mCi)</label>
+                <input type="number" id="placa1Fracao1" class="efficiency-input" value="95" step="any" min="0" oninput="calcularEficienciaMarcacao()">
             </div>
-            <div class="input-group" style="margin-bottom: 0;">
-                <label style="color: #ccc; font-size: 0.8rem;">Atividade Fração 2 (cpm/mCi)</label>
-                <input type="number" id="placa1Fracao2" value="5" step="any" min="0" oninput="calcularEficienciaMarcacao()" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
+            <div class="input-group mb-0">
+                <label class="efficiency-input-label">Atividade Fração 2 (cpm/mCi)</label>
+                <input type="number" id="placa1Fracao2" class="efficiency-input" value="5" step="any" min="0" oninput="calcularEficienciaMarcacao()">
             </div>
         </div>
 
         <!-- ===== DADOS DA PLACA 2 ===== -->
-        <div style="background: rgba(241, 196, 15, 0.08); border: 1px solid rgba(241, 196, 15, 0.2); padding: 15px; border-radius: 8px;">
-            <h5 style="color: #f1c40f; margin: 0 0 10px 0; font-size: 0.9rem;">📊 Placa 2</h5>
-            <div class="input-group" style="margin-bottom: 8px;">
-                <label style="color: #ccc; font-size: 0.8rem;">Atividade Fração 1 (cpm/mCi)</label>
-                <input type="number" id="placa2Fracao1" value="2" step="any" min="0" oninput="calcularEficienciaMarcacao()" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
+        <div class="efficiency-panel warning">
+            <h5>📊 Placa 2</h5>
+            <div class="input-group mb-8">
+                <label class="efficiency-input-label">Atividade Fração 1 (cpm/mCi)</label>
+                <input type="number" id="placa2Fracao1" class="efficiency-input" value="2" step="any" min="0" oninput="calcularEficienciaMarcacao()">
             </div>
-            <div class="input-group" style="margin-bottom: 0;">
-                <label style="color: #ccc; font-size: 0.8rem;">Atividade Fração 2 (cpm/mCi)</label>
-                <input type="number" id="placa2Fracao2" value="98" step="any" min="0" oninput="calcularEficienciaMarcacao()" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.95rem;">
+            <div class="input-group mb-0">
+                <label class="efficiency-input-label">Atividade Fração 2 (cpm/mCi)</label>
+                <input type="number" id="placa2Fracao2" class="efficiency-input" value="98" step="any" min="0" oninput="calcularEficienciaMarcacao()">
             </div>
         </div>
     </div>
 
     <!-- Botão Calcular -->
-    <div style="margin-top: 15px;">
-        <button onclick="calcularEficienciaMarcacao()" style="padding: 12px 30px; background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; transition: 0.3s;">
+    <div class="efficiency-actions">
+        <button class="btn-purple" onclick="calcularEficienciaMarcacao()">
             🔬 Calcular Eficiência de Marcação
         </button>
-        <button onclick="limparCamposEficiencia()" style="padding: 12px 20px; background: rgba(255,255,255,0.05); color: #888; border: 1px solid #444; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: 0.3s; margin-left: 10px;">
+        <button class="btn-secondary" onclick="limparCamposEficiencia()">
             🗑️ Limpar
         </button>
     </div>
 
     <!-- Resultados -->
-    <div id="resultadoEficienciaMarcacao" style="display: none; margin-top: 20px;">
-        <div style="background: rgba(255,255,255,0.03); border: 2px solid rgba(155, 89, 182, 0.3); padding: 20px; border-radius: 10px;">
-            <h4 style="margin-top: 0; color: #9b59b6;">✅ Resultado da Eficiência de Marcação</h4>
+    <div id="resultadoEficienciaMarcacao" class="efficiency-result">
+        <div class="efficiency-result-box">
+            <h4>✅ Resultado da Eficiência de Marcação</h4>
 
             <!-- Cards de Resultado -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 15px 0;">
-                <div style="background: rgba(46, 204, 113, 0.15); padding: 20px; border-radius: 8px; border: 1px solid rgba(46, 204, 113, 0.2); text-align: center;">
-                    <strong style="color: #aaa;">Placa 1</strong><br>
-                    <span style="font-size: 2em; color: #2ecc71;" id="resultadoPlaca1">--%</span>
-                    <br><small id="placa1Detalhe" style="color: #888;">--</small>
+            <div class="efficiency-score-grid">
+                <div class="efficiency-score success">
+                    <strong>Placa 1</strong><br>
+                    <span id="resultadoPlaca1" style="color: #2ecc71;">--%</span>
+                    <br><small id="placa1Detalhe">--</small>
                 </div>
-                <div style="background: rgba(241, 196, 15, 0.15); padding: 20px; border-radius: 8px; border: 1px solid rgba(241, 196, 15, 0.2); text-align: center;">
-                    <strong style="color: #aaa;">Placa 2</strong><br>
-                    <span style="font-size: 2em; color: #f1c40f;" id="resultadoPlaca2">--%</span>
-                    <br><small id="placa2Detalhe" style="color: #888;">--</small>
+                <div class="efficiency-score warning">
+                    <strong>Placa 2</strong><br>
+                    <span id="resultadoPlaca2" style="color: #f1c40f;">--%</span>
+                    <br><small id="placa2Detalhe">--</small>
                 </div>
-                <div style="background: rgba(0, 210, 255, 0.15); padding: 20px; border-radius: 8px; border: 1px solid rgba(0, 210, 255, 0.2); text-align: center;">
-                    <strong style="color: #aaa;">🧪 Pureza Radioquímica</strong><br>
-                    <span style="font-size: 2em; color: #00d2ff;" id="resultadoPureza">--%</span>
+                <div class="efficiency-score info">
+                    <strong>🧪 Pureza Radioquímica</strong><br>
+                    <span id="resultadoPureza" style="color: #00d2ff;">--%</span>
                 </div>
             </div>
 
             <!-- Status -->
-            <div id="statusEficienciaContainer" style="margin-top: 15px; padding: 15px; border-radius: 8px; border-left: 4px solid #2ecc71; background: rgba(46, 204, 113, 0.05);">
-                <strong id="statusEficienciaTitulo" style="color: #2ecc71;">✅ APROVADO</strong>
-                <span id="statusEficienciaTexto" style="color: #aaa; font-size: 0.9rem; margin-left: 10px;">
+            <div id="statusEficienciaContainer" class="efficiency-status">
+                <strong id="statusEficienciaTitulo">✅ APROVADO</strong>
+                <span id="statusEficienciaTexto">
                     A pureza radioquímica está dentro dos padrões exigidos.
                 </span>
             </div>
 
             <!-- Informações do Kit -->
-            <div style="background: rgba(0, 210, 255, 0.05); border: 1px solid rgba(0, 210, 255, 0.1); padding: 15px; border-radius: 8px; margin-top: 10px;">
-                <strong style="color: #00d2ff;">📋 Detalhes do Cálculo:</strong><br>
-                <span style="color: #aaa; font-size: 0.9rem;">
+            <div class="efficiency-details">
+                <strong>📋 Detalhes do Cálculo:</strong><br>
+                <span>
                     • Kit: <strong id="kitNomeResultado" style="color: #fff;">--</strong><br>
                     • Fórmula: <span id="formulaEficiencia" style="color: #ffd700;">--</span>
                 </span>
             </div>
 
             <!-- Referência -->
-            <div style="margin-top: 10px; color: #666; font-size: 0.7rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+            <div class="efficiency-reference">
                 Referência: USP 40 – Technetium Tc 99m e bulas dos fabricantes
             </div>
         </div>
     </div>
 
     <!-- Informações do Kit (Fórmulas) -->
-    <div id="infoKitEficiencia" style="margin-top: 15px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 15px; border-radius: 8px;">
-        <strong style="color: #ffd700;">📌 Fórmula do Kit Selecionado:</strong><br>
-        <span id="infoKitTexto" style="color: #aaa; font-size: 0.9rem;">
+    <div id="infoKitEficiencia" class="efficiency-kit-info">
+        <strong>📌 Fórmula do Kit Selecionado:</strong><br>
+        <span id="infoKitTexto">
             KARDIA (MIBI): Placa 1 = (Fração 2 / Fração 1 + 2) × 100 | Placa 2 = (Fração 1 / Fração 1 + 2) × 100 | Pureza ≥ 90%
         </span>
     </div>
@@ -1235,54 +999,30 @@
     </p>
 </footer>
 <!-- ===== TOAST DE NOTIFICAÇÃO ===== -->
-<div id="toastNotificacao" style="
-    display: none;
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 999999;
-    padding: 16px 24px;
-    border-radius: 10px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    border-left: 5px solid #ff6b6b;
-    background: rgba(255, 107, 107, 0.95);
-    color: #fff;
-    max-width: 400px;
-    animation: slideIn 0.3s ease;
-    transition: all 0.3s;
-">
+<div id="toastNotificacao" class="toast">
     <span id="toastMensagem"></span>
 </div>
-
-<style>
-@keyframes slideIn {
-    from { transform: translateX(400px); opacity: 0; }
-    to   { transform: translateX(0);     opacity: 1; }
-}
-</style>
 
 <!-- ===== BOTÃO FLUTUANTE DE FEEDBACK ===== -->
 <button class="feedback-button-floating" onclick="abrirFeedback()">
     💬 Feedback
-    <span style="background: #ff6b6b; color: #fff; border-radius: 50%; padding: 2px 8px; font-size: 0.7rem;">1</span>
+    <span class="count">1</span>
 </button>
 
 <!-- ===== MODAL SOBRE ===== -->
 <div class="modal-sobre-overlay" id="modalSobre" onclick="fecharSobreExterno(event)">
-    <div class="modal-sobre" style="text-align: left;">
+    <div class="modal-sobre">
         <button class="fechar" onclick="fecharSobre()">✕</button>
 
         <div class="header-sobre">
-            <span class="icon" style="font-size: 2.8rem;">☢️🩺</span>
+            <span class="icon">☢️🩺</span>
             <div>
                 <h2>RadioCalc BR</h2>
                 <span class="versao">v1.6 beta</span>
             </div>
         </div>
 
-        <div class="descricao" style="text-align: left;">
+        <div class="descricao">
             O <strong>RadioCalc BR</strong> é uma ferramenta computacional em desenvolvimento, idealizada para auxiliar profissionais e estudantes da Medicina Nuclear na realização de cálculos relacionados ao preparo, controle de qualidade e administração de radiofármacos.
             <br><br>
             O projeto tem como objetivo contribuir para a <strong>padronização dos cálculos</strong>, reduzir a possibilidade de erros operacionais e otimizar a rotina dos serviços de Medicina Nuclear, por meio de uma interface simples, acessível e de fácil utilização, disponível diretamente em navegador web.
@@ -1291,22 +1031,22 @@
         </div>
 
         <div class="grid-sobre">
-            <div class="item" style="text-align: left;">
+            <div class="item">
                 <div class="emoji">🎯</div>
                 <h4>Objetivo</h4>
                 <p>Auxiliar no planejamento, marcação e administração segura de radiofármacos, com suporte para Tc-99m, F-18 e I-123.</p>
             </div>
-            <div class="item" style="text-align: left;">
+            <div class="item">
                 <div class="emoji">📋</div>
                 <h4>Funcionalidades</h4>
                 <p>Planejamento de atividade, marcação, gestão de pacientes e dose pediátrica baseada nas diretrizes SNMMI 2024.</p>
             </div>
-            <div class="item" style="text-align: left;">
+            <div class="item">
                 <div class="emoji">👶</div>
                 <h4>Dose Pediátrica</h4>
                 <p>Diretriz SNMMI 2024 com limites mínimos e máximos por faixa etária e peso, com fator de correção ajustável.</p>
             </div>
-            <div class="item" style="text-align: left;">
+            <div class="item">
                 <div class="emoji">📊</div>
                 <h4>Relatórios</h4>
                 <p>Geração de PDFs detalhados do planejamento e da lista de pacientes para documentação e arquivamento.</p>
@@ -1334,92 +1074,34 @@
     </div>
 </div>
 <!-- ===== MODAL DE GERÊNCIA DE ESTOQUE (VERSÃO SIMPLIFICADA) ===== -->
-<div id="modalEstoque" style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(10px);
-    z-index: 99999;
-    align-items: center;
-    justify-content: center;
-    overflow-y: auto;
-    padding: 20px;
-">
-    <div style="
-        background: #1a1a2e;
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 1200px;
-        width: 95%;
-        max-height: 95vh;
-        overflow-y: auto;
-        border: 1px solid rgba(155,89,182,0.3);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-        position: relative;
-    ">
+<div id="modalEstoque" class="estoque-modal">
+    <div class="modal-conteudo estoque-modal-content">
      <!-- Cabeçalho -->
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
+<div class="estoque-header">
     <div>
-        <h3 style="color: #9b59b6; margin: 0;">📦 Gerência de Estoque de Kits</h3>
-        <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
+        <h3 class="estoque-title">📦 Gerência de Estoque de Kits</h3>
+        <p class="estoque-subtitle">
             Controle de entrada e saída de frascos de kits para marcação
         </p>
     </div>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <div class="estoque-header-actions">
         <!-- INDICADOR DE NUVEM -->
-        <span id="indicadorEstoqueNuvem" style="
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            color: #888;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-        ">
+        <span id="indicadorEstoqueNuvem" class="estoque-cloud-status">
             ☁️ Verificando...
         </span>
         
         <!-- BOTÃO SALVAR NA NUVEM -->
-        <button onclick="salvarEstoqueNaNuvem()" style="
-            background: rgba(46,204,113,0.15);
-            border: 1px solid rgba(46,204,113,0.3);
-            color: #2ecc71;
-            padding: 6px 14px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        " onmouseover="this.style.background='rgba(46,204,113,0.25)'" onmouseout="this.style.background='rgba(46,204,113,0.15)'">
+        <button class="estoque-cloud-btn salvar" onclick="salvarEstoqueNaNuvem()">
             ☁️ Salvar Nuvem
         </button>
         
         <!-- BOTÃO CARREGAR DA NUVEM -->
-        <button onclick="carregarEstoqueDaNuvem()" style="
-            background: rgba(52,152,219,0.15);
-            border: 1px solid rgba(52,152,219,0.3);
-            color: #3498db;
-            padding: 6px 14px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        " onmouseover="this.style.background='rgba(52,152,219,0.25)'" onmouseout="this.style.background='rgba(52,152,219,0.15)'">
+        <button class="estoque-cloud-btn carregar" onclick="carregarEstoqueDaNuvem()">
             ☁️ Carregar Nuvem
         </button>
         
         <!-- BOTÃO FECHAR -->
-        <button onclick="
+        <button class="estoque-close-btn" onclick="
             var modal = document.getElementById('modalEstoque');
             if (modal) {
                 modal.style.display = 'none';
@@ -1428,41 +1110,19 @@
                 modal.style.pointerEvents = 'none';
                 modal.classList.remove('ativo');
             }
-        " style="
-            background: rgba(255,255,255,0.05);
-            border: none;
-            color: #888;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0 10px;
-            transition: 0.3s;
-        " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+        ">✕</button>
     </div>
 </div>
 
         <!-- ===== FORMULÁRIO DE CADASTRO ===== -->
-        <div style="
-            background: rgba(155,89,182,0.05);
-            border: 1px solid rgba(155,89,182,0.15);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 25px;
-        ">
-            <h4 style="color: #ffd700; margin: 0 0 15px 0; font-size: 1rem;">📝 Cadastrar Movimentação</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div class="estoque-form-panel">
+            <h4 class="estoque-form-title">📝 Cadastrar Movimentação</h4>
+            <div class="estoque-form-grid">
                 
                 <!-- Tipo do Kit -->
                 <div class="input-group">
-                    <label style="color: #ccc; font-size: 0.85rem;">🧪 Tipo do Kit</label>
-                    <select id="estoqueTipoKit" style="
-                        width: 100%;
-                        padding: 10px 14px;
-                        border-radius: 8px;
-                        border: 1px solid #444;
-                        background: rgba(255,255,255,0.05);
-                        color: #fff;
-                        font-size: 0.95rem;
-                    ">
+                    <label class="estoque-label">🧪 Tipo do Kit</label>
+                    <select id="estoqueTipoKit" class="estoque-input">
                         <optgroup label="🔵 Tc-99m">
                             <option value="MIBI">MIBI (Miocárdio)</option>
                             <option value="MDP">MDP (Ósseo)</option>
@@ -1476,58 +1136,26 @@
 
                 <!-- Lote -->
                 <div class="input-group">
-                    <label style="color: #ccc; font-size: 0.85rem;">🔢 Lote</label>
-                    <input type="text" id="estoqueLote" placeholder="Ex: L12345678" style="
-                        width: 100%;
-                        padding: 10px 14px;
-                        border-radius: 8px;
-                        border: 1px solid #444;
-                        background: rgba(255,255,255,0.05);
-                        color: #fff;
-                        font-size: 0.95rem;
-                    ">
+                    <label class="estoque-label">🔢 Lote</label>
+                    <input type="text" id="estoqueLote" class="estoque-input" placeholder="Ex: L12345678">
                 </div>
 
                 <!-- Validade -->
                 <div class="input-group">
-                    <label style="color: #ccc; font-size: 0.85rem;">📅 Validade</label>
-                    <input type="date" id="estoqueValidade" style="
-                        width: 100%;
-                        padding: 10px 14px;
-                        border-radius: 8px;
-                        border: 1px solid #444;
-                        background: rgba(255,255,255,0.05);
-                        color: #fff;
-                        font-size: 0.95rem;
-                    ">
+                    <label class="estoque-label">📅 Validade</label>
+                    <input type="date" id="estoqueValidade" class="estoque-input">
                 </div>
 
                 <!-- Quantidade de Frascos -->
                 <div class="input-group">
-                    <label style="color: #ccc; font-size: 0.85rem;">📦 Quant. de Frascos</label>
-                    <input type="number" id="estoqueQuantidade" value="1" min="1" step="1" style="
-                        width: 100%;
-                        padding: 10px 14px;
-                        border-radius: 8px;
-                        border: 1px solid #444;
-                        background: rgba(255,255,255,0.05);
-                        color: #fff;
-                        font-size: 0.95rem;
-                    ">
+                    <label class="estoque-label">📦 Quant. de Frascos</label>
+                    <input type="number" id="estoqueQuantidade" class="estoque-input" value="1" min="1" step="1">
                 </div>
 
                 <!-- Tipo de Movimentação -->
                 <div class="input-group">
-                    <label style="color: #ccc; font-size: 0.85rem;">🔄 Tipo de Movimentação</label>
-                    <select id="estoqueTipoMovimento" style="
-                        width: 100%;
-                        padding: 10px 14px;
-                        border-radius: 8px;
-                        border: 1px solid #444;
-                        background: rgba(255,255,255,0.05);
-                        color: #fff;
-                        font-size: 0.95rem;
-                    ">
+                    <label class="estoque-label">🔄 Tipo de Movimentação</label>
+                    <select id="estoqueTipoMovimento" class="estoque-input">
                         <option value="entrada" style="color: #2ecc71;">✅ Entrada (Chegou ao setor)</option>
                         <option value="saida" style="color: #e74c3c;" selected>❌ Saída (Utilizado/Retirado)</option>
                     </select>
@@ -1535,31 +1163,15 @@
 
                 <!-- Observação -->
                 <div class="input-group" style="grid-column: span 1;">
-                    <label style="color: #ccc; font-size: 0.85rem;">📝 Observação </label>
-                    <input type="text" id="estoqueObservacao" placeholder="Ex: Recebido do fornecedor X" style="
-                        width: 100%;
-                        padding: 10px 14px;
-                        border-radius: 8px;
-                        border: 1px solid #444;
-                        background: rgba(255,255,255,0.05);
-                        color: #fff;
-                        font-size: 0.95rem;
-                    ">
+                    <label class="estoque-label">📝 Observação </label>
+                    <input type="text" id="estoqueObservacao" class="estoque-input" placeholder="Ex: Recebido do fornecedor X">
                 </div>
             </div>
             <!-- 👤 Responsável pela Movimentação -->
 <div class="input-group">
-    <label style="color: #ccc; font-size: 0.85rem;">👤 Responsável pela Movimentação</label>
-    <input type="text" id="estoqueResponsavel" placeholder="Nome de quem está registrando" style="
-        width: 100%;
-        padding: 10px 14px;
-        border-radius: 8px;
-        border: 1px solid #444;
-        background: rgba(255,255,255,0.05);
-        color: #fff;
-        font-size: 0.95rem;
-    ">
-    <small style="color: #888; font-size: 0.75rem;">Preenchido automaticamente com o usuário logado</small>
+    <label class="estoque-label">👤 Responsável pela Movimentação</label>
+    <input type="text" id="estoqueResponsavel" class="estoque-input" placeholder="Nome de quem está registrando">
+    <small class="estoque-help">Preenchido automaticamente com o usuário logado</small>
 </div>
 
             <!-- Botões -->
@@ -1593,78 +1205,60 @@
         </div>
 
         <!-- ===== RESULTADOS / TABELA DE ESTOQUE ===== -->
-        <div style="margin-top: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-                <h4 style="color: #00d2ff; margin: 0;">📊 Estoque Atual</h4>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="exportarEstoqueExcel()" style="
-                        padding: 8px 20px;
-                        background: rgba(0, 210, 255, 0.15);
-                        border: 1px solid rgba(0, 210, 255, 0.3);
-                        color: #00d2ff;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-size: 0.85rem;
-                        transition: 0.3s;
-                    " onmouseover="this.style.background='rgba(0, 210, 255, 0.25)'" onmouseout="this.style.background='rgba(0, 210, 255, 0.15)'">
+        <div class="estoque-results">
+            <div class="estoque-results-header">
+                <h4 class="estoque-results-title">📊 Estoque Atual</h4>
+                <div class="estoque-results-actions">
+                    <button class="estoque-export-btn" onclick="exportarEstoqueExcel()">
                         📊 Exportar Excel
                     </button>
-                    <button onclick="limparHistoricoEstoque()" style="
-                        padding: 8px 20px;
-                        background: rgba(255,107,107,0.15);
-                        border: 1px solid rgba(255,107,107,0.3);
-                        color: #ff6b6b;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-size: 0.85rem;
-                        transition: 0.3s;
-                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                    <button class="estoque-clear-btn" onclick="limparHistoricoEstoque()">
                         🗑️ Limpar Histórico
                     </button>
                 </div>
             </div>
 
             <!-- Cards Resumo -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;" id="estoqueResumoCards">
-                <div style="background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="color: #888; font-size: 0.8rem;">Total de Frascos</div>
-                    <div style="font-size: 2rem; color: #2ecc71;" id="totalFrascosEstoque">0</div>
+            <div class="estoque-summary-grid" id="estoqueResumoCards">
+                <div class="estoque-summary-card green">
+                    <div class="estoque-summary-label">Total de Frascos</div>
+                    <div class="estoque-summary-value" id="totalFrascosEstoque">0</div>
                 </div>
-                <div style="background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="color: #888; font-size: 0.8rem;">Tipos de Kits</div>
-                    <div style="font-size: 2rem; color: #3498db;" id="totalTiposEstoque">0</div>
+                <div class="estoque-summary-card blue">
+                    <div class="estoque-summary-label">Tipos de Kits</div>
+                    <div class="estoque-summary-value" id="totalTiposEstoque">0</div>
                 </div>
-                <div style="background: rgba(241, 196, 15, 0.1); border: 1px solid rgba(241, 196, 15, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="color: #888; font-size: 0.8rem;">Lotes Diferentes</div>
-                    <div style="font-size: 2rem; color: #f1c40f;" id="totalLotesEstoque">0</div>
+                <div class="estoque-summary-card yellow">
+                    <div class="estoque-summary-label">Lotes Diferentes</div>
+                    <div class="estoque-summary-value" id="totalLotesEstoque">0</div>
                 </div>
-                <div style="background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.2); padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="color: #888; font-size: 0.8rem;">Alertas de Validade</div>
-                    <div style="font-size: 2rem; color: #e74c3c;" id="totalAlertasEstoque">0</div>
+                <div class="estoque-summary-card red">
+                    <div class="estoque-summary-label">Alertas de Validade</div>
+                    <div class="estoque-summary-value" id="totalAlertasEstoque">0</div>
                 </div>
             </div>
 
             <!-- ===== TABELA DE SALDO ATUAL ===== -->
-<h4 style="color: #00d2ff; margin: 20px 0 10px 0;">📊 Saldo Atual (por Lote)</h4>
-<div class="table-wrapper" style="max-height: 350px; overflow-y: auto;">
-    <table style="min-width: 900px; font-size: 0.8rem; width: 100%; border-collapse: collapse;">
-        <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
-            <tr style="border-bottom: 2px solid rgba(155,89,182,0.3);">
-                <th style="padding: 10px; text-align: left; color: #9b59b6;">#</th>
-                <th style="padding: 10px; text-align: left; color: #9b59b6;">🧪 Kit</th>
-                <th style="padding: 10px; text-align: left; color: #9b59b6;">🔢 Lote</th>
-                <th style="padding: 10px; text-align: left; color: #9b59b6;">📅 Validade</th>
-                <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Entrada</th>
-                <th style="padding: 10px; text-align: center; color: #9b59b6;">📦 Saída</th>
-                <th style="padding: 10px; text-align: center; color: #9b59b6; background: rgba(255,215,0,0.05);">📊 Saldo</th>
-                <th style="padding: 10px; text-align: center; color: #9b59b6;">⚠️ Status</th>
-                <th style="padding: 10px; text-align: center; color: #9b59b6;">📝 Observação</th>
-                <th style="padding: 10px; text-align: center; color: #9b59b6;">Ação</th>
+<h4 class="estoque-balance-title">📊 Saldo Atual (por Lote)</h4>
+<div class="table-wrapper estoque-balance-wrapper">
+    <table class="estoque-balance-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>🧪 Kit</th>
+                <th>🔢 Lote</th>
+                <th>📅 Validade</th>
+                <th>📦 Entrada</th>
+                <th>📦 Saída</th>
+                <th class="saldo">📊 Saldo</th>
+                <th>⚠️ Status</th>
+                <th>📝 Observação</th>
+                <th>Ação</th>
             </tr>
         </thead>
         <tbody id="corpoEstoque">
             <tr>
-                <td colspan="10" style="text-align: center; padding: 40px; color: #888;">
+                <td colspan="10" class="estoque-empty-state">
                     Nenhum item cadastrado. Adicione a primeira movimentação!
                 </td>
             </tr>
