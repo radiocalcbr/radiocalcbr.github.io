@@ -226,6 +226,50 @@ function escaparHtmlCusto(valor) {
         .replaceAll("'", '&#039;');
 }
 
+function calcularCustoPorMci(dtIni, dtFim, totalGeradores = 0) {
+    const doses = Array.isArray(dosesAdministradas) && dosesAdministradas.length
+        ? dosesAdministradas
+        : JSON.parse(localStorage.getItem('radiocalc_doses_administradas') || '[]');
+
+    const dosesPeriodo = (Array.isArray(doses) ? doses : []).filter(dose => {
+        if (!dose || !dose.data || !dose.atividade) return false;
+        const timestamp = new Date(`${dose.data}T00:00:00`).getTime();
+        return !Number.isNaN(timestamp) && timestamp >= dtIni && timestamp <= dtFim;
+    });
+
+    const atividadeTotal = dosesPeriodo.reduce((soma, dose) => soma + (Number(dose.atividade) || 0), 0);
+    const totalDoses = dosesPeriodo.length;
+    const custoTotalGeradores = Number(totalGeradores) || 0;
+    const custoPorMci = atividadeTotal > 0 ? custoTotalGeradores / atividadeTotal : 0;
+    const custoPorPaciente = totalDoses > 0 ? custoTotalGeradores / totalDoses : 0;
+
+    return {
+        atividadeTotal,
+        totalDoses,
+        custoPorMci,
+        custoPorPaciente,
+        custoTotalGeradores
+    };
+}
+
+function renderizarCustoPorMci(indicadores) {
+    const custoPorMciEl = document.getElementById('custoPorMci');
+
+    if (custoPorMciEl) {
+        const valor = Number(indicadores?.custoPorMci) || 0;
+        custoPorMciEl.textContent = formatarMoeda(valor);
+        if (valor === 0) {
+            custoPorMciEl.style.color = '#888';
+        } else if (valor <= 25) {
+            custoPorMciEl.style.color = '#2ecc71';
+        } else if (valor <= 50) {
+            custoPorMciEl.style.color = '#ffd700';
+        } else {
+            custoPorMciEl.style.color = '#ff6b6b';
+        }
+    }
+}
+
 function calcularCustosPeriodo() {
     try {
         const inicio = document.getElementById('custoDataInicio')?.value;
@@ -262,11 +306,14 @@ function calcularCustosPeriodo() {
         renderizarCustosKits(resultadoKits);
         renderizarCustosGeradores(resultadoGeradores);
 
+        const indicadoresMci = calcularCustoPorMci(dtIni, dtFim, totalGeradores);
+        renderizarCustoPorMci(indicadoresMci);
+
         if (typeof renderizarGraficoCustos === 'function') {
             renderizarGraficoCustos(resultadoKits.porMes, resultadoGeradores.porMes);
         }
 
-        return { kits: resultadoKits, geradores: resultadoGeradores, totalGeral };
+        return { kits: resultadoKits, geradores: resultadoGeradores, totalGeral, mci: indicadoresMci };
     } catch (erro) {
         console.error('❌ Erro ao calcular custos do período:', erro);
         alert('⚠️ Não foi possível calcular os custos do período.');
@@ -654,6 +701,9 @@ function exportarCustosExcel() {
             return;
         }
 
+        const inicio = document.getElementById('custoDataInicio')?.value || '';
+        const fim = document.getElementById('custoDataFim')?.value || '';
+
         const dadosKits = [['Kit', 'Preço Unitário por Frasco', 'Qtd. de Frascos', 'Subtotal', '%']];
         Object.entries(ultimoResultadoCustosKits.porKit)
             .sort(([, itemA], [, itemB]) => itemB.subtotal - itemA.subtotal)
@@ -672,9 +722,27 @@ function exportarCustosExcel() {
         });
         dadosGeradores.push(['TOTAL', '', '', ultimoResultadoCustosGeradores.total]);
 
+        const indicadores = calcularCustoPorMci(
+            new Date(`${inicio}T00:00:00`).getTime(),
+            new Date(`${fim}T23:59:59.999`).getTime(),
+            ultimoResultadoCustosGeradores.total
+        );
+
+        const dadosCustoPorMci = [
+            ['Indicador', 'Valor'],
+            ['Período', `${inicio || 'N/A'} até ${fim || 'N/A'}`],
+            ['Total pago em Geradores (R$)', ultimoResultadoCustosGeradores.total],
+            ['Atividade Administrada (mCi)', indicadores.atividadeTotal],
+            ['Total de Doses Registradas', indicadores.totalDoses],
+            ['Custo Médio por mCi (R$/mCi)', indicadores.custoPorMci],
+            ['Custo Médio por Paciente (R$)', indicadores.custoPorPaciente],
+            ['Observação', 'Numerador = apenas custo dos geradores.']
+        ];
+
         const pasta = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(pasta, XLSX.utils.aoa_to_sheet(dadosKits), 'Kits');
         XLSX.utils.book_append_sheet(pasta, XLSX.utils.aoa_to_sheet(dadosGeradores), 'Geradores');
+        XLSX.utils.book_append_sheet(pasta, XLSX.utils.aoa_to_sheet(dadosCustoPorMci), 'Custo por mCi');
         XLSX.writeFile(pasta, `Custos_${formatarDataInputCustos(new Date())}.xlsx`);
     } catch (erro) {
         console.error('❌ Erro ao exportar custos:', erro);
@@ -865,10 +933,12 @@ window.importarPrecosCustosNuvem = importarPrecosCustosNuvem;
 window.salvarPrecosCustosNuvemManual = salvarPrecosCustosNuvemManual;
 window.formatarMoeda = formatarMoeda;
 window.calcularCustosPeriodo = calcularCustosPeriodo;
+window.calcularCustoPorMci = calcularCustoPorMci;
 window.calcularCustosKits = calcularCustosKits;
 window.calcularCustosGeradores = calcularCustosGeradores;
 window.renderizarCustosKits = renderizarCustosKits;
 window.renderizarCustosGeradores = renderizarCustosGeradores;
+window.renderizarCustoPorMci = renderizarCustoPorMci;
 window.renderizarGraficoCustos = renderizarGraficoCustos;
 window.exportarCustosExcel = exportarCustosExcel;
 window.verificarAdminCustos = verificarAdminCustos;
