@@ -488,7 +488,7 @@ async function removerDoseDaNuvem(id) {
 async function registrarDose() {
     const data = document.getElementById('dosesData')?.value;
     const numeroFicha = document.getElementById('dosesNumeroFicha')?.value.trim();
-    const radiofarmaco = document.getElementById('dosesRadiofarmaco')?.value.trim();
+        const radiofarmaco = (document.getElementById('dosesRadiofarmaco')?.value.trim() || '').toUpperCase();
     const peso = Number(document.getElementById('dosesPeso')?.value || 0);
     const atividade = Number(document.getElementById('dosesAtividade')?.value || 0);
     const motivo = document.getElementById('dosesMotivoDuplicidade')?.value || '';
