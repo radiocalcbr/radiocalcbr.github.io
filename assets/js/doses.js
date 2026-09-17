@@ -44,6 +44,31 @@ function normalizarDoseAdministrada(dose) {
     };
 }
 
+// mesclar dados já existentes
+function mesclarDosesPorFicha(registrosNuvem = [], registrosLocais = []) {
+    const mapa = new Map();
+
+    const chaveDe = (dose) => {
+        const ficha = String(dose?.numeroFicha || '').trim();
+        if (ficha) return `ficha:${ficha}`;
+        return `id:${Number(dose?.id) || 0}`;
+    };
+
+    // 1) Primeiro coloca o que já existe na nuvem
+    for (const dose of registrosNuvem) {
+        const normalizada = normalizarDoseAdministrada(dose);
+        if (normalizada) mapa.set(chaveDe(normalizada), normalizada);
+    }
+
+    // 2) Aplica os locais por cima (sobrescreve se mesma ficha, adiciona se nova)
+    for (const dose of registrosLocais) {
+        const normalizada = normalizarDoseAdministrada(dose);
+        if (normalizada) mapa.set(chaveDe(normalizada), normalizada);
+    }
+
+    return Array.from(mapa.values());
+}
+
 function carregarDosesSalvas() {
     try {
         const dadosSalvos = localStorage.getItem(STORAGE_DOSES_ADMINISTRADAS);
@@ -141,15 +166,40 @@ async function salvarDosesNaNuvem() {
             .collection('doses')
             .doc(DOC_DOSES_NUVEM);
 
+        // 🔥 1) LER O QUE JÁ EXISTE NA NUVEM
+        const documentoAtual = await ref.get();
+        const dadosAtuais = documentoAtual.exists ? documentoAtual.data() : {};
+        const registrosNuvem = Array.isArray(dadosAtuais.registros)
+            ? dadosAtuais.registros
+            : [];
+
+        // 🔥 2) MESCLAR POR numeroFicha (locais sobrescrevem nuvem)
+        const registrosMesclados = mesclarDosesPorFicha(
+            registrosNuvem,
+            dosesAdministradas
+        );
+
+        // 🔥 3) GRAVAR O RESULTADO MESCLADO
         await ref.set({
-            registros: dosesAdministradas,
+            registros: registrosMesclados,
             organizacao: usuario.organizacao,
-            total: dosesAdministradas.length,
+            total: registrosMesclados.length,
             ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp(),
             atualizadoPor: usuario.uid || usuario.email || 'usuario',
             atualizadoPorEmail: usuario.email || '',
             dataBackup: new Date().toISOString()
         }, { merge: true });
+
+        // 🔥 4) ATUALIZAR O ARRAY LOCAL COM O RESULTADO FINAL
+        dosesAdministradas = registrosMesclados
+            .slice()
+            .sort((a, b) => new Date(b.data) - new Date(a.data) || Number(b.id) - Number(a.id));
+        dosesIdCounter = dosesAdministradas.reduce(
+            (maior, dose) => Math.max(maior, Number(dose.id) || 0), 0
+        ) + 1;
+        dosesFiltradas = [...dosesAdministradas];
+        persistirDosesLocal();
+        aplicarFiltroDoses();
 
         localStorage.setItem(STORAGE_DOSES_NUVEM_BACKUP, JSON.stringify({
             registros: dosesAdministradas,
@@ -159,7 +209,7 @@ async function salvarDosesNaNuvem() {
 
         window._cloudDosesCarregado = true;
         atualizarIndicadorDosesNuvem('sincronizado');
-        mostrarToast(`✅ ${dosesAdministradas.length} doses salvas na nuvem!`, 'sucesso');
+        mostrarToast(`✅ ${registrosMesclados.length} doses salvas na nuvem (merge por ficha)!`, 'sucesso');
     } catch (erro) {
         console.error('❌ Erro ao salvar doses na nuvem:', erro);
         atualizarIndicadorDosesNuvem('erro');
@@ -182,11 +232,12 @@ async function carregarDosesDaNuvem() {
             return;
         }
 
-        const inicioFiltro = document.getElementById('dosesFiltroDataInicio')?.value || obterPeriodoPadraoUltimos7Dias().inicio;
-        const fimFiltro = document.getElementById('dosesFiltroDataFim')?.value || obterPeriodoPadraoUltimos7Dias().fim;
-
-        if (inicioFiltro) document.getElementById('dosesFiltroDataInicio').value = inicioFiltro;
-        if (fimFiltro) document.getElementById('dosesFiltroDataFim').value = fimFiltro;
+        // Define período visual (não filtra os dados internamente!)
+        const periodo = obterPeriodoPadraoUltimos7Dias();
+        const inputIni = document.getElementById('dosesFiltroDataInicio');
+        const inputFim = document.getElementById('dosesFiltroDataFim');
+        if (inputIni && !inputIni.value) inputIni.value = periodo.inicio;
+        if (inputFim && !inputFim.value) inputFim.value = periodo.fim;
 
         atualizarIndicadorDosesNuvem('carregando');
         const db = firebase.firestore();
@@ -206,30 +257,29 @@ async function carregarDosesDaNuvem() {
         const dados = documento.data();
         const registros = Array.isArray(dados.registros) ? dados.registros : [];
 
-        const registrosFiltrados = registros
+        // 🔥 MESCLA com o que já existe localmente (preserva cadastros não salvos)
+        const mesclados = mesclarDosesPorFicha(registros, dosesAdministradas);
+
+        dosesAdministradas = mesclados
             .map(normalizarDoseAdministrada)
             .filter(Boolean)
-            .filter(dose => {
-                const data = dose.data || '';
-                const dentroInicio = !inicioFiltro || data >= inicioFiltro;
-                const dentroFim = !fimFiltro || data <= fimFiltro;
-                return dentroInicio && dentroFim;
-            })
             .sort((a, b) => new Date(b.data) - new Date(a.data) || Number(b.id) - Number(a.id));
 
-        dosesAdministradas = registrosFiltrados;
-        dosesFiltradas = [...dosesAdministradas];
-        dosesIdCounter = dosesAdministradas.reduce((maior, dose) => Math.max(maior, Number(dose.id) || 0), 0) + 1;
+        dosesIdCounter = dosesAdministradas.reduce(
+            (maior, dose) => Math.max(maior, Number(dose.id) || 0), 0
+        ) + 1;
+
         persistirDosesLocal();
-        aplicarFiltroDoses();
+        aplicarFiltroDoses(); // aplica filtro visual
+
         window._cloudDosesCarregado = true;
         atualizarIndicadorDosesNuvem('sincronizado');
-        mostrarToast(`✅ ${dosesAdministradas.length} doses carregadas da nuvem para o período selecionado!`, 'sucesso');
+        mostrarToast(`✅ ${dosesAdministradas.length} doses carregadas/mescladas da nuvem!`, 'sucesso');
     } catch (erro) {
         console.error('❌ Erro ao carregar doses da nuvem:', erro);
         atualizarIndicadorDosesNuvem('erro');
         if (erro?.code === 'permission-denied') {
-            mostrarToast('❌ Sem permissão para ler organizacoes/' + usuario?.organizacao + '/doses. Verifique as regras do Firestore.', 'erro');
+            mostrarToast('❌ Sem permissão para ler organizacoes/' + usuario?.organizacao + '/doses.', 'erro');
         } else {
             mostrarToast('❌ Não foi possível carregar as doses da nuvem.', 'erro');
         }
@@ -317,17 +367,39 @@ function limparCamposDoses() {
 
 function atualizarMotivoDuplicidadeDose() {
     const campoFicha = document.getElementById('dosesNumeroFicha');
+    const campoData = document.getElementById('dosesData');
     const campoMotivo = document.getElementById('dosesMotivoDuplicidade');
     const grupoMotivo = document.getElementById('grupoMotivoDuplicidadeDose');
     if (!campoFicha || !campoMotivo || !grupoMotivo) return false;
 
     const numeroFicha = campoFicha.value.trim();
-    const fichaDuplicada = numeroFicha && dosesAdministradas.some(dose => String(dose.numeroFicha).trim() === numeroFicha);
+    const dataReferencia = campoData?.value || formatarDataLocalISO(new Date());
+    const fichaDuplicada = numeroFicha && fichaDuplicadaNosUltimosSeisMeses(dosesAdministradas, numeroFicha, dataReferencia);
+
     grupoMotivo.style.display = fichaDuplicada ? 'block' : 'none';
     campoMotivo.required = Boolean(fichaDuplicada);
     if (!fichaDuplicada) campoMotivo.value = '';
 
     return fichaDuplicada;
+}
+
+function fichaDuplicadaNosUltimosSeisMeses(registros = [], numeroFicha, dataReferencia = null) {
+    const ficha = String(numeroFicha || '').trim();
+    if (!ficha || !Array.isArray(registros)) return false;
+
+    const dataBase = dataReferencia ? new Date(dataReferencia + 'T00:00:00') : new Date();
+    if (Number.isNaN(dataBase.getTime())) return false;
+
+    const inicio = new Date(dataBase);
+    inicio.setMonth(inicio.getMonth() - 6);
+    const inicioISO = formatarDataLocalISO(inicio);
+    const fimISO = formatarDataLocalISO(dataBase);
+
+    return registros.some(dose => {
+        const fichaIgual = String(dose.numeroFicha || '').trim() === ficha;
+        const dataValida = Boolean(dose.data && dose.data >= inicioISO && dose.data <= fimISO);
+        return fichaIgual && dataValida;
+    });
 }
 
 function obterInicioUltimosSeisMeses() {
@@ -356,11 +428,15 @@ async function verificarFichaDuplicadaNaNuvem(numeroFicha) {
         const registros = documento.data()?.registros;
         if (!Array.isArray(registros)) return false;
 
-        const inicio = obterInicioUltimosSeisMeses();
-        const fim = formatarDataLocalISO(new Date());
+        const hoje = new Date();
+        const inicio = new Date(hoje);
+        inicio.setMonth(inicio.getMonth() - 6);
+        const inicioISO = formatarDataLocalISO(inicio);
+        const fimISO = formatarDataLocalISO(hoje);
+
         return registros.some(dose => {
-            const fichaIgual = String(dose.numeroFicha || '').trim() === numeroFicha;
-            const dataValida = dose.data && dose.data >= inicio && dose.data <= fim;
+            const fichaIgual = String(dose.numeroFicha || '').trim() === String(numeroFicha || '').trim();
+            const dataValida = dose.data && dose.data >= inicioISO && dose.data <= fimISO;
             return fichaIgual && dataValida;
         });
     } catch (erro) {
@@ -421,38 +497,41 @@ async function registrarDose() {
         mostrarToast('⚠️ Preencha data, número da ficha, radiofármaco, peso e atividade.', 'aviso');
         return;
     }
-
     if (peso <= 0) {
         mostrarToast('⚠️ O peso deve ser maior que zero.', 'erro');
         return;
     }
-
     if (atividade < 0) {
         mostrarToast('⚠️ A atividade administrada não pode ser negativa.', 'erro');
         return;
     }
 
-    const fichaDuplicadaLocal = numeroFicha && dosesAdministradas.some(
+    // 🔥 Procura ficha existente (local)
+    const indiceExistente = dosesAdministradas.findIndex(
         dose => String(dose.numeroFicha).trim() === numeroFicha
     );
-    if (fichaDuplicadaLocal) atualizarMotivoDuplicidadeDose();
-    const fichaDuplicadaNuvem = fichaDuplicadaLocal
-        ? false
-        : await verificarFichaDuplicadaNaNuvem(numeroFicha);
-    const fichaDuplicada = fichaDuplicadaLocal || fichaDuplicadaNuvem;
 
-    if (fichaDuplicadaNuvem) {
-        const grupoMotivo = document.getElementById('grupoMotivoDuplicidadeDose');
-        const campoMotivo = document.getElementById('dosesMotivoDuplicidade');
-        if (grupoMotivo) grupoMotivo.style.display = 'block';
-        if (campoMotivo) campoMotivo.required = true;
-    }
-
-    if (fichaDuplicada && !MOTIVOS_DUPLICIDADE_DOSE.includes(motivo)) {
-        mostrarToast('⚠️ Selecione o motivo para repetir o número da ficha.', 'aviso');
+    if (indiceExistente >= 0) {
+        // 🔥 ATUALIZA o registro existente (não cria novo)
+        const existente = dosesAdministradas[indiceExistente];
+        dosesAdministradas[indiceExistente] = {
+            ...existente,
+            data,
+            radiofarmaco,
+            peso,
+            atividade,
+            mCiKg: Number((atividade / peso).toFixed(4)),
+            motivo: motivo || existente.motivo || '',
+            atualizadoEm: new Date().toISOString()
+        };
+        persistirDosesLocal();
+        aplicarFiltroDoses();
+        limparCamposDoses();
+        mostrarToast(`✅ Ficha ${numeroFicha} atualizada com sucesso!`, 'sucesso');
         return;
     }
 
+    // 🔥 Se não existe localmente, cria novo
     const novaDose = {
         id: dosesIdCounter++,
         data,
@@ -461,17 +540,14 @@ async function registrarDose() {
         peso,
         atividade,
         mCiKg: Number((atividade / peso).toFixed(4)),
-        motivo: fichaDuplicada ? motivo : '',
+        motivo: '',
         criadoEm: new Date().toISOString()
     };
 
     dosesAdministradas.unshift(novaDose);
-    dosesFiltradas = [...dosesAdministradas];
     persistirDosesLocal();
-    atualizarResumoDoses();
-    atualizarTabelaDoses();
+    aplicarFiltroDoses();
     limparCamposDoses();
-
     mostrarToast('✅ Dose registrada com sucesso!', 'sucesso');
 }
 
