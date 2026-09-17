@@ -10,6 +10,15 @@ let paginaAtualDoses = 1;
 const STORAGE_DOSES_ADMINISTRADAS = 'radiocalc_doses_administradas';
 const STORAGE_DOSES_NUVEM_BACKUP = 'radiocalc_doses_nuvem_backup';
 const DOC_DOSES_NUVEM = 'todas_doses';
+const MOTIVOS_DUPLICIDADE_DOSE = [
+    'Falha na injeção',
+    'Protocolo incorreto',
+    'Artefato',
+    'Quebra de equipamento',
+    'Cliente suspendeu o exame',
+    'Complementação Médica',
+    'Falha na marcação do kit'
+];
 
 window._cloudDosesCarregado = false;
 
@@ -30,6 +39,7 @@ function normalizarDoseAdministrada(dose) {
         peso,
         atividade,
         mCiKg: Number.isFinite(mCiKg) ? Number(mCiKg.toFixed(4)) : 0,
+        motivo: String(dose.motivo || '').trim(),
         criadoEm: dose.criadoEm || new Date().toISOString()
     };
 }
@@ -301,6 +311,62 @@ function limparCamposDoses() {
 
     const ficha = document.getElementById('dosesNumeroFicha');
     if (ficha) ficha.focus();
+
+    atualizarMotivoDuplicidadeDose();
+}
+
+function atualizarMotivoDuplicidadeDose() {
+    const campoFicha = document.getElementById('dosesNumeroFicha');
+    const campoMotivo = document.getElementById('dosesMotivoDuplicidade');
+    const grupoMotivo = document.getElementById('grupoMotivoDuplicidadeDose');
+    if (!campoFicha || !campoMotivo || !grupoMotivo) return false;
+
+    const numeroFicha = campoFicha.value.trim();
+    const fichaDuplicada = numeroFicha && dosesAdministradas.some(dose => String(dose.numeroFicha).trim() === numeroFicha);
+    grupoMotivo.style.display = fichaDuplicada ? 'block' : 'none';
+    campoMotivo.required = Boolean(fichaDuplicada);
+    if (!fichaDuplicada) campoMotivo.value = '';
+
+    return fichaDuplicada;
+}
+
+function obterInicioUltimosSeisMeses() {
+    const inicio = new Date();
+    inicio.setMonth(inicio.getMonth() - 6);
+    return formatarDataLocalISO(inicio);
+}
+
+async function verificarFichaDuplicadaNaNuvem(numeroFicha) {
+    try {
+        if (typeof firebase === 'undefined' || !firebase.firestore || typeof obterDadosUsuario !== 'function') {
+            return false;
+        }
+
+        const usuario = await obterDadosUsuario();
+        if (!usuario?.organizacao) return false;
+
+        const referencia = firebase.firestore()
+            .collection('organizacoes')
+            .doc(usuario.organizacao)
+            .collection('doses')
+            .doc(DOC_DOSES_NUVEM);
+        const documento = await referencia.get();
+        if (!documento.exists) return false;
+
+        const registros = documento.data()?.registros;
+        if (!Array.isArray(registros)) return false;
+
+        const inicio = obterInicioUltimosSeisMeses();
+        const fim = formatarDataLocalISO(new Date());
+        return registros.some(dose => {
+            const fichaIgual = String(dose.numeroFicha || '').trim() === numeroFicha;
+            const dataValida = dose.data && dose.data >= inicio && dose.data <= fim;
+            return fichaIgual && dataValida;
+        });
+    } catch (erro) {
+        console.error('❌ Erro ao verificar ficha duplicada na nuvem:', erro);
+        return false;
+    }
 }
 
 function limparHistoricoDoses() {
@@ -343,12 +409,13 @@ async function removerDoseDaNuvem(id) {
     }, { merge: true });
 }
 
-function registrarDose() {
+async function registrarDose() {
     const data = document.getElementById('dosesData')?.value;
     const numeroFicha = document.getElementById('dosesNumeroFicha')?.value.trim();
     const radiofarmaco = document.getElementById('dosesRadiofarmaco')?.value.trim();
     const peso = Number(document.getElementById('dosesPeso')?.value || 0);
     const atividade = Number(document.getElementById('dosesAtividade')?.value || 0);
+    const motivo = document.getElementById('dosesMotivoDuplicidade')?.value || '';
 
     if (!data || !numeroFicha || !radiofarmaco || !peso || !atividade) {
         mostrarToast('⚠️ Preencha data, número da ficha, radiofármaco, peso e atividade.', 'aviso');
@@ -365,6 +432,27 @@ function registrarDose() {
         return;
     }
 
+    const fichaDuplicadaLocal = numeroFicha && dosesAdministradas.some(
+        dose => String(dose.numeroFicha).trim() === numeroFicha
+    );
+    if (fichaDuplicadaLocal) atualizarMotivoDuplicidadeDose();
+    const fichaDuplicadaNuvem = fichaDuplicadaLocal
+        ? false
+        : await verificarFichaDuplicadaNaNuvem(numeroFicha);
+    const fichaDuplicada = fichaDuplicadaLocal || fichaDuplicadaNuvem;
+
+    if (fichaDuplicadaNuvem) {
+        const grupoMotivo = document.getElementById('grupoMotivoDuplicidadeDose');
+        const campoMotivo = document.getElementById('dosesMotivoDuplicidade');
+        if (grupoMotivo) grupoMotivo.style.display = 'block';
+        if (campoMotivo) campoMotivo.required = true;
+    }
+
+    if (fichaDuplicada && !MOTIVOS_DUPLICIDADE_DOSE.includes(motivo)) {
+        mostrarToast('⚠️ Selecione o motivo para repetir o número da ficha.', 'aviso');
+        return;
+    }
+
     const novaDose = {
         id: dosesIdCounter++,
         data,
@@ -373,6 +461,7 @@ function registrarDose() {
         peso,
         atividade,
         mCiKg: Number((atividade / peso).toFixed(4)),
+        motivo: fichaDuplicada ? motivo : '',
         criadoEm: new Date().toISOString()
     };
 
@@ -479,7 +568,7 @@ function atualizarTabelaDoses() {
     if (!dosesFiltradas.length) {
         corpo.innerHTML = `
             <tr>
-                <td colspan="8" style="padding: 30px; text-align: center; color: #718579;">📭 Nenhuma dose registrada no período.</td>
+            <td colspan="9" style="padding: 30px; text-align: center; color: #718579;">📭 Nenhuma dose registrada no período.</td>
             </tr>
         `;
         if (paginacao) paginacao.innerHTML = '';
@@ -501,6 +590,7 @@ function atualizarTabelaDoses() {
                 <td style="padding: 10px; color: #dfece3;">${dose.data}</td>
                 <td style="padding: 10px; color: #dfece3;">${dose.numeroFicha}</td>
                 <td style="padding: 10px; color: #dfece3;">${dose.radiofarmaco || '--'}</td>
+                <td style="padding: 10px; color: #dfece3;">${dose.motivo || '--'}</td>
                 <td style="padding: 10px; text-align: right; color: #dfece3;">${Number(dose.peso).toFixed(1)}</td>
                 <td style="padding: 10px; text-align: right; color: #dfece3;">${Number(dose.atividade).toFixed(2)}</td>
                 <td style="padding: 10px; text-align: right; color: #dfece3;">${Number(dose.mCiKg).toFixed(2)}</td>
@@ -546,7 +636,7 @@ function exportarExcelDoses() {
         }
 
         const linhas = [
-            ['#', 'Data', 'Nº Ficha', 'Radiofármaco', 'Peso (kg)', 'Atividade (mCi)', 'mCi/kg']
+            ['#', 'Data', 'Nº Ficha', 'Radiofármaco', 'Motivo', 'Peso (kg)', 'Atividade (mCi)', 'mCi/kg']
         ];
 
         dosesFiltradas.forEach((dose, index) => {
@@ -555,6 +645,7 @@ function exportarExcelDoses() {
                 dose.data,
                 dose.numeroFicha,
                 dose.radiofarmaco || '',
+                dose.motivo || '',
                 Number(dose.peso).toFixed(1),
                 Number(dose.atividade).toFixed(2),
                 Number(dose.mCiKg).toFixed(2)
@@ -579,6 +670,8 @@ window.persistirDosesLocal = persistirDosesLocal;
 window.registrarDose = registrarDose;
 window.excluirDose = excluirDose;
 window.limparCamposDoses = limparCamposDoses;
+window.atualizarMotivoDuplicidadeDose = atualizarMotivoDuplicidadeDose;
+window.verificarFichaDuplicadaNaNuvem = verificarFichaDuplicadaNaNuvem;
 window.limparHistoricoDoses = limparHistoricoDoses;
 window.atualizarTabelaDoses = atualizarTabelaDoses;
 window.irPaginaDoses = irPaginaDoses;
