@@ -2433,7 +2433,7 @@
                 </div>
                 <div>
                     <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">🆔 Nº da ficha</label>
-                    <input id="dosesNumeroFicha" type="text" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;" placeholder="Ex: 1045">
+                    <input id="dosesNumeroFicha" type="text" oninput="atualizarMotivoDuplicidadeDose()" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;" placeholder="Ex: 1045">
                 </div>
                 <div>
                     <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">🧪 Radiofármaco</label>
@@ -2446,6 +2446,19 @@
                 <div>
                     <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">☢️ Atividade administrada (mCi)</label>
                     <input id="dosesAtividade" type="number" step="0.01" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;" placeholder="0.00">
+                </div>
+                <div id="grupoMotivoDuplicidadeDose" style="display:none;">
+                    <label for="dosesMotivoDuplicidade" style="display:block; color:#ffd166; font-size:0.82rem; margin-bottom:6px;">⚠️ Motivo da repetição da ficha</label>
+                    <select id="dosesMotivoDuplicidade" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #d9a441; border-radius:7px; background:#202d26; color:#fff;">
+                        <option value="">Selecione o motivo</option>
+                        <option value="Falha na injeção">Falha na injeção</option>
+                        <option value="Protocolo incorreto">Protocolo incorreto</option>
+                        <option value="Artefato">Artefato</option>
+                        <option value="Quebra de equipamento">Quebra de equipamento</option>
+                        <option value="Cliente suspendeu o exame">Cliente suspendeu o exame</option>
+                        <option value="Complementação Médica">Complementação Médica</option>
+                        <option value="Falha na marcação do kit">Falha na marcação do kit</option>
+                    </select>
                 </div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
@@ -2506,6 +2519,7 @@
                         <th style="padding: 11px; text-align: left; color: #9ee5b4;">Data</th>
                         <th style="padding: 11px; text-align: left; color: #9ee5b4;">Nº Ficha</th>
                         <th style="padding: 11px; text-align: left; color: #9ee5b4;">Radiofármaco</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Motivo</th>
                         <th style="padding: 11px; text-align: right; color: #9ee5b4;">Peso (kg)</th>
                         <th style="padding: 11px; text-align: right; color: #9ee5b4;">Atividade (mCi)</th>
                         <th style="padding: 11px; text-align: right; color: #9ee5b4;">mCi/kg</th>
