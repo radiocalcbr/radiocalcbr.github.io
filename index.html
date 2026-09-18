@@ -918,7 +918,7 @@
             <div class="tool-card" onclick="abrirModalDoses()">
                 <span class="tool-icon">💉📊</span>
                 <span class="tool-name">Doses Administradas</span>
-                <span class="tool-desc">Registro de doses injetadas por paciente</span>
+                <span class="tool-desc">Registro de doses injetadas.</span>
                 <span class="tool-badge">Clique para abrir ➜</span>
             </div>
 
@@ -2415,7 +2415,7 @@
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 22px; flex-wrap: wrap;">
             <div>
                 <h3 style="color: #2ecc71; margin: 0; font-size: 1.35rem;">💉📊 Doses Administradas</h3>
-                <p style="color: #8fa99a; margin: 6px 0 0; font-size: 0.85rem;">Registro manual de doses administradas por paciente.</p>
+                <p style="color: #8fa99a; margin: 6px 0 0; font-size: 0.85rem;">Registro manual de doses administradas.</p>
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <span id="indicadorDosesNuvem" style="padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; color: #b7c4bd; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);">☁️ Verificando...</span>
@@ -2451,13 +2451,16 @@
                     <label for="dosesMotivoDuplicidade" style="display:block; color:#ffd166; font-size:0.82rem; margin-bottom:6px;">⚠️ Motivo da repetição da ficha</label>
                     <select id="dosesMotivoDuplicidade" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #d9a441; border-radius:7px; background:#202d26; color:#fff;">
                         <option value="">Selecione o motivo</option>
-                        <option value="Falha na injeção">Falha na injeção</option>
-                        <option value="Protocolo incorreto">Protocolo incorreto</option>
                         <option value="Artefato">Artefato</option>
+                        <option value="Falha na injeção">Falha na injeção</option>
+                         <option value="Radiofármaco incorreto">Radiofármaco incorreto</option>
+                        <option value="Protocolo incorreto">Protocolo incorreto</option>
+                        <option value="Falha na interpretação do pedido médico">Falha na interpretação do pedido médico</option>
                         <option value="Quebra de equipamento">Quebra de equipamento</option>
                         <option value="Cliente suspendeu o exame">Cliente suspendeu o exame</option>
                         <option value="Complementação Médica">Complementação Médica</option>
                         <option value="Falha na marcação do kit">Falha na marcação do kit</option>
+                        <option value="Troca de clientes">Troca de clientes</option>
                     </select>
                 </div>
             </div>
