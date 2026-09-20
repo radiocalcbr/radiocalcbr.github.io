@@ -748,7 +748,7 @@ function renderizarGraficosDashboard(dados) {
     });
 }
 
-function renderizarTabelaResumoDashboard(resumo, custoTotal) {
+function renderizarTabelaResumoDashboard(resumo, precoPorMci) {
     const corpo = document.getElementById('dashTabelaResumo');
     if (!corpo) return;
     const itens = Object.values(resumo).sort((a, b) => b.doses - a.doses);
@@ -756,15 +756,14 @@ function renderizarTabelaResumoDashboard(resumo, custoTotal) {
         corpo.innerHTML = '<tr><td colspan="5" style="padding: 25px; text-align: center; color: #718579;">Nenhum dado no período.</td></tr>';
         return;
     }
-    const totalAtividade = itens.reduce((soma, item) => soma + item.atividade, 0);
     corpo.innerHTML = itens.map(item => {
-        const custoEstimado = totalAtividade > 0 ? custoTotal * item.atividade / totalAtividade : 0;
+        const custoReal = item.atividade * (Number(precoPorMci) || 0);
         return `<tr style="border-top: 1px solid rgba(255,255,255,0.06);">
             <td style="padding: 10px; color: #fff;">${escaparHtmlCusto(item.nome)}</td>
             <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.doses}</td>
             <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.atividade.toFixed(2)} mCi</td>
-            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(custoEstimado)}</td>
-            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.doses ? formatarMoeda(custoEstimado / item.doses) : '—'}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(custoReal)}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.doses ? formatarMoeda(custoReal / item.doses) : '—'}</td>
         </tr>`;
     }).join('');
 }
@@ -809,6 +808,7 @@ function calcularDashboard() {
             diasProdutivos.add(dose.data);
         });
         const total = custosKits.total + custosGeradores.total;
+        const precoPorMci = atividadeTotal > 0 ? custosGeradores.total / atividadeTotal : 0;
         const diasCorridos = Math.floor((dtFim - dtIni) / 86400000) + 1;
         const totais = { kits: custosKits.total, geradores: custosGeradores.total, total };
         const KPIs = { doses: dosesPeriodo.length, kits: kitsUsados, geradores: custosGeradores.detalhes.length, atividade: atividadeTotal };
@@ -816,13 +816,13 @@ function calcularDashboard() {
         document.getElementById('dashDoses').textContent = KPIs.doses;
         document.getElementById('dashKits').textContent = KPIs.kits;
         document.getElementById('dashGeradores').textContent = KPIs.geradores;
-        document.getElementById('dashCustoMci').textContent = atividadeTotal > 0 ? formatarMoeda(custosGeradores.total / atividadeTotal) : '—';
+        document.getElementById('dashCustoMci').textContent = atividadeTotal > 0 ? formatarMoeda(precoPorMci) : '—';
         document.getElementById('dashCustoDose').textContent = KPIs.doses > 0 ? formatarMoeda(total / KPIs.doses) : '—';
         document.getElementById('dashCustoDiaCorrido').textContent = diasCorridos > 0 ? formatarMoeda(total / diasCorridos) : '—';
         document.getElementById('dashCustoDiaProdutivo').textContent = diasProdutivos.size > 0 ? formatarMoeda(total / diasProdutivos.size) : '—';
         const topRadio = Object.values(resumo).sort((a, b) => b.doses - a.doses).slice(0, 5);
         renderizarGraficosDashboard({ custosKits, custosGeradores, dosesPorMes, topRadio });
-        renderizarTabelaResumoDashboard(resumo, total);
+        renderizarTabelaResumoDashboard(resumo, precoPorMci);
         console.log('✅ Dashboard calculado:', { totais, KPIs });
     } catch (erro) {
         console.error('❌ Erro ao calcular dashboard:', erro);
