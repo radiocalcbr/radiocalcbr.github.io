@@ -414,6 +414,13 @@ function abrirModalDoses() {
     carregarDosesSalvas();
     aplicarFiltroPadraoUltimos7Dias();
     verificarStatusDosesNuvem();
+
+    // 🔥 PRÉ-PREENCHER DATA ATUAL (só se estiver vazia)
+    const campoData = document.getElementById('dosesData');
+    if (campoData && !campoData.value) {
+        campoData.value = formatarDataLocalISO(new Date());
+    }
+
     modal.style.display = 'flex';
     modal.style.visibility = 'visible';
     modal.style.opacity = '1';
@@ -434,7 +441,6 @@ function fecharModalDoses() {
 
 function limparCamposDoses() {
     const campos = [
-        'dosesData',
         'dosesNumeroFicha',
         'dosesRadiofarmaco',
         'dosesPeso',
@@ -445,6 +451,12 @@ function limparCamposDoses() {
         const campo = document.getElementById(campoId);
         if (campo) campo.value = '';
     });
+
+    // 🔥 DATA: NÃO limpa — restaura para data atual
+    const campoData = document.getElementById('dosesData');
+    if (campoData) {
+        campoData.value = formatarDataLocalISO(new Date());
+    }
 
     const ficha = document.getElementById('dosesNumeroFicha');
     if (ficha) ficha.focus();
