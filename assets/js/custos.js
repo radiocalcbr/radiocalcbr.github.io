@@ -694,6 +694,141 @@ function renderizarGraficoCustos(porMesKits = {}, porMesGeradores = {}) {
     }
 }
 
+function aplicarPeriodoDashboard(dias) {
+    const campoInicio = document.getElementById('dashboardDataInicio');
+    const campoFim = document.getElementById('dashboardDataFim');
+    if (!campoInicio || !campoFim) return;
+
+    const hoje = new Date();
+    const dataInicio = new Date(hoje);
+    dataInicio.setDate(dataInicio.getDate() - Number(dias));
+    campoInicio.value = formatarDataInputCustos(dataInicio);
+    campoFim.value = formatarDataInputCustos(hoje);
+    calcularDashboard();
+}
+
+function renderizarGraficosDashboard(dados) {
+    if (typeof Chart === 'undefined') return;
+
+    const criarGrafico = (id, configuracao) => {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        if (canvas._chart) canvas._chart.destroy();
+        canvas._chart = new Chart(canvas.getContext('2d'), configuracao);
+    };
+    const meses = [...new Set([
+        ...Object.keys(dados.custosKits.porMes || {}),
+        ...Object.keys(dados.custosGeradores.porMes || {}),
+        ...Object.keys(dados.dosesPorMes || {})
+    ])].sort();
+    const opcoesComuns = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } };
+
+    criarGrafico('dashChartCustoMes', {
+        type: 'bar',
+        data: { labels: meses.map(formatarMesGraficoCustos), datasets: [
+            { label: '📦 Kits', data: meses.map(mes => dados.custosKits.porMes[mes] || 0), backgroundColor: '#2ecc71' },
+            { label: '⚛️ Geradores', data: meses.map(mes => dados.custosGeradores.porMes[mes] || 0), backgroundColor: '#00d2ff' }
+        ] },
+        options: { ...opcoesComuns, scales: { x: { stacked: true, ticks: { color: '#b9c9bd' } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#b9c9bd', callback: valor => formatarMoeda(valor) } } } }
+    });
+    criarGrafico('dashChartDosesMes', {
+        type: 'line',
+        data: { labels: meses.map(formatarMesGraficoCustos), datasets: [{ label: '💉 Doses', data: meses.map(mes => dados.dosesPorMes[mes] || 0), borderColor: '#00d2ff', backgroundColor: 'rgba(0,210,255,0.15)', fill: true, tension: 0.25 }] },
+        options: { ...opcoesComuns, scales: { x: { ticks: { color: '#b9c9bd' } }, y: { beginAtZero: true, ticks: { color: '#b9c9bd', precision: 0 } } } }
+    });
+    criarGrafico('dashChartCategorias', {
+        type: 'doughnut',
+        data: { labels: ['📦 Kits', '⚛️ Geradores'], datasets: [{ data: [dados.custosKits.total, dados.custosGeradores.total], backgroundColor: ['#2ecc71', '#00d2ff'], borderColor: '#151f1b', borderWidth: 3 }] },
+        options: { ...opcoesComuns, cutout: '65%' }
+    });
+    criarGrafico('dashChartTopRadio', {
+        type: 'bar',
+        data: { labels: dados.topRadio.map(item => item.nome), datasets: [{ label: 'Doses', data: dados.topRadio.map(item => item.doses), backgroundColor: '#00d2ff' }] },
+        options: { ...opcoesComuns, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { color: '#b9c9bd', precision: 0 } }, y: { ticks: { color: '#b9c9bd' } } } }
+    });
+}
+
+function renderizarTabelaResumoDashboard(resumo, custoTotal) {
+    const corpo = document.getElementById('dashTabelaResumo');
+    if (!corpo) return;
+    const itens = Object.values(resumo).sort((a, b) => b.doses - a.doses);
+    if (!itens.length) {
+        corpo.innerHTML = '<tr><td colspan="5" style="padding: 25px; text-align: center; color: #718579;">Nenhum dado no período.</td></tr>';
+        return;
+    }
+    const totalAtividade = itens.reduce((soma, item) => soma + item.atividade, 0);
+    corpo.innerHTML = itens.map(item => {
+        const custoEstimado = totalAtividade > 0 ? custoTotal * item.atividade / totalAtividade : 0;
+        return `<tr style="border-top: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 10px; color: #fff;">${escaparHtmlCusto(item.nome)}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.doses}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.atividade.toFixed(2)} mCi</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(custoEstimado)}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.doses ? formatarMoeda(custoEstimado / item.doses) : '—'}</td>
+        </tr>`;
+    }).join('');
+}
+
+function calcularDashboard() {
+    try {
+        const campoInicio = document.getElementById('dashboardDataInicio');
+        const campoFim = document.getElementById('dashboardDataFim');
+        if (!campoInicio?.value || !campoFim?.value) {
+            aplicarPeriodoDashboard(90);
+            return;
+        }
+        const dtIni = new Date(`${campoInicio.value}T00:00:00`).getTime();
+        const dtFim = new Date(`${campoFim.value}T23:59:59.999`).getTime();
+        if (Number.isNaN(dtIni) || Number.isNaN(dtFim) || dtIni > dtFim) return;
+
+        const custosKits = calcularCustosKits(dtIni, dtFim);
+        const custosGeradores = calcularCustosGeradores(dtIni, dtFim);
+        const doses = typeof dosesAdministradas !== 'undefined' && Array.isArray(dosesAdministradas)
+            ? dosesAdministradas : [];
+        const dosesPeriodo = doses.filter(dose => {
+            const timestamp = new Date(`${dose?.data}T00:00:00`).getTime();
+            return dose?.data && !Number.isNaN(timestamp) && timestamp >= dtIni && timestamp <= dtFim;
+        });
+        const historico = typeof historicoMovimentacoes !== 'undefined' ? historicoMovimentacoes : [];
+        const kitsUsados = historico.reduce((total, evento) => {
+            const timestamp = obterDataTimestamp(evento?.timestamp || evento?.dataHora)?.getTime();
+            return evento?.tipoMovimento === 'saida' && timestamp >= dtIni && timestamp <= dtFim
+                ? total + (Number(evento.quantidade) || 0) : total;
+        }, 0);
+        const atividadeTotal = dosesPeriodo.reduce((total, dose) => total + (Number(dose.atividade) || 0), 0);
+        const resumo = {};
+        const dosesPorMes = {};
+        const diasProdutivos = new Set();
+        dosesPeriodo.forEach(dose => {
+            const nome = String(dose.radiofarmaco || 'Não informado');
+            if (!resumo[nome]) resumo[nome] = { nome, doses: 0, atividade: 0 };
+            resumo[nome].doses += 1;
+            resumo[nome].atividade += Number(dose.atividade) || 0;
+            const mes = dose.data.slice(0, 7);
+            dosesPorMes[mes] = (dosesPorMes[mes] || 0) + 1;
+            diasProdutivos.add(dose.data);
+        });
+        const total = custosKits.total + custosGeradores.total;
+        const diasCorridos = Math.floor((dtFim - dtIni) / 86400000) + 1;
+        const totais = { kits: custosKits.total, geradores: custosGeradores.total, total };
+        const KPIs = { doses: dosesPeriodo.length, kits: kitsUsados, geradores: custosGeradores.detalhes.length, atividade: atividadeTotal };
+        document.getElementById('dashCustoTotal').textContent = formatarMoeda(total);
+        document.getElementById('dashDoses').textContent = KPIs.doses;
+        document.getElementById('dashKits').textContent = KPIs.kits;
+        document.getElementById('dashGeradores').textContent = KPIs.geradores;
+        document.getElementById('dashCustoMci').textContent = atividadeTotal > 0 ? formatarMoeda(custosGeradores.total / atividadeTotal) : '—';
+        document.getElementById('dashCustoDose').textContent = KPIs.doses > 0 ? formatarMoeda(total / KPIs.doses) : '—';
+        document.getElementById('dashCustoDiaCorrido').textContent = diasCorridos > 0 ? formatarMoeda(total / diasCorridos) : '—';
+        document.getElementById('dashCustoDiaProdutivo').textContent = diasProdutivos.size > 0 ? formatarMoeda(total / diasProdutivos.size) : '—';
+        const topRadio = Object.values(resumo).sort((a, b) => b.doses - a.doses).slice(0, 5);
+        renderizarGraficosDashboard({ custosKits, custosGeradores, dosesPorMes, topRadio });
+        renderizarTabelaResumoDashboard(resumo, total);
+        console.log('✅ Dashboard calculado:', { totais, KPIs });
+    } catch (erro) {
+        console.error('❌ Erro ao calcular dashboard:', erro);
+    }
+}
+
 function exportarCustosExcel() {
     try {
         if (typeof XLSX === 'undefined') {
@@ -868,7 +1003,8 @@ function trocarAbaCustos(aba) {
         const abas = {
             analise: document.getElementById('abaCustosAnalise'),
             precos: document.getElementById('abaCustosPrecos'),
-            historico: document.getElementById('abaCustosHistorico')
+            historico: document.getElementById('abaCustosHistorico'),
+            dashboard: document.getElementById('abaCustosDashboard')
         };
 
         Object.entries(abas).forEach(([nomeAba, elemento]) => {
@@ -878,16 +1014,24 @@ function trocarAbaCustos(aba) {
         const botoes = {
             analise: document.querySelector("[onclick=\"trocarAbaCustos('analise')\"]"),
             precos: document.querySelector("[onclick=\"trocarAbaCustos('precos')\"]"),
-            historico: document.querySelector("[onclick=\"trocarAbaCustos('historico')\"]")
+            historico: document.querySelector("[onclick=\"trocarAbaCustos('historico')\"]"),
+            dashboard: document.querySelector("[onclick=\"trocarAbaCustos('dashboard')\"]")
         };
 
         Object.entries(botoes).forEach(([nomeAba, botao]) => {
             if (!botao) return;
             const ativo = nomeAba === aba;
-            botao.style.borderBottom = ativo ? '3px solid #2ecc71' : '1px solid rgba(255,255,255,0.12)';
-            botao.style.color = ativo ? '#2ecc71' : '#a8b8ae';
-            botao.style.background = ativo ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.04)';
+            botao.style.borderBottom = ativo ? `3px solid ${nomeAba === 'dashboard' ? '#00d2ff' : '#2ecc71'}` : '1px solid rgba(255,255,255,0.12)';
+            botao.style.color = ativo ? (nomeAba === 'dashboard' ? '#00d2ff' : '#2ecc71') : '#a8b8ae';
+            botao.style.background = ativo ? (nomeAba === 'dashboard' ? 'rgba(0,210,255,0.2)' : 'rgba(46,204,113,0.2)') : 'rgba(255,255,255,0.04)';
         });
+
+        if (aba === 'dashboard') {
+            const campoInicio = document.getElementById('dashboardDataInicio');
+            const campoFim = document.getElementById('dashboardDataFim');
+            if (!campoInicio?.value || !campoFim?.value) aplicarPeriodoDashboard(90);
+            else calcularDashboard();
+        }
     } catch (erro) {
         console.error('❌ Erro ao trocar aba de custos:', erro);
     }
@@ -955,6 +1099,10 @@ window.obterUsuarioAtual = obterUsuarioAtual;
 window.abrirModalCustos = abrirModalCustos;
 window.fecharModalCustos = fecharModalCustos;
 window.trocarAbaCustos = trocarAbaCustos;
+window.aplicarPeriodoDashboard = aplicarPeriodoDashboard;
+window.calcularDashboard = calcularDashboard;
+window.renderizarGraficosDashboard = renderizarGraficosDashboard;
+window.renderizarTabelaResumoDashboard = renderizarTabelaResumoDashboard;
 window.aplicarPeriodoRapidoCustos = aplicarPeriodoRapidoCustos;
 window.aplicarPeriodoCustos = aplicarPeriodoCustos;
 
