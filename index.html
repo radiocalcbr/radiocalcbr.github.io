@@ -2255,6 +2255,7 @@
                 cursor: pointer;
                 padding: 10px 15px;
             ">📜 Histórico de Alterações</button>
+            <button type="button" onclick="trocarAbaCustos('dashboard')" style="background: rgba(0,210,255,0.12); border: 1px solid #00d2ff; border-radius: 8px; color: #00d2ff; cursor: pointer; padding: 10px 15px;">📈 Dashboard</button>
         </div>
 
         <!-- ABA 1: ANÁLISE DE GASTOS -->
@@ -2379,6 +2380,44 @@
                     </tr></thead>
                     <tbody id="corpoHistoricoCustos"><tr><td colspan="6" style="padding: 30px; text-align: center; color: #718579;">Nenhuma alteração registrada.</td></tr></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ABA 4: DASHBOARD -->
+        <div id="abaCustosDashboard" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,0.04); border: 1px solid rgba(0,210,255,0.25); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                <strong style="color: #b9c9bd;">🔍 Período:</strong>
+                <label style="color: #8fa99a; font-size: 0.8rem;">De</label><input type="date" id="dashboardDataInicio" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <label style="color: #8fa99a; font-size: 0.8rem;">Até</label><input type="date" id="dashboardDataFim" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <button type="button" onclick="calcularDashboard()" style="padding: 9px 17px; border: 1px solid #00d2ff; border-radius: 7px; background: rgba(0,210,255,0.15); color: #00d2ff; cursor: pointer; font-weight: 700;">🔍 Calcular</button>
+                <span style="color: #718579; font-size: 0.78rem; margin-left: auto;">Atalhos:</span>
+                <button type="button" onclick="aplicarPeriodoDashboard(30)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">30d</button>
+                <button type="button" onclick="aplicarPeriodoDashboard(90)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">90d</button>
+                <button type="button" onclick="aplicarPeriodoDashboard(180)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">180d</button>
+                <button type="button" onclick="aplicarPeriodoDashboard(365)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">1 ano</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                <div style="background: rgba(46,204,113,0.1); border-left: 4px solid #2ecc71; border-radius: 14px; padding: 16px;"><div style="color: #9ee5b4; font-size: 0.78rem;">💰 Custo Total</div><strong id="dashCustoTotal" style="display: block; color: #2ecc71; font-size: 1.4rem; margin-top: 6px;">R$ 0,00</strong></div>
+                <div style="background: rgba(0,210,255,0.1); border-left: 4px solid #00d2ff; border-radius: 14px; padding: 16px;"><div style="color: #9cdeea; font-size: 0.78rem;">💉 Doses</div><strong id="dashDoses" style="display: block; color: #00d2ff; font-size: 1.4rem; margin-top: 6px;">0</strong></div>
+                <div style="background: rgba(46,204,113,0.1); border-left: 4px solid #2ecc71; border-radius: 14px; padding: 16px;"><div style="color: #9ee5b4; font-size: 0.78rem;">📦 Kits Usados</div><strong id="dashKits" style="display: block; color: #2ecc71; font-size: 1.4rem; margin-top: 6px;">0</strong></div>
+                <div style="background: rgba(0,210,255,0.1); border-left: 4px solid #00d2ff; border-radius: 14px; padding: 16px;"><div style="color: #9cdeea; font-size: 0.78rem;">⚛️ Geradores</div><strong id="dashGeradores" style="display: block; color: #00d2ff; font-size: 1.4rem; margin-top: 6px;">0</strong></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 22px;">
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #ffd166; border-radius: 14px; padding: 16px;"><div style="color: #d9c78c; font-size: 0.78rem;">💵 Custo/mCi</div><strong id="dashCustoMci" style="display: block; color: #ffd166; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #ff9f43; border-radius: 14px; padding: 16px;"><div style="color: #e0b27d; font-size: 0.78rem;">👤 Custo/Dose</div><strong id="dashCustoDose" style="display: block; color: #ff9f43; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #a8b8ae; border-radius: 14px; padding: 16px;"><div style="color: #a8b8ae; font-size: 0.78rem;">📅 Custo/Dia Corrido</div><strong id="dashCustoDiaCorrido" style="display: block; color: #dfece3; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #c084fc; border-radius: 14px; padding: 16px;"><div style="color: #c9a7e8; font-size: 0.78rem;">💉 Custo/Dia Produtivo</div><strong id="dashCustoDiaProdutivo" style="display: block; color: #c084fc; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-bottom: 22px;">
+                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartCustoMes"></canvas></div>
+                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartDosesMes"></canvas></div>
+                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartCategorias"></canvas></div>
+                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartTopRadio"></canvas></div>
+            </div>
+            <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 680px; font-size: 0.82rem;"><thead style="background: rgba(0,210,255,0.12);"><tr>
+                    <th style="padding: 11px; text-align: left; color: #9cdeea;">Radiofármaco</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Doses</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Atividade</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Est.</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Custo/Dose</th>
+                </tr></thead><tbody id="dashTabelaResumo"><tr><td colspan="5" style="padding: 25px; text-align: center; color: #718579;">Nenhum dado no período.</td></tr></tbody></table>
             </div>
         </div>
     </div>
