@@ -263,6 +263,10 @@ async function salvarEstoqueNaNuvem() {
         } else {
             mostrarToastEstoque(`✅ ${salvos} itens + ${historicoSalvos} eventos salvos!`, 'sucesso');
         }
+
+        if (erros === 0 && historicoSalvos === historicoMovimentacoes.length) {
+            salvarEstoque(true);
+        }
         
         atualizarIndicadorEstoqueNuvem(true);
 

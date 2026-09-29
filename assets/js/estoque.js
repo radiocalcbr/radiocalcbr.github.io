@@ -19,6 +19,7 @@ let historicoFiltrado = [];
 // ===== PERÍODO PADRÃO (180 DIAS) =====
 const DIAS_PADRAO_HISTORICO = 180;
 let periodoAtivoHistorico = 'padrao180';
+const STORAGE_ESTOQUE_CACHE_SINCRONIZADO = 'estoqueHistorico_cache_sincronizado';
 
 // ===== PAGINAÇÃO DO ESTOQUE =====
 let paginaAtualEstoque = 1;
@@ -63,6 +64,12 @@ function carregarEstoqueSalvo() {
     if (historicoSalvo) {
         try {
             historicoMovimentacoes = JSON.parse(historicoSalvo);
+            const cacheLimitado = limitarCacheHistoricoSincronizado(
+                'estoqueHistorico',
+                STORAGE_ESTOQUE_CACHE_SINCRONIZADO,
+                evento => evento.timestamp
+            );
+            if (cacheLimitado) historicoMovimentacoes = cacheLimitado;
             historicoIdCounter = historicoMovimentacoes.length > 0
                 ? Math.max(...historicoMovimentacoes.map(h => h.id || 0)) + 1
                 : 0;
@@ -78,10 +85,20 @@ function carregarEstoqueSalvo() {
 // ============================================================
 // ===== SALVAR DADOS =====
 // ============================================================
-function salvarEstoque() {
+function salvarEstoque(sincronizadoComNuvem = false) {
     try {
+        const historicoLocal = sincronizadoComNuvem
+            ? selecionarHistoricoParaCache(historicoMovimentacoes, evento => evento.timestamp)
+            : historicoMovimentacoes;
+
+        if (sincronizadoComNuvem) {
+            localStorage.setItem(STORAGE_ESTOQUE_CACHE_SINCRONIZADO, 'true');
+        } else {
+            localStorage.removeItem(STORAGE_ESTOQUE_CACHE_SINCRONIZADO);
+        }
+
         localStorage.setItem('estoqueKits', JSON.stringify(estoqueItens));
-        localStorage.setItem('estoqueHistorico', JSON.stringify(historicoMovimentacoes));
+        localStorage.setItem('estoqueHistorico', JSON.stringify(historicoLocal));
     } catch (e) {
         console.error('Erro ao salvar estoque:', e);
     }

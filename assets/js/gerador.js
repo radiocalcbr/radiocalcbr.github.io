@@ -17,6 +17,7 @@ let geradorIdCounter = 0;
 let paginaAtualHistoricoGerador = 1;
 const ITENS_POR_PAGINA_HISTORICO_GERADOR = 10;   // 🔥 RENOMEADO
 let historicoGeradorFiltrado = [];
+const STORAGE_GERADORES_CACHE_SINCRONIZADO = 'radiocalc_geradores_cache_sincronizado';
 
 // ============================================================
 // ===== CARREGAR DADOS SALVOS =====
@@ -27,6 +28,25 @@ function carregarGeradoresSalvos() {
     if (salvo) {
         try {
             registrosGerador = JSON.parse(salvo);
+            const cacheLimitado = limitarCacheHistoricoSincronizado(
+                'radiocalc_geradores_historico',
+                STORAGE_GERADORES_CACHE_SINCRONIZADO,
+                registro => registro.dataRecebimento
+            );
+            if (cacheLimitado) registrosGerador = cacheLimitado;
+
+            if (localStorage.getItem(STORAGE_GERADORES_CACHE_SINCRONIZADO) === 'true') {
+                try {
+                    const backup = JSON.parse(localStorage.getItem('radiocalc_geradores_nuvem_backup') || 'null');
+                    if (backup && Array.isArray(backup.registros)) {
+                        backup.registros = selecionarHistoricoParaCache(backup.registros, registro => registro.dataRecebimento);
+                        localStorage.setItem('radiocalc_geradores_nuvem_backup', JSON.stringify(backup));
+                    }
+                } catch (erroBackup) {
+                    console.warn('Não foi possível limitar o backup local de geradores:', erroBackup);
+                }
+            }
+
             geradorIdCounter = registrosGerador.length > 0 
                 ? Math.max(...registrosGerador.map(item => item.id || 0)) + 1 
                 : 0;
@@ -45,9 +65,19 @@ function carregarGeradoresSalvos() {
 // ===== SALVAR DADOS =====
 // ============================================================
 
-function salvarGeradores() {
+function salvarGeradores(sincronizadoComNuvem = false) {
     try {
-        localStorage.setItem('radiocalc_geradores_historico', JSON.stringify(registrosGerador));
+        const registrosLocais = sincronizadoComNuvem
+            ? selecionarHistoricoParaCache(registrosGerador, registro => registro.dataRecebimento)
+            : registrosGerador;
+
+        if (sincronizadoComNuvem) {
+            localStorage.setItem(STORAGE_GERADORES_CACHE_SINCRONIZADO, 'true');
+        } else {
+            localStorage.removeItem(STORAGE_GERADORES_CACHE_SINCRONIZADO);
+        }
+
+        localStorage.setItem('radiocalc_geradores_historico', JSON.stringify(registrosLocais));
     } catch (e) {
         console.error('Erro ao salvar geradores:', e);
     }

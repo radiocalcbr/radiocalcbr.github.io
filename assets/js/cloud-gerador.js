@@ -118,6 +118,19 @@ async function salvarGeradoresNaNuvem() {
         // 🔥 ESTRATÉGIA: SALVAR COMO UM ÚNICO DOCUMENTO COM ID FIXO
         // Isso evita múltiplos documentos e problemas de sincronização
         const docRef = orgGeradoresRef.doc('todos_geradores');
+
+        const documentoAtual = await docRef.get();
+        const registrosNuvem = documentoAtual.exists && Array.isArray(documentoAtual.data().registros)
+            ? documentoAtual.data().registros
+            : [];
+        const registrosPorId = new Map();
+        registrosNuvem.forEach(registro => registrosPorId.set(String(registro.id), registro));
+        registrosGerador.forEach(registro => registrosPorId.set(String(registro.id), registro));
+        registrosGerador = Array.from(registrosPorId.values());
+        geradorIdCounter = Math.max(
+            geradorIdCounter,
+            ...registrosGerador.map(registro => (Number(registro.id) || 0) + 1)
+        );
         
         await docRef.set({
             registros: registrosGerador,
@@ -130,10 +143,13 @@ async function salvarGeradoresNaNuvem() {
         });
         
         console.log(`✅ ${registrosGerador.length} geradores salvos na nuvem!`);
+
+        salvarGeradores(true);
+        const registrosBackup = selecionarHistoricoParaCache(registrosGerador, registro => registro.dataRecebimento);
         
         // Salvar backup local
         localStorage.setItem('radiocalc_geradores_nuvem_backup', JSON.stringify({
-            registros: registrosGerador,
+            registros: registrosBackup,
             dataBackup: new Date().toISOString(),
             organizacao: userData.organizacao
         }));

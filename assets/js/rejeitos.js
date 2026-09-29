@@ -7,6 +7,91 @@
 // ===== FUNÇÕES PARA ABRIR/FECHAR MODAL =====
 // ============================================================
 
+const STORAGE_REJEITOS = 'radiocalc_rejeitos_radioativos';
+const STORAGE_REJEITOS_CACHE_SINCRONIZADO = 'radiocalc_rejeitos_cache_sincronizado';
+const STORAGE_REJEITOS_ORGANIZACAO_SINCRONIZADA = 'radiocalc_rejeitos_organizacao_sincronizada';
+
+function carregarRegistrosRejeitosLocais() {
+    try {
+        const registros = JSON.parse(localStorage.getItem(STORAGE_REJEITOS) || '[]');
+        const cacheLimitado = limitarCacheHistoricoSincronizado(
+            STORAGE_REJEITOS,
+            STORAGE_REJEITOS_CACHE_SINCRONIZADO,
+            registro => registro.dataSalvamento
+        );
+        return cacheLimitado || registros;
+    } catch (erro) {
+        console.error('Erro ao carregar histórico local de rejeitos:', erro);
+        return [];
+    }
+}
+
+function salvarRegistrosRejeitosLocais(registros, sincronizadoComNuvem = false) {
+    if (sincronizadoComNuvem) {
+        localStorage.setItem(STORAGE_REJEITOS_CACHE_SINCRONIZADO, 'true');
+        registros = selecionarHistoricoParaCache(registros, registro => registro.dataSalvamento);
+    } else {
+        localStorage.removeItem(STORAGE_REJEITOS_CACHE_SINCRONIZADO);
+        localStorage.removeItem(STORAGE_REJEITOS_ORGANIZACAO_SINCRONIZADA);
+    }
+    localStorage.setItem(STORAGE_REJEITOS, JSON.stringify(registros));
+}
+
+async function sincronizarRejeitosComNuvem() {
+    try {
+        if (typeof firebase === 'undefined' || !firebase.firestore || typeof obterDadosUsuario !== 'function') return false;
+
+        const usuario = await obterDadosUsuario();
+        if (!usuario || !usuario.organizacao) return false;
+
+        const db = firebase.firestore();
+        const colecao = db.collection('organizacoes')
+            .doc(usuario.organizacao)
+            .collection('rejeitos_radioativos');
+        const jaSincronizado = localStorage.getItem(STORAGE_REJEITOS_CACHE_SINCRONIZADO) === 'true'
+            && localStorage.getItem(STORAGE_REJEITOS_ORGANIZACAO_SINCRONIZADA) === usuario.organizacao;
+        const dataMinima = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+        const snapshot = await colecao
+            .where('dataSalvamento', '>=', dataMinima)
+            .orderBy('dataSalvamento', 'desc')
+            .limit(500)
+            .get();
+        const mapa = new Map();
+
+        snapshot.forEach(documento => {
+            const registro = documento.data();
+            mapa.set(String(registro.id || documento.id), { ...registro, id: registro.id || documento.id });
+        });
+
+        const registrosLocais = JSON.parse(localStorage.getItem(STORAGE_REJEITOS) || '[]');
+        registrosLocais.forEach(registro => mapa.set(String(registro.id), registro));
+
+        if (!jaSincronizado) {
+            for (let inicio = 0; inicio < registrosLocais.length; inicio += 400) {
+                const lote = db.batch();
+                registrosLocais.slice(inicio, inicio + 400).forEach(registro => {
+                    const referencia = colecao.doc(String(registro.id));
+                    lote.set(referencia, {
+                        ...registro,
+                        organizacao: usuario.organizacao,
+                        sincronizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                });
+                await lote.commit();
+            }
+        }
+
+        const registrosCompletos = Array.from(mapa.values());
+        salvarRegistrosRejeitosLocais(registrosCompletos, true);
+        localStorage.setItem(STORAGE_REJEITOS_ORGANIZACAO_SINCRONIZADA, usuario.organizacao);
+        atualizarHistoricoRejeitosModal();
+        return true;
+    } catch (erro) {
+        console.error('Erro ao sincronizar rejeitos na nuvem:', erro);
+        return false;
+    }
+}
+
 function abrirModalRejeitos() {
     console.log('🖱️ Abrindo modal de rejeitos...');
     const modal = document.getElementById('modalRejeitos');
@@ -417,11 +502,12 @@ function salvarTabelaRejeitosModal() {
         totalRejeitos: totalRejeitos,
         rejeitos: todosRejeitos
     };
-    let registros = JSON.parse(localStorage.getItem('radiocalc_rejeitos_radioativos') || '[]');
+    let registros = carregarRegistrosRejeitosLocais();
     registros.unshift(registro);
-    localStorage.setItem('radiocalc_rejeitos_radioativos', JSON.stringify(registros));
+    salvarRegistrosRejeitosLocais(registros);
     mostrarFeedbackRejeitos('✅ ' + totalRejeitos + ' rejeitos salvos em ' + totalPaginasRejeitos + ' páginas!', 'success');
     atualizarHistoricoRejeitosModal();
+    void sincronizarRejeitosComNuvem();
 }
 
 // ============================================================
@@ -459,7 +545,7 @@ function exportarExcelRejeitosModal() {
 function atualizarHistoricoRejeitosModal() {
     const container = document.getElementById('historicoRejeitosContainerModal');
     if (!container) return;
-    const registros = JSON.parse(localStorage.getItem('radiocalc_rejeitos_radioativos') || '[]');
+    const registros = carregarRegistrosRejeitosLocais();
     if (registros.length === 0) {
         container.innerHTML = '<div class="historico-vazio">Nenhum registro salvo ainda.</div>';
         return;
@@ -480,6 +566,10 @@ function atualizarHistoricoRejeitosModal() {
     });
     container.innerHTML = html;
 }
+
+document.addEventListener('userLoggedIn', () => {
+    void sincronizarRejeitosComNuvem();
+});
 
 // ============================================================
 // ===== FEEDBACK =====

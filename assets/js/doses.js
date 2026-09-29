@@ -9,6 +9,7 @@ const ITENS_POR_PAGINA_DOSES = 30;
 let paginaAtualDoses = 1;
 const STORAGE_DOSES_ADMINISTRADAS = 'radiocalc_doses_administradas';
 const STORAGE_DOSES_NUVEM_BACKUP = 'radiocalc_doses_nuvem_backup';
+const STORAGE_DOSES_CACHE_SINCRONIZADO = 'radiocalc_doses_cache_sincronizado';
 const DOC_DOSES_NUVEM = 'todas_doses';
 const MOTIVOS_DUPLICIDADE_DOSE = [
     'Falha na injeção',
@@ -168,7 +169,26 @@ function mesclarDosesPorFicha(registrosNuvem = [], registrosLocais = []) {
 function carregarDosesSalvas() {
     try {
         const dadosSalvos = localStorage.getItem(STORAGE_DOSES_ADMINISTRADAS);
-        const registros = dadosSalvos ? JSON.parse(dadosSalvos) : [];
+        let registros = dadosSalvos ? JSON.parse(dadosSalvos) : [];
+
+        const cacheLimitado = limitarCacheHistoricoSincronizado(
+            STORAGE_DOSES_ADMINISTRADAS,
+            STORAGE_DOSES_CACHE_SINCRONIZADO,
+            dose => dose.data
+        );
+        if (cacheLimitado) registros = cacheLimitado;
+
+        if (localStorage.getItem(STORAGE_DOSES_CACHE_SINCRONIZADO) === 'true') {
+            try {
+                const backup = JSON.parse(localStorage.getItem(STORAGE_DOSES_NUVEM_BACKUP) || 'null');
+                if (backup && Array.isArray(backup.registros)) {
+                    backup.registros = selecionarHistoricoParaCache(backup.registros, dose => dose.data);
+                    localStorage.setItem(STORAGE_DOSES_NUVEM_BACKUP, JSON.stringify(backup));
+                }
+            } catch (erroBackup) {
+                console.warn('Não foi possível limitar o backup local de doses:', erroBackup);
+            }
+        }
 
         dosesAdministradas = Array.isArray(registros)
             ? registros
@@ -195,8 +215,18 @@ function carregarDosesSalvas() {
     }
 }
 
-function persistirDosesLocal() {
-    localStorage.setItem(STORAGE_DOSES_ADMINISTRADAS, JSON.stringify(dosesAdministradas));
+function persistirDosesLocal(sincronizadoComNuvem = false) {
+    const registrosLocais = sincronizadoComNuvem
+        ? selecionarHistoricoParaCache(dosesAdministradas, dose => dose.data)
+        : dosesAdministradas;
+
+    if (sincronizadoComNuvem) {
+        localStorage.setItem(STORAGE_DOSES_CACHE_SINCRONIZADO, 'true');
+    } else {
+        localStorage.removeItem(STORAGE_DOSES_CACHE_SINCRONIZADO);
+    }
+
+    localStorage.setItem(STORAGE_DOSES_ADMINISTRADAS, JSON.stringify(registrosLocais));
 }
 
 // ============================================
@@ -313,11 +343,12 @@ async function salvarDosesNaNuvem() {
         dosesIdCounter = Math.max(dosesIdCounter, maiorIdNumerico + 1);
 
         dosesFiltradas = [...dosesAdministradas];
-        persistirDosesLocal();
+        persistirDosesLocal(true);
         aplicarFiltroDoses(true);
 
+        const registrosBackup = selecionarHistoricoParaCache(dosesAdministradas, dose => dose.data);
         localStorage.setItem(STORAGE_DOSES_NUVEM_BACKUP, JSON.stringify({
-            registros: dosesAdministradas,
+            registros: registrosBackup,
             dataBackup: new Date().toISOString(),
             organizacao: usuario.organizacao
         }));
