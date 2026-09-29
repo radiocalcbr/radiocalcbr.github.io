@@ -748,22 +748,146 @@ function renderizarGraficosDashboard(dados) {
     });
 }
 
-function renderizarTabelaResumoDashboard(resumo, precoPorMci) {
+function normalizarChaveRadiofarmaco(nome) {
+    return String(nome || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
+}
+
+function ehRadiofarmacoSemKit(nome) {
+    const chave = normalizarChaveRadiofarmaco(nome);
+    return [
+        'TC99M', '99MTC', 'TECNECIO99M', '99MTECNECIO',
+        'PERTECNETATO', 'PERTECNETATODESODIO', 'PERTECNETATO99M',
+        'TC99MPERTECNETATO'
+    ].includes(chave)
+        || chave.startsWith('TC99M')
+        || chave.startsWith('99MTC')
+        || chave.startsWith('TECNECIO99M')
+        || chave.startsWith('99MTECNECIO')
+        || chave.includes('PERTECNETATO');
+}
+
+function resolverCodigoKitRadiofarmaco(nome, tabelaPrecos) {
+    const chave = normalizarChaveRadiofarmaco(nome);
+    if (!chave || ehRadiofarmacoSemKit(chave)) return null;
+
+    const aliases = {
+        SESTAMIBI: 'MIBI'
+    };
+    const chaveCanonica = aliases[chave] || chave;
+    const codigos = Object.keys(tabelaPrecos || {});
+    const codigoCorrespondente = codigos
+        .sort((a, b) => normalizarChaveRadiofarmaco(b).length - normalizarChaveRadiofarmaco(a).length)
+        .find(codigo => {
+            const codigoNormalizado = normalizarChaveRadiofarmaco(codigo);
+            const nomeAmigavel = typeof getNomeKit === 'function' ? getNomeKit(codigo) : codigo;
+            const nomeAmigavelNormalizado = normalizarChaveRadiofarmaco(nomeAmigavel);
+            return codigoNormalizado === chaveCanonica
+                || nomeAmigavelNormalizado === chave
+                || (codigoNormalizado.length >= 3 && chave.includes(codigoNormalizado));
+        });
+
+    return aliases[codigoCorrespondente] || codigoCorrespondente || chaveCanonica;
+}
+
+function obterPrecoKitRadiofarmaco(codigoKit, tabelaPrecos) {
+    if (!codigoKit || !tabelaPrecos) return 0;
+
+    const codigoNormalizado = normalizarChaveRadiofarmaco(codigoKit);
+    const aliases = codigoNormalizado === 'MIBI' || codigoNormalizado === 'SESTAMIBI'
+        ? ['MIBI', 'SESTAMIBI']
+        : [codigoNormalizado];
+    const codigoPreco = Object.keys(tabelaPrecos).find(codigo =>
+        aliases.includes(normalizarChaveRadiofarmaco(codigo))
+    );
+    return Number(tabelaPrecos[codigoPreco]) || 0;
+}
+
+function calcularCustoRealPorRadiofarmaco(
+    resumo,
+    precoPorMci,
+    dtIni,
+    dtFim,
+    historico = typeof historicoMovimentacoes !== 'undefined' ? historicoMovimentacoes : [],
+    tabelaPrecos = typeof precosKits !== 'undefined' ? precosKits : {}
+) {
+    const eventos = Array.isArray(historico) ? historico : [];
+    const precoMci = Number(precoPorMci) || 0;
+
+    return Object.values(resumo || {}).map(item => {
+        const codigoKit = resolverCodigoKitRadiofarmaco(item.nome, tabelaPrecos);
+        let frascosUsados = 0;
+
+        if (codigoKit) {
+            eventos.forEach(evento => {
+                if (String(evento?.tipoMovimento || '').toLowerCase() !== 'saida') return;
+
+                const dataEvento = obterDataTimestamp(evento.timestamp || evento.dataHora);
+                const timestamp = dataEvento?.getTime();
+                if (!Number.isFinite(timestamp) || timestamp < dtIni || timestamp > dtFim) return;
+
+                const codigoEvento = resolverCodigoKitRadiofarmaco(evento.tipoKit, tabelaPrecos);
+                if (codigoEvento === codigoKit) {
+                    frascosUsados += Number(evento.quantidade) || 0;
+                }
+            });
+        }
+
+        const custoTc99m = (Number(item.atividade) || 0) * precoMci;
+        const custoKit = frascosUsados * obterPrecoKitRadiofarmaco(codigoKit, tabelaPrecos);
+        const custoReal = custoTc99m + custoKit;
+
+        return {
+            ...item,
+            codigoKit,
+            frascosUsados,
+            custoTc99m,
+            custoKit,
+            custoReal,
+            custoPorDose: Number(item.doses) > 0 ? custoReal / Number(item.doses) : 0
+        };
+    });
+}
+
+function renderizarTabelaResumoDashboard(itens) {
     const corpo = document.getElementById('dashTabelaResumo');
     if (!corpo) return;
-    const itens = Object.values(resumo).sort((a, b) => b.doses - a.doses);
-    if (!itens.length) {
-        corpo.innerHTML = '<tr><td colspan="5" style="padding: 25px; text-align: center; color: #718579;">Nenhum dado no período.</td></tr>';
+
+    const cabecalho = corpo.closest('table')?.querySelector('thead tr');
+    if (cabecalho) {
+        cabecalho.innerHTML = `
+            <th style="padding: 11px; text-align: left; color: #9cdeea;">Radiofármaco</th>
+            <th style="padding: 11px; text-align: right; color: #9cdeea;">Doses</th>
+            <th style="padding: 11px; text-align: right; color: #9cdeea;">Atividade</th>
+            <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Tc-99m</th>
+            <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Kit</th>
+            <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Real</th>
+            <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo/Dose</th>`;
+    }
+
+    const itensOrdenados = (Array.isArray(itens) ? itens : [])
+        .slice()
+        .sort((a, b) => b.doses - a.doses);
+    if (!itensOrdenados.length) {
+        corpo.innerHTML = '<tr><td colspan="7" style="padding: 25px; text-align: center; color: #718579;">Nenhum dado no período.</td></tr>';
         return;
     }
-    corpo.innerHTML = itens.map(item => {
-        const custoReal = item.atividade * (Number(precoPorMci) || 0);
+
+    corpo.innerHTML = itensOrdenados.map(item => {
+        const nomeExibicao = item.codigoKit && typeof getNomeKit === 'function'
+            ? getNomeKit(item.codigoKit)
+            : item.nome;
         return `<tr style="border-top: 1px solid rgba(255,255,255,0.06);">
-            <td style="padding: 10px; color: #fff;">${escaparHtmlCusto(item.nome)}</td>
+            <td style="padding: 10px; color: #fff;">${escaparHtmlCusto(nomeExibicao)}</td>
             <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.doses}</td>
-            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.atividade.toFixed(2)} mCi</td>
-            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(custoReal)}</td>
-            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${item.doses ? formatarMoeda(custoReal / item.doses) : '—'}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${(Number(item.atividade) || 0).toFixed(2)} mCi</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(item.custoTc99m)}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(item.custoKit)}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(item.custoReal)}</td>
+            <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(item.custoPorDose)}</td>
         </tr>`;
     }).join('');
 }
@@ -807,8 +931,19 @@ function calcularDashboard() {
             dosesPorMes[mes] = (dosesPorMes[mes] || 0) + 1;
             diasProdutivos.add(dose.data);
         });
-        const total = custosKits.total + custosGeradores.total;
         const precoPorMci = atividadeTotal > 0 ? custosGeradores.total / atividadeTotal : 0;
+        const historicoParaResumo = typeof historicoMovimentacoes !== 'undefined'
+            ? historicoMovimentacoes
+            : [];
+        const resumoCustos = calcularCustoRealPorRadiofarmaco(
+            resumo,
+            precoPorMci,
+            dtIni,
+            dtFim,
+            historicoParaResumo,
+            precosKits
+        );
+        const total = resumoCustos.reduce((soma, item) => soma + item.custoReal, 0);
         const diasCorridos = Math.floor((dtFim - dtIni) / 86400000) + 1;
         const totais = { kits: custosKits.total, geradores: custosGeradores.total, total };
         const KPIs = { doses: dosesPeriodo.length, kits: kitsUsados, geradores: custosGeradores.detalhes.length, atividade: atividadeTotal };
@@ -822,7 +957,7 @@ function calcularDashboard() {
         document.getElementById('dashCustoDiaProdutivo').textContent = diasProdutivos.size > 0 ? formatarMoeda(total / diasProdutivos.size) : '—';
         const topRadio = Object.values(resumo).sort((a, b) => b.doses - a.doses).slice(0, 5);
         renderizarGraficosDashboard({ custosKits, custosGeradores, dosesPorMes, topRadio });
-        renderizarTabelaResumoDashboard(resumo, precoPorMci);
+        renderizarTabelaResumoDashboard(resumoCustos);
         console.log('✅ Dashboard calculado:', { totais, KPIs });
     } catch (erro) {
         console.error('❌ Erro ao calcular dashboard:', erro);
