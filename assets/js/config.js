@@ -253,6 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 // ===== TOAST DE NOTIFICAÇÃO =====
 function mostrarToast(mensagem, tipo = 'erro') {
+    // 🔇 Suprime se estiver carregando custos em lote
+    if (window._silenciarToastsCustos) return;
+
     const toast = document.getElementById('toastNotificacao');
     const msg = document.getElementById('toastMensagem');
     
@@ -325,9 +328,100 @@ function abrirPaginaFerramenta(ferramenta) {
 function voltarParaPrincipal() {
     window.location.href = '../index.html';
 }
+// ============================================
+// 🔐 MATRIZ DE PERMISSÕES POR CARGO
+// ============================================
 
-// ============================================
-// EXPORTA AS NOVAS FUNÇÕES PARA USO GLOBAL
-// ============================================
-window.abrirPaginaFerramenta = abrirPaginaFerramenta;
-window.voltarParaPrincipal = voltarParaPrincipal;
+/**
+ * Papéis disponíveis e o que cada um pode ver.
+ * 
+ * Chaves: ID do card (definido no HTML via data-role-required)
+ * Valores: array de roles que podem ver aquele card
+ */
+const PERMISSOES_POR_CARGO = {
+    // 🔹 Nome amigável de cada cargo (usado em exibição)
+    nomes: {
+        'tecnico_enfermagem':      'Técnico(a) de Enfermagem',
+        'tecnico_radiologia':      'Técnico(a) em Radiologia',
+        'biomedico':               'Biomédico(a)',
+        'supervisor_radioprotecao':'Supervisor(a) de Radioproteção',
+        'supervisor':              'Supervisor(a)',
+        'admin':                   'Administrador(a)'
+    },
+
+    // 🔹 Regras: quem vê cada ferramenta
+    ferramentas: {
+        // 💉 Doses Administradas → TODOS
+        'doses': [
+            'tecnico_enfermagem',
+            'tecnico_radiologia',
+            'biomedico',
+            'supervisor_radioprotecao',
+            'supervisor',
+            'admin'
+        ],
+
+        // 📋 Registro de Marcação → todos menos técnico de enfermagem
+        'registro-marcacao': [
+            'tecnico_radiologia',
+            'biomedico',
+            'supervisor_radioprotecao',
+            'supervisor',
+            'admin'
+        ],
+
+        // 📦 Estoque de Kits → todos menos técnico de enfermagem
+        'estoque': [
+            'tecnico_radiologia',
+            'biomedico',
+            'supervisor_radioprotecao',
+            'supervisor',
+            'admin'
+        ],
+
+        // 🗑️ Rejeitos → todos menos técnico de enfermagem
+        'rejeitos': [
+            'tecnico_radiologia',
+            'biomedico',
+            'supervisor_radioprotecao',
+            'supervisor',
+            'admin'
+        ],
+
+        // ⚛️ Gerador → todos menos técnico de enfermagem
+        'gerador': [
+            'tecnico_radiologia',
+            'biomedico',
+            'supervisor_radioprotecao',
+            'supervisor',
+            'admin'
+        ],
+
+        // 💰 Análise de Custos → SOMENTE supervisor e admin
+        'custos': [
+            'supervisor',
+            'admin'
+        ]
+    }
+};
+
+/**
+ * Verifica se um cargo pode ver uma ferramenta
+ */
+function podeVerFerramenta(cargo, ferramenta) {
+    if (!cargo) return false;
+    const permitidos = PERMISSOES_POR_CARGO.ferramentas[ferramenta] || [];
+    return permitidos.includes(cargo);
+}
+
+/**
+ * Retorna o nome amigável de um cargo
+ */
+function getNomeCargo(cargo) {
+    return PERMISSOES_POR_CARGO.nomes[cargo] || cargo || 'Não definido';
+}
+
+// Exporta para uso global
+window.PERMISSOES_POR_CARGO = PERMISSOES_POR_CARGO;
+window.podeVerFerramenta = podeVerFerramenta;
+window.getNomeCargo = getNomeCargo;

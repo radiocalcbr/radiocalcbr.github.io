@@ -306,7 +306,7 @@ function atualizarTabelaEstoque() {
             status = '❌ Vencido';
             statusColor = '#e74c3c';
             bgColor = 'rgba(231, 76, 60, 0.1)';
-        } else if (diffDias <= 7) {
+        } else if (diffDias <= 30) {
             status = `⚠️ Vence em ${diffDias} dias`;
             statusColor = '#f1c40f';
             bgColor = 'rgba(241, 196, 15, 0.1)';
@@ -774,7 +774,7 @@ function buscarPorLote(lote) {
             status = '❌ Vencido';
             statusColor = '#e74c3c';
             bgColor = 'rgba(231, 76, 60, 0.1)';
-        } else if (diffDias <= 7) {
+        } else if (diffDias <= 30) {
             status = `⚠️ Vence em ${diffDias} dias`;
             statusColor = '#f1c40f';
             bgColor = 'rgba(241, 196, 15, 0.1)';
@@ -845,7 +845,7 @@ function atualizarResumoEstoque() {
     const alertas = estoqueItens.filter(item => {
         const validadeDate = new Date(item.validade + 'T00:00:00');
         const diffDias = Math.ceil((validadeDate - hoje) / (1000 * 60 * 60 * 24));
-        return diffDias < 0 || diffDias <= 7;
+        return diffDias < 0 || diffDias <= 30;
     }).length;
 
     const totalFrascosEl = document.getElementById('totalFrascosEstoque');

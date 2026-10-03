@@ -130,12 +130,10 @@ function invalidarCacheAdmin() {
 }
 
 async function atualizarVisibilidadeCardCustos() {
-    const cardCustos = document.querySelector('.tool-card[onclick="abrirModalCustos()"]');
-    if (!cardCustos) return;
-
-    const isAdmin = await verificarAdminComCache();
-    cardCustos.style.display = isAdmin ? '' : 'none';
-    console.log(isAdmin ? '👑 Card de custos liberado para administrador' : '👤 Card de custos oculto para usuário comum');
+    // 🔥 Redireciona para a nova função unificada
+    if (typeof aplicarPermissoesPorCargo === 'function') {
+        await aplicarPermissoesPorCargo();
+    }
 }
 
 // ============================================
@@ -1040,7 +1038,7 @@ async function salvarEdicaoItem() {
             if (diffDias < 0) {
                 status = '❌ Vencido';
                 statusColor = '#e74c3c';
-            } else if (diffDias <= 7) {
+            } else if (diffDias <= 30) {
                 status = `⚠️ Vence em ${diffDias} dias`;
                 statusColor = '#f1c40f';
             }
@@ -1103,6 +1101,9 @@ function atualizarIndicadorEstoqueNuvem(sincronizado) {
  * Toast específico para estoque
  */
 function mostrarToastEstoque(mensagem, tipo = 'info') {
+    // 🔇 Suprime se estiver carregando custos em lote
+    if (window._silenciarToastsCustos) return;
+
     const container = document.getElementById('modalEstoque');
     if (!container) {
         console.log('📢 Estoque:', mensagem);
@@ -1232,8 +1233,13 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('userLoggedIn', atualizarVisibilidadeCardCustos);
 document.addEventListener('userLoggedOut', function() {
     invalidarCacheAdmin();
-    const cardCustos = document.querySelector('.tool-card[onclick="abrirModalCustos()"]');
-    if (cardCustos) cardCustos.style.display = 'none';
+    // Esconde todos os cards até o próximo login
+    document.querySelectorAll('.tool-card[data-ferramenta]').forEach(card => {
+        card.style.display = 'none';
+    });
+    // Remove o badge de cargo
+    const badge = document.querySelector('.user-role-badge');
+    if (badge) badge.remove();
 });
 
 // ============================================
@@ -1252,6 +1258,97 @@ window.invalidarCacheAdmin = invalidarCacheAdmin;
 window.editarItemEstoque = editarItemEstoque;
 window.fecharModalEdicao = fecharModalEdicao;
 window.salvarEdicaoItem = salvarEdicaoItem;
+// ============================================
+// 🔐 APLICAR PERMISSÕES DE VISIBILIDADE POR CARGO
+// ============================================
+
+/**
+ * Mostra/esconde os cards das ferramentas conforme o cargo do usuário.
+ * Deve ser chamada após o login e no carregamento da página.
+ */
+async function aplicarPermissoesPorCargo() {
+    try {
+        // 1) Descobre o usuário logado e seu cargo
+        if (typeof verificarUsuarioLogado !== 'function') {
+            console.warn('⚠️ verificarUsuarioLogado não disponível');
+            return;
+        }
+
+        const usuario = await verificarUsuarioLogado();
+        if (!usuario) {
+            console.log('🔒 Nenhum usuário logado — cards ocultos até login');
+            document.querySelectorAll('.tool-card[data-ferramenta]').forEach(card => {
+                card.style.display = 'none';
+            });
+            return;
+        }
+
+        const cargo = usuario.role || 'tecnico_radiologia';
+        console.log(`👤 Aplicando permissões para cargo: ${cargo}`);
+
+        // 2) Para cada card, decide se mostra ou esconde
+        document.querySelectorAll('.tool-card[data-ferramenta]').forEach(card => {
+            const ferramenta = card.getAttribute('data-ferramenta');
+            const podeVer = typeof podeVerFerramenta === 'function'
+                ? podeVerFerramenta(cargo, ferramenta)
+                : true;
+
+            if (podeVer) {
+                card.style.display = '';
+                card.removeAttribute('data-bloqueado');
+            } else {
+                card.style.display = 'none';
+                card.setAttribute('data-bloqueado', 'true');
+            }
+        });
+
+        // 3) Atualiza o badge do banner com o nome do cargo
+        const banner = document.querySelector('.user-banner span');
+        if (banner) {
+            const nomeCargo = typeof getNomeCargo === 'function'
+                ? getNomeCargo(cargo)
+                : cargo;
+
+            // Remove badge antigo se existir
+            const badgeAntigo = banner.querySelector('.user-role-badge');
+            if (badgeAntigo) badgeAntigo.remove();
+
+            const badge = document.createElement('span');
+            badge.className = 'user-role-badge';
+            badge.style.cssText = `
+                display: inline-block;
+                margin-left: 10px;
+                padding: 3px 12px;
+                border-radius: 12px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                background: rgba(0, 210, 255, 0.15);
+                color: #00d2ff;
+                border: 1px solid rgba(0, 210, 255, 0.3);
+            `;
+            badge.textContent = `🔑 ${nomeCargo}`;
+            banner.appendChild(badge);
+        }
+
+        console.log('✅ Permissões aplicadas com sucesso');
+    } catch (erro) {
+        console.error('❌ Erro ao aplicar permissões:', erro);
+    }
+}
+
+// Exporta globalmente
+window.aplicarPermissoesPorCargo = aplicarPermissoesPorCargo;
+
+// Dispara sempre que o usuário fizer login
+document.addEventListener('userLoggedIn', () => {
+    // Pequeno delay para garantir que o Firestore já respondeu
+    setTimeout(aplicarPermissoesPorCargo, 300);
+});
+
+// Dispara no carregamento (caso o usuário já esteja logado)
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(aplicarPermissoesPorCargo, 1000);
+});
 
 console.log('☁️ Módulo Cloud Estoque carregado com sucesso!');
 console.log('🔒 Proteção: Apenas ADMIN pode remover itens');

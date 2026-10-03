@@ -638,6 +638,19 @@ function renderizarGraficoCustos(porMesKits = {}, porMesGeradores = {}) {
             return;
         }
 
+        // 🔥 Registra o plugin ChartDataLabels (uma vez por sessão)
+        if (typeof ChartDataLabels !== 'undefined' && !window._chartDataLabelsRegistered) {
+            try {
+                Chart.register(ChartDataLabels);
+                window._chartDataLabelsRegistered = true;
+                console.log('✅ ChartDataLabels registrado (na Análise)');
+            } catch (e) {
+                console.warn('⚠️ Erro ao registrar ChartDataLabels:', e);
+            }
+        } else if (typeof ChartDataLabels === 'undefined') {
+            console.error('❌ ChartDataLabels NÃO carregado! Verifique o <script> no index.html.');
+        }
+
         const meses = [...new Set([
             ...Object.keys(porMesKits || {}),
             ...Object.keys(porMesGeradores || {})
@@ -679,11 +692,24 @@ function renderizarGraficoCustos(porMesKits = {}, porMesGeradores = {}) {
                         grid: { color: 'rgba(255,255,255,0.08)' }
                     }
                 },
-                plugins: {
+                                plugins: {
                     legend: { labels: { color: '#fff' } },
                     tooltip: {
                         callbacks: {
                             label: contexto => `${contexto.dataset.label}: ${formatarMoeda(contexto.raw)}`
+                        }
+                    },
+                    // 🔥 ADICIONA RÓTULOS NO GRÁFICO DE BARRAS EMPILHADAS
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 10 },
+                        anchor: 'center',
+                        align: 'center',
+                        formatter: (valor) => {
+                            if (!valor || valor === 0) return '';
+                            // Formato compacto: 30000 → "30k"
+                            if (valor >= 1000) return (valor / 1000).toFixed(1) + 'k';
+                            return Number(valor).toFixed(0);
                         }
                     }
                 }
@@ -710,41 +736,211 @@ function aplicarPeriodoDashboard(dias) {
 function renderizarGraficosDashboard(dados) {
     if (typeof Chart === 'undefined') return;
 
+    // 🔥 FORÇA o registro do plugin TODA VEZ (idempotente — registrar 2x não dá erro)
+    if (typeof ChartDataLabels !== 'undefined') {
+        try {
+            Chart.register(ChartDataLabels);
+            console.log('✅ ChartDataLabels registrado');
+        } catch (e) {
+            console.log('ℹ️ ChartDataLabels já registrado (ok)');
+        }
+    } else {
+        console.error('❌ ChartDataLabels NÃO carregado! Verifique se o <script> do plugin está no index.html DEPOIS do Chart.js.');
+    }
+
     const criarGrafico = (id, configuracao) => {
         const canvas = document.getElementById(id);
         if (!canvas) return;
         if (canvas._chart) canvas._chart.destroy();
         canvas._chart = new Chart(canvas.getContext('2d'), configuracao);
     };
+
     const meses = [...new Set([
         ...Object.keys(dados.custosKits.porMes || {}),
         ...Object.keys(dados.custosGeradores.porMes || {}),
         ...Object.keys(dados.dosesPorMes || {})
     ])].sort();
-    const opcoesComuns = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } };
 
+    const opcoesComuns = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#fff' } }
+        }
+    };
+
+    // ============================================
+    // 📊 Gráfico 1: Custo por Mês (barras empilhadas)
+    // ============================================
     criarGrafico('dashChartCustoMes', {
         type: 'bar',
-        data: { labels: meses.map(formatarMesGraficoCustos), datasets: [
-            { label: '📦 Kits', data: meses.map(mes => dados.custosKits.porMes[mes] || 0), backgroundColor: '#2ecc71' },
-            { label: '⚛️ Geradores', data: meses.map(mes => dados.custosGeradores.porMes[mes] || 0), backgroundColor: '#00d2ff' }
-        ] },
-        options: { ...opcoesComuns, scales: { x: { stacked: true, ticks: { color: '#b9c9bd' } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#b9c9bd', callback: valor => formatarMoeda(valor) } } } }
+        data: {
+            labels: meses.map(formatarMesGraficoCustos),
+            datasets: [
+                { label: '📦 Kits', data: meses.map(mes => dados.custosKits.porMes[mes] || 0), backgroundColor: '#2ecc71' },
+                { label: '⚛️ Geradores', data: meses.map(mes => dados.custosGeradores.porMes[mes] || 0), backgroundColor: '#00d2ff' }
+            ]
+        },
+        options: {
+            ...opcoesComuns,
+            scales: {
+                x: { stacked: true, ticks: { color: '#b9c9bd' } },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: { color: '#b9c9bd', callback: valor => formatarMoeda(valor) }
+                }
+            },
+            plugins: {
+                ...opcoesComuns.plugins,
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 10 },
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (valor) => {
+                        if (!valor || valor === 0) return '';
+                        return formatarMoeda(valor).replace('R$ ', '');
+                    }
+                }
+            }
+        }
     });
+
+    // ============================================
+    // 📈 Gráfico 2: Doses por Mês (linha)
+    // ============================================
     criarGrafico('dashChartDosesMes', {
         type: 'line',
-        data: { labels: meses.map(formatarMesGraficoCustos), datasets: [{ label: '💉 Doses', data: meses.map(mes => dados.dosesPorMes[mes] || 0), borderColor: '#00d2ff', backgroundColor: 'rgba(0,210,255,0.15)', fill: true, tension: 0.25 }] },
-        options: { ...opcoesComuns, scales: { x: { ticks: { color: '#b9c9bd' } }, y: { beginAtZero: true, ticks: { color: '#b9c9bd', precision: 0 } } } }
+        data: {
+            labels: meses.map(formatarMesGraficoCustos),
+            datasets: [{
+                label: '💉 Doses',
+                data: meses.map(mes => dados.dosesPorMes[mes] || 0),
+                borderColor: '#00d2ff',
+                backgroundColor: 'rgba(0,210,255,0.15)',
+                fill: true,
+                tension: 0.25
+            }]
+        },
+        options: {
+            ...opcoesComuns,
+            scales: {
+                x: { ticks: { color: '#b9c9bd' } },
+                y: { beginAtZero: true, ticks: { color: '#b9c9bd', precision: 0 } }
+            },
+            plugins: {
+                ...opcoesComuns.plugins,
+                datalabels: {
+                    color: '#00d2ff',
+                    backgroundColor: 'rgba(0,0,0,0.6)',
+                    borderRadius: 4,
+                    padding: { top: 3, bottom: 3, left: 6, right: 6 },
+                    font: { weight: 'bold', size: 11 },
+                    align: 'top',
+                    offset: 6,
+                    formatter: (valor) => valor > 0 ? valor : ''
+                }
+            }
+        }
     });
+
+    // ============================================
+    // 🍩 Gráfico 3: Categorias (rosca)
+    // ============================================
     criarGrafico('dashChartCategorias', {
         type: 'doughnut',
-        data: { labels: ['📦 Kits', '⚛️ Geradores'], datasets: [{ data: [dados.custosKits.total, dados.custosGeradores.total], backgroundColor: ['#2ecc71', '#00d2ff'], borderColor: '#151f1b', borderWidth: 3 }] },
-        options: { ...opcoesComuns, cutout: '65%' }
+        data: {
+            labels: ['📦 Kits', '⚛️ Geradores'],
+            datasets: [{
+                data: [dados.custosKits.total, dados.custosGeradores.total],
+                backgroundColor: ['#2ecc71', '#00d2ff'],
+                borderColor: '#151f1b',
+                borderWidth: 3
+            }]
+        },
+        options: {
+            ...opcoesComuns,
+            cutout: '65%',
+            plugins: {
+                ...opcoesComuns.plugins,
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 12 },
+                    formatter: (valor, contexto) => {
+                        if (!valor) return '';
+                        const total = contexto.dataset.data.reduce((s, v) => s + (Number(v) || 0), 0);
+                        const perc = total > 0 ? ((valor / total) * 100).toFixed(1) : 0;
+                        return `${formatarMoeda(valor)}\n${perc}%`;
+                    },
+                    textAlign: 'center'
+                }
+            }
+        }
     });
+
+        // ============================================
+    // 🏆 Gráfico 4: Top Radiofármacos (barras horizontais)
+    // ============================================
     criarGrafico('dashChartTopRadio', {
         type: 'bar',
-        data: { labels: dados.topRadio.map(item => item.nome), datasets: [{ label: 'Doses', data: dados.topRadio.map(item => item.doses), backgroundColor: '#00d2ff' }] },
-        options: { ...opcoesComuns, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { color: '#b9c9bd', precision: 0 } }, y: { ticks: { color: '#b9c9bd' } } } }
+        data: {
+            labels: dados.topRadio.map(item => item.nome),
+            datasets: [{
+                label: 'Doses',
+                data: dados.topRadio.map(item => item.doses),
+                backgroundColor: '#00d2ff'
+            }]
+        },
+        options: {
+            ...opcoesComuns,
+            indexAxis: 'y',
+            layout: {
+                padding: {
+                    right: 60   // 🔥 espaço extra à direita para rótulos externos
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { color: '#b9c9bd', precision: 0 },
+                    grace: '5%'   // 🔥 margem extra pra barra não colar no rótulo
+                },
+                y: { ticks: { color: '#b9c9bd' } }
+            },
+            plugins: {
+                ...opcoesComuns.plugins,
+                legend: { display: false },
+                datalabels: {
+                    // 🎨 Cor do texto e fundo
+                    color: '#fff',
+                    backgroundColor: 'rgba(0,210,255,0.35)',
+                    borderRadius: 4,
+                    padding: { top: 3, bottom: 3, left: 8, right: 8 },
+                    font: { weight: 'bold', size: 11 },
+
+                    // 🔥 ADAPTATIVO: calcula posição com base no tamanho da barra
+                    anchor: (contexto) => {
+                        const valor = Number(contexto.dataset.data[contexto.dataIndex]) || 0;
+                        const maximo = Math.max(...contexto.dataset.data.map(Number).filter(Number.isFinite));
+                        const proporcao = maximo > 0 ? valor / maximo : 0;
+
+                        // Barra grande (≥ 60% do maior) → rótulo DENTRO
+                        // Barra pequena → rótulo FORA
+                        return proporcao >= 0.6 ? 'center' : 'end';
+                    },
+                    align: (contexto) => {
+                        const valor = Number(contexto.dataset.data[contexto.dataIndex]) || 0;
+                        const maximo = Math.max(...contexto.dataset.data.map(Number).filter(Number.isFinite));
+                        const proporcao = maximo > 0 ? valor / maximo : 0;
+
+                        return proporcao >= 0.6 ? 'center' : 'right';
+                    },
+                    offset: 4,
+                    formatter: (valor) => valor > 0 ? `${valor} dose${valor > 1 ? 's' : ''}` : ''
+                }
+            }
+        }
     });
 }
 
@@ -1098,6 +1294,44 @@ async function abrirModalCustos() {
             return;
         }
 
+        // ============================================
+        // 🔇 SILENCIA TOASTS DURANTE CARREGAMENTO EM LOTE
+        // ============================================
+        window._silenciarToastsCustos = true;
+        console.log('☁️ Carregando dados necessários para análise de custos (toasts suprimidos)...');
+
+        try {
+            if (typeof carregarEstoqueDaNuvem === 'function') {
+                console.log('📦 Carregando estoque da nuvem...');
+                await carregarEstoqueDaNuvem();
+            }
+        } catch (erroEstoque) {
+            console.warn('⚠️ Erro ao carregar estoque da nuvem:', erroEstoque);
+        }
+
+        try {
+            if (typeof carregarGeradoresDaNuvem === 'function') {
+                console.log('⚛️ Carregando geradores da nuvem...');
+                await carregarGeradoresDaNuvem();
+            }
+        } catch (erroGerador) {
+            console.warn('⚠️ Erro ao carregar geradores da nuvem:', erroGerador);
+        }
+
+        try {
+            if (typeof carregarDosesDaNuvem === 'function') {
+                console.log('💉 Carregando doses da nuvem...');
+                await carregarDosesDaNuvem();
+            }
+        } catch (erroDoses) {
+            console.warn('⚠️ Erro ao carregar doses da nuvem:', erroDoses);
+        }
+
+        // 🔇 Desliga a flag (com try/finally garantindo que SEMPRE desliga)
+        window._silenciarToastsCustos = false;
+        console.log('✅ Dados carregados para análise de custos!');
+        // ============================================
+
         carregarPrecosKits();
         carregarPrecosGeradores();
 
@@ -1120,6 +1354,8 @@ async function abrirModalCustos() {
             await calcularCustosPeriodo();
         }
     } catch (erro) {
+        // 🔇 Garante que a flag é desligada mesmo em caso de erro
+        window._silenciarToastsCustos = false;
         console.error('❌ Erro ao abrir modal de custos:', erro);
     }
 }

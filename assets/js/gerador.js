@@ -1056,6 +1056,9 @@ document.addEventListener('keydown', function(event) {
 // ============================================================
 
 function mostrarFeedbackGerador(mensagem, tipo) {
+    // 🔇 Suprime se estiver carregando custos em lote
+    if (window._silenciarToastsCustos) return;
+
     tipo = tipo || 'success';
     const existing = document.querySelector('.feedback-flash-gerador');
     if (existing) existing.remove();
