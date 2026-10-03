@@ -15,6 +15,7 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -912,74 +913,69 @@
         </p>
 
         <!-- ===== MENU DE FERRAMENTAS ===== -->
-        <div class="tools-grid">
-            
-            <!-- Card 1: Doses Administradas -->
-            <div class="tool-card" onclick="abrirModalDoses()">
-                <span class="tool-icon">💉📊</span>
-                <span class="tool-name">Doses Administradas</span>
-                <span class="tool-desc">Registro de doses injetadas.</span>
-                <span class="tool-badge">Clique para abrir ➜</span>
-            </div>
+<div class="tools-grid">
 
-            <!-- Card 2: Registro de Marcação -->
-            <div class="tool-card" onclick="abrirPaginaFerramenta('registro-marcacao')">
-                <span class="tool-icon">📋</span>
-                <span class="tool-name">Registro de Marcação</span>
-                <span class="tool-desc">Registre todas as marcações de radiofármacos realizadas.</span>
-                <span class="tool-badge">Clique para abrir ➜</span>
-            </div>
+    <!-- Card 1: Doses Administradas -->
+    <div class="tool-card" data-ferramenta="doses" onclick="abrirModalDoses()">
+        <span class="tool-icon">💉📊</span>
+        <span class="tool-name">Doses Administradas</span>
+        <span class="tool-desc">Registro de doses injetadas.</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
 
-            <!-- Card 3: Gerência de Estoque de Kits -->
-            <div class="tool-card" onclick="
-                console.log('🖱️ Card clicado!');
-                var modal = document.getElementById('modalEstoque');
-                if (modal) {
-                    modal.style.display = 'flex';
-                    modal.classList.add('ativo');
-                    modal.style.visibility = 'visible';
-                    modal.style.opacity = '1';
-                    modal.style.pointerEvents = 'auto';
-                    console.log('✅ Modal aberto!');
-                    if (typeof carregarEstoqueSalvo === 'function') {
-                        carregarEstoqueSalvo();
-                    }
-                } else {
-                    console.error('❌ Modal não encontrado!');
-                    alert('Erro: Modal de estoque não encontrado!');
-                }
-            ">
-                <span class="tool-icon">📦📋</span>
-                <span class="tool-name">Gerência de Estoque de Kits</span>
-                <span class="tool-desc">Controle de <strong style="color: #ffd700;">entrada e saída</strong> de frascos</span>
-                <span class="tool-badge">Clique para abrir ➜</span>
-            </div>
+    <!-- Card 2: Registro de Marcação -->
+    <div class="tool-card" data-ferramenta="registro-marcacao" onclick="abrirPaginaFerramenta('registro-marcacao')">
+        <span class="tool-icon">📋</span>
+        <span class="tool-name">Registro de Marcação</span>
+        <span class="tool-desc">Registre todas as marcações de radiofármacos realizadas.</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
 
-            <!-- Card 4: Registro de Rejeitos -->
-            <div class="tool-card" onclick="abrirModalRejeitos()">
-                <span class="tool-icon">🗑️☢️</span>
-                <span class="tool-name">Registro de Rejeitos</span>
-                <span class="tool-desc">Controle todos os rejeitos radioativos do setor.</span>
-                <span class="tool-badge">Clique para abrir ➜</span>
-            </div>
+    <!-- Card 3: Gerência de Estoque de Kits -->
+    <div class="tool-card" data-ferramenta="estoque" onclick="
+        var modal = document.getElementById('modalEstoque');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('ativo');
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+            if (typeof carregarEstoqueSalvo === 'function') {
+                carregarEstoqueSalvo();
+            }
+        }
+    ">
+        <span class="tool-icon">📦📋</span>
+        <span class="tool-name">Gerência de Estoque de Kits</span>
+        <span class="tool-desc">Controle de <strong style="color: #ffd700;">entrada e saída</strong> de frascos</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
 
-            <!-- Card 5: Registro de Gerador -->
-            <div class="tool-card" onclick="abrirModalGerador()">
-                <span class="tool-icon">⚛️⬇️</span>
-                <span class="tool-name">Registro de Gerador</span>
-                <span class="tool-desc">Gerencie o ciclo de vida do gerador <strong style="color: #ffd700;">Mo-99/Tc-99m</strong></span>
-                <span class="tool-badge">Clique para abrir ➜</span>
-            </div>
+    <!-- Card 4: Registro de Rejeitos -->
+    <div class="tool-card" data-ferramenta="rejeitos" onclick="abrirModalRejeitos()">
+        <span class="tool-icon">🗑️☢️</span>
+        <span class="tool-name">Registro de Rejeitos</span>
+        <span class="tool-desc">Controle todos os rejeitos radioativos do setor.</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
 
-            <!-- Card 6: Análise de Custos - Administradores -->
-            <div id="cardCustos" class="tool-card" onclick="abrirModalCustos()" style="display: none;">
-                <span class="tool-icon">💰📊</span>
-                <span class="tool-name">Análise de Custos</span>
-                <span class="tool-desc">Analise os custos e indicadores financeiros do sistema.</span>
-                <span class="tool-badge">👑 Área do Administrador</span>
-            </div>
+    <!-- Card 5: Registro de Gerador -->
+    <div class="tool-card" data-ferramenta="gerador" onclick="abrirModalGerador()">
+        <span class="tool-icon">⚛️⬇️</span>
+        <span class="tool-name">Registro de Gerador</span>
+        <span class="tool-desc">Gerencie o ciclo de vida do gerador <strong style="color: #ffd700;">Mo-99/Tc-99m</strong></span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
 
-        </div>
+    <!-- Card 6: Análise de Custos (só supervisor/admin) -->
+    <div id="cardCustos" class="tool-card" data-ferramenta="custos" onclick="abrirModalCustos()" style="display: none;">
+        <span class="tool-icon">💰📊</span>
+        <span class="tool-name">Análise de Custos</span>
+        <span class="tool-desc">Analise os custos e indicadores financeiros do sistema.</span>
+        <span class="tool-badge">👑 Área do Supervisor</span>
+    </div>
+
+</div>
     </div>
 </div>
 
@@ -1281,7 +1277,6 @@
             <h4 style="color: #00d2ff; margin: 0;">
                 📋 Histórico de Movimentações
                 <span style="font-size: 0.7rem; color: #888; font-weight: normal;">
-                    (Auditoria — quem, quando, quanto, por quê)
                 </span>
             </h4>
         </div>
@@ -1465,7 +1460,7 @@
                 </span>
                 <span style="color: #888; font-size: 0.75rem;">
                     <span style="display: inline-block; width: 12px; height: 12px; background: #f1c40f; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
-                    Vence em ≤ 7 dias
+                    Vence em ≤ 30 dias
                 </span>
                 <span style="color: #888; font-size: 0.75rem;">
                     <span style="display: inline-block; width: 12px; height: 12px; background: #e74c3c; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
@@ -2229,34 +2224,44 @@
         </div>
 
         <!-- ABAS -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(46,204,113,0.25); margin-bottom: 24px; padding-bottom: 10px;">
-            <button type="button" onclick="trocarAbaCustos('analise')" style="
-                background: rgba(46,204,113,0.2);
-                border: 1px solid #2ecc71;
-                border-radius: 8px;
-                color: #2ecc71;
-                cursor: pointer;
-                font-weight: 700;
-                padding: 10px 15px;
-            ">📊 Análise de Gastos</button>
-            <button type="button" onclick="trocarAbaCustos('precos')" style="
-                background: rgba(255,255,255,0.04);
-                border: 1px solid rgba(255,255,255,0.12);
-                border-radius: 8px;
-                color: #a8b8ae;
-                cursor: pointer;
-                padding: 10px 15px;
-            ">💵 Cadastrar Preços</button>
-            <button type="button" onclick="trocarAbaCustos('historico')" style="
-                background: rgba(255,255,255,0.04);
-                border: 1px solid rgba(255,255,255,0.12);
-                border-radius: 8px;
-                color: #a8b8ae;
-                cursor: pointer;
-                padding: 10px 15px;
-            ">📜 Histórico de Alterações</button>
-            <button type="button" onclick="trocarAbaCustos('dashboard')" style="background: rgba(0,210,255,0.12); border: 1px solid #00d2ff; border-radius: 8px; color: #00d2ff; cursor: pointer; padding: 10px 15px;">📈 Dashboard</button>
-        </div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(46,204,113,0.25); margin-bottom: 24px; padding-bottom: 10px;">
+    <button type="button" onclick="trocarAbaCustos('analise')" style="
+        background: rgba(46,204,113,0.2);
+        border: 1px solid #2ecc71;
+        border-radius: 8px;
+        color: #2ecc71;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 10px 15px;
+    ">📊 Análise de Gastos</button>
+
+    <button type="button" onclick="trocarAbaCustos('dashboard')" style="
+        background: rgba(0,210,255,0.12);
+        border: 1px solid #00d2ff;
+        border-radius: 8px;
+        color: #00d2ff;
+        cursor: pointer;
+        padding: 10px 15px;
+    ">📈 Dashboard</button>
+
+    <button type="button" onclick="trocarAbaCustos('precos')" style="
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        color: #a8b8ae;
+        cursor: pointer;
+        padding: 10px 15px;
+    ">💵 Cadastrar Preços</button>
+
+    <button type="button" onclick="trocarAbaCustos('historico')" style="
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        color: #a8b8ae;
+        cursor: pointer;
+        padding: 10px 15px;
+    ">📜 Histórico de Alterações</button>
+</div>
 
         <!-- ABA 1: ANÁLISE DE GASTOS -->
         <div id="abaCustosAnalise" style="display: block;">
