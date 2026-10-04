@@ -19,6 +19,33 @@ const COR_ISOTOPO = {
 
 const MAX_PACIENTES = 30;
 
+// ============================================
+// 🔐 CONFIGURAÇÕES DE SESSÃO / TIMEOUT DE INATIVIDADE
+// ============================================
+const CONFIG_SESSAO = {
+    // Tempo total de inatividade antes do logout automático (1 hora)
+    TIMEOUT_MS: 60 * 60 * 1000,
+
+    // Quanto tempo ANTES do logout mostrar o aviso (5 minutos)
+    AVISO_ANTECEDENTE_MS: 5 * 60 * 1000,
+
+    // Frequência com que o sistema verifica se expirou (30 segundos)
+    CHECK_INTERVAL_MS: 30 * 1000,
+
+    // Chave usada no localStorage para guardar o timestamp da última atividade
+    STORAGE_KEY: 'radiocalc_ultima_atividade',
+
+    // Eventos que contam como "atividade do usuário"
+    EVENTOS: ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click', 'wheel'],
+
+    // Intervalo mínimo entre gravações no localStorage (evita excesso de I/O)
+    THROTTLE_MS: 2000,
+
+    // Liga/desliga o módulo inteiro (útil para testes)
+    ATIVO: true
+};
+
+
 // 🔥 CONFIGURAÇÃO DO FIREBASE
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyCW0JSVhwXezcWSvRsyxUowr_m9MyiG2gw",  // 

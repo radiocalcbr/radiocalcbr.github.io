@@ -107,14 +107,23 @@ async function fazerLogin() {
 }
 
 // 3. Função para sair
-async function fazerLogout() {
-    if (!confirm('Deseja realmente sair do sistema?')) return;
+// modoSilencioso = true → não pede confirmação (usado pelo timeout de inatividade)
+async function fazerLogout(modoSilencioso = false) {
+    if (!modoSilencioso) {
+        if (!confirm('Deseja realmente sair do sistema?')) return;
+    }
     
     try {
         await auth.signOut();
-        console.log('🚪 Logout realizado');
+        console.log(modoSilencioso 
+            ? '🚪 Logout automático (inatividade)' 
+            : '🚪 Logout realizado');
     } catch (error) {
-        alert('Erro ao sair: ' + error.message);
+        if (!modoSilencioso) {
+            alert('Erro ao sair: ' + error.message);
+        } else {
+            console.error('Erro no logout automático:', error);
+        }
     }
 }
 
