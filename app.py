@@ -967,7 +967,8 @@ def render_renda():
 
 def render_categorias():
     cabecalho_aba("🏷️", "Categorias",
-                  "Gerencie as categorias usadas para classificar os lançamentos.")
+                  "Gerencie as categorias usadas para classificar os lançamentos. "
+                  "Use ⬆️/⬇️ para mudar a ordem (a ordem vale para todos os menus do app).")
 
     with st.form("nova_cat"):
         c1, c2 = st.columns([3, 1])
@@ -982,17 +983,45 @@ def render_categorias():
                 st.warning("Essa categoria já existe.")
 
     st.divider()
-    st.write("**Categorias existentes:**")
-    for cat in dados["categorias"]:
-        c1, c2 = st.columns([4, 1])
-        c1.write(f"🏷️ {cat}")
-        if c2.button("🗑️ Excluir", key=f"cat_{cat}"):
+    st.write("**Categorias existentes (na ordem em que aparecem nos menus):**")
+
+    total = len(dados["categorias"])
+    for i, cat in enumerate(list(dados["categorias"])):
+        # layout: [nome] [⬆️] [⬇️] [🗑️]
+        c1, c2, c3, c4 = st.columns([4, 0.6, 0.6, 1])
+        c1.write(f"**{i+1}.** 🏷️ {cat}")
+
+        # Botão subir
+        if c2.button(
+            "⬆️",
+            key=f"cat_up_{cat}",
+            disabled=(i == 0),
+            help="Mover para cima",
+        ):
+            cats = dados["categorias"]
+            cats[i - 1], cats[i] = cats[i], cats[i - 1]
+            if salvar_dados(dados):
+                st.rerun()
+
+        # Botão descer
+        if c3.button(
+            "⬇️",
+            key=f"cat_down_{cat}",
+            disabled=(i == total - 1),
+            help="Mover para baixo",
+        ):
+            cats = dados["categorias"]
+            cats[i + 1], cats[i] = cats[i], cats[i + 1]
+            if salvar_dados(dados):
+                st.rerun()
+
+        # Botão excluir
+        if c4.button("🗑️ Excluir", key=f"cat_del_{cat}"):
             dados["categorias"].remove(cat)
             dados["orcamentos"].pop(cat, None)
             if salvar_dados(dados):
                 st.success(f"'{cat}' removida.")
                 st.rerun()
-
 
 def render_orcamentos():
     cabecalho_aba("🎯", "Orçamentos",
