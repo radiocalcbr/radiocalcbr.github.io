@@ -296,10 +296,8 @@ function calcularCustosPeriodo() {
         const totalGeradores = resultadoGeradores.total;
         const totalGeral = totalKits + totalGeradores;
 
-        const totalKitsEl = document.getElementById('custoTotalKits');
         const totalGeradoresEl = document.getElementById('custoTotalGeradores');
         const totalGeralEl = document.getElementById('custoTotalGeral');
-        if (totalKitsEl) totalKitsEl.textContent = formatarMoeda(totalKits);
         if (totalGeradoresEl) totalGeradoresEl.textContent = formatarMoeda(totalGeradores);
         if (totalGeralEl) totalGeralEl.textContent = formatarMoeda(totalGeral);
 
@@ -325,24 +323,32 @@ function calcularCustosKits(dtIni, dtFim) {
     const porKit = {};
     const porMes = {};
     let total = 0;
-    const historico = typeof historicoMovimentacoes !== 'undefined'
+    const historicoEstoque = typeof historicoMovimentacoes !== 'undefined'
         ? historicoMovimentacoes
         : [];
 
-    historico.forEach(evento => {
-        // O custo deve refletir o consumo real dos frascos, portanto considera saídas.
-        if (evento.tipoMovimento !== 'saida') return;
+    historicoEstoque.forEach(evento => {
+        const tipoMovimento = String(evento?.tipoMovimento || '')
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+        if (tipoMovimento !== 'saida' && tipoMovimento !== 'consumo') return;
 
-        const dataEvento = obterDataTimestamp(evento.timestamp || evento.dataHora);
+        const dataEvento = obterDataTimestamp(evento?.timestamp || evento?.dataHora);
         const timestamp = dataEvento?.getTime();
         if (!dataEvento || Number.isNaN(timestamp) || timestamp < dtIni || timestamp > dtFim) return;
 
-        const kit = evento.tipoKit || 'Não informado';
-        const precoUnit = evento.precoUnitarioAplicado !== null
-            && evento.precoUnitarioAplicado !== undefined
-            ? Number(evento.precoUnitarioAplicado) || 0
-            : Number(precosKits[kit]) || 0;
-        const quantidade = Number(evento.quantidade) || 0;
+        const kitOriginal = String(evento?.tipoKit || '').trim();
+        const chaveKit = normalizarChaveRadiofarmaco(kitOriginal);
+        const kit = resolverCodigoKitRadiofarmaco(kitOriginal, precosKits)
+            || (chaveKit === 'SESTAMIBI' ? 'MIBI' : chaveKit)
+            || 'Não informado';
+        const precoHistorico = Number.parseFloat(evento?.precoUnitarioAplicado);
+        const precoUnit = Number.isFinite(precoHistorico) && precoHistorico > 0
+            ? precoHistorico
+            : obterPrecoKitRadiofarmaco(kit, precosKits);
+        const quantidade = Number.parseInt(evento?.quantidade, 10) || 0;
         if (precoUnit <= 0 || quantidade <= 0) return;
 
         const subtotal = precoUnit * quantidade;
@@ -398,6 +404,9 @@ function calcularCustosGeradores(dtIni, dtFim) {
 }
 
 function renderizarCustosKits(resultado) {
+    const totalKitsEl = document.getElementById('custoTotalKits');
+    if (totalKitsEl) totalKitsEl.textContent = formatarMoeda(resultado.total);
+
     const corpo = document.getElementById('corpoCustosKits');
     if (!corpo) return;
 
@@ -879,32 +888,30 @@ function renderizarGraficosDashboard(dados) {
         }
     });
 
-        // ============================================
-    // 🏆 Gráfico 4: Top Radiofármacos (barras horizontais)
     // ============================================
+    // 📊 Gráfico 4: Quantidade de doses por radiofármaco
+    // ============================================
+    const radiofarmacos = dados.radiofarmacos || [];
+    const topRadio = dados.topRadio || radiofarmacos.slice(0, 5);
     criarGrafico('dashChartTopRadio', {
         type: 'bar',
         data: {
-            labels: dados.topRadio.map(item => item.nome),
+            labels: topRadio.map(item => item.nome),
             datasets: [{
                 label: 'Doses',
-                data: dados.topRadio.map(item => item.doses),
+                data: topRadio.map(item => item.doses),
                 backgroundColor: '#00d2ff'
             }]
         },
         options: {
             ...opcoesComuns,
             indexAxis: 'y',
-            layout: {
-                padding: {
-                    right: 60   // 🔥 espaço extra à direita para rótulos externos
-                }
-            },
+            layout: { padding: { right: 60 } },
             scales: {
                 x: {
                     beginAtZero: true,
                     ticks: { color: '#b9c9bd', precision: 0 },
-                    grace: '5%'   // 🔥 margem extra pra barra não colar no rótulo
+                    grace: '5%'
                 },
                 y: { ticks: { color: '#b9c9bd' } }
             },
@@ -912,32 +919,102 @@ function renderizarGraficosDashboard(dados) {
                 ...opcoesComuns.plugins,
                 legend: { display: false },
                 datalabels: {
-                    // 🎨 Cor do texto e fundo
                     color: '#fff',
                     backgroundColor: 'rgba(0,210,255,0.35)',
                     borderRadius: 4,
                     padding: { top: 3, bottom: 3, left: 8, right: 8 },
                     font: { weight: 'bold', size: 11 },
-
-                    // 🔥 ADAPTATIVO: calcula posição com base no tamanho da barra
-                    anchor: (contexto) => {
+                    anchor: contexto => {
                         const valor = Number(contexto.dataset.data[contexto.dataIndex]) || 0;
                         const maximo = Math.max(...contexto.dataset.data.map(Number).filter(Number.isFinite));
-                        const proporcao = maximo > 0 ? valor / maximo : 0;
-
-                        // Barra grande (≥ 60% do maior) → rótulo DENTRO
-                        // Barra pequena → rótulo FORA
-                        return proporcao >= 0.6 ? 'center' : 'end';
+                        return maximo > 0 && valor / maximo >= 0.6 ? 'center' : 'end';
                     },
-                    align: (contexto) => {
+                    align: contexto => {
                         const valor = Number(contexto.dataset.data[contexto.dataIndex]) || 0;
                         const maximo = Math.max(...contexto.dataset.data.map(Number).filter(Number.isFinite));
-                        const proporcao = maximo > 0 ? valor / maximo : 0;
-
-                        return proporcao >= 0.6 ? 'center' : 'right';
+                        return maximo > 0 && valor / maximo >= 0.6 ? 'center' : 'right';
                     },
                     offset: 4,
-                    formatter: (valor) => valor > 0 ? `${valor} dose${valor > 1 ? 's' : ''}` : ''
+                    formatter: valor => valor > 0 ? `${valor} dose${valor > 1 ? 's' : ''}` : ''
+                }
+            }
+        }
+    });
+
+    // ============================================
+    // 🥧 Gráfico 5: Distribuição percentual por radiofármaco
+    // ============================================
+    const totalDosesRadiofarmacos = radiofarmacos.reduce(
+        (total, item) => total + (Number(item.doses) || 0),
+        0
+    );
+    const coresRadiofarmacos = [
+        '#00d2ff', '#2ecc71', '#ffd166', '#ff6b6b', '#c084fc',
+        '#ff9f43', '#4ecdc4', '#f368e0', '#a8e6cf', '#778beb',
+        '#e056fd', '#f9ca24', '#6ab04c', '#eb4d4b', '#22a6b3'
+    ];
+
+    criarGrafico('dashChartPizzaRadio', {
+        type: 'pie',
+        data: {
+            labels: radiofarmacos.map(item => item.nome),
+            datasets: [{
+                data: radiofarmacos.map(item => Number(item.doses) || 0),
+                backgroundColor: radiofarmacos.map((_, index) =>
+                    coresRadiofarmacos[index % coresRadiofarmacos.length]
+                ),
+                borderColor: '#151f1b',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            ...opcoesComuns,
+            plugins: {
+                ...opcoesComuns.plugins,
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#fff',
+                        generateLabels: grafico => grafico.data.labels.map((nome, index) => {
+                            const doses = Number(grafico.data.datasets[0].data[index]) || 0;
+                            const percentual = totalDosesRadiofarmacos > 0
+                                ? (doses / totalDosesRadiofarmacos * 100).toFixed(1)
+                                : '0.0';
+                            return {
+                                text: `${nome} (${percentual}%)`,
+                                fillStyle: coresRadiofarmacos[index % coresRadiofarmacos.length],
+                                strokeStyle: '#151f1b',
+                                lineWidth: 2,
+                                hidden: false,
+                                index
+                            };
+                        })
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: contexto => {
+                            const doses = Number(contexto.raw) || 0;
+                            const percentual = totalDosesRadiofarmacos > 0
+                                ? (doses / totalDosesRadiofarmacos * 100).toFixed(1)
+                                : '0.0';
+                            const nome = contexto.label || 'Não informado';
+                            return `${nome}: ${percentual}% (${doses} dose${doses === 1 ? '' : 's'})`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    backgroundColor: 'rgba(0,0,0,0.55)',
+                    borderRadius: 4,
+                    padding: 4,
+                    font: { weight: 'bold', size: 10 },
+                    formatter: valor => {
+                        const percentual = totalDosesRadiofarmacos > 0
+                            ? (Number(valor) / totalDosesRadiofarmacos * 100).toFixed(1)
+                            : 0;
+                        return valor > 0 ? `${percentual}%` : '';
+                    }
                 }
             }
         }
@@ -954,6 +1031,11 @@ function normalizarChaveRadiofarmaco(nome) {
 
 function ehRadiofarmacoSemKit(nome) {
     const chave = normalizarChaveRadiofarmaco(nome);
+    const contemKitConhecido = KITS_CUSTOS.some(kit =>
+        chave.includes(normalizarChaveRadiofarmaco(kit))
+    ) || chave.includes('SESTAMIBI');
+    if (contemKitConhecido) return false;
+
     return [
         'TC99M', '99MTC', 'TECNECIO99M', '99MTECNECIO',
         'PERTECNETATO', 'PERTECNETATODESODIO', 'PERTECNETATO99M',
@@ -996,10 +1078,21 @@ function obterPrecoKitRadiofarmaco(codigoKit, tabelaPrecos) {
     const aliases = codigoNormalizado === 'MIBI' || codigoNormalizado === 'SESTAMIBI'
         ? ['MIBI', 'SESTAMIBI']
         : [codigoNormalizado];
-    const codigoPreco = Object.keys(tabelaPrecos).find(codigo =>
+    const codigos = Object.keys(tabelaPrecos);
+    const codigoPreco = codigos.find(codigo =>
         aliases.includes(normalizarChaveRadiofarmaco(codigo))
-    );
-    return Number(tabelaPrecos[codigoPreco]) || 0;
+    ) || codigos
+        .filter(codigo => {
+            const chavePreco = normalizarChaveRadiofarmaco(codigo);
+            return chavePreco && aliases.some(alias =>
+                chavePreco.includes(alias) || alias.includes(chavePreco)
+            );
+        })
+        .sort((codigoA, codigoB) =>
+            normalizarChaveRadiofarmaco(codigoA).length
+            - normalizarChaveRadiofarmaco(codigoB).length
+        )[0];
+    return Number.parseFloat(tabelaPrecos[codigoPreco]) || 0;
 }
 
 function calcularCustoRealPorRadiofarmaco(
@@ -1151,8 +1244,9 @@ function calcularDashboard() {
         document.getElementById('dashCustoDose').textContent = KPIs.doses > 0 ? formatarMoeda(total / KPIs.doses) : '—';
         document.getElementById('dashCustoDiaCorrido').textContent = diasCorridos > 0 ? formatarMoeda(total / diasCorridos) : '—';
         document.getElementById('dashCustoDiaProdutivo').textContent = diasProdutivos.size > 0 ? formatarMoeda(total / diasProdutivos.size) : '—';
-        const topRadio = Object.values(resumo).sort((a, b) => b.doses - a.doses).slice(0, 5);
-        renderizarGraficosDashboard({ custosKits, custosGeradores, dosesPorMes, topRadio });
+        const radiofarmacos = Object.values(resumo).sort((a, b) => b.doses - a.doses);
+        const topRadio = radiofarmacos.slice(0, 5);
+        renderizarGraficosDashboard({ custosKits, custosGeradores, dosesPorMes, topRadio, radiofarmacos });
         renderizarTabelaResumoDashboard(resumoCustos);
         console.log('✅ Dashboard calculado:', { totais, KPIs });
     } catch (erro) {

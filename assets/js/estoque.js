@@ -6,6 +6,7 @@
 // ===== VARIÁVEIS GLOBAIS =====
 let estoqueItens = [];
 let estoqueIdCounter = 0;
+let movimentacaoEstoqueEmAndamento = false;
 
 // ===== HISTÓRICO DE MOVIMENTAÇÕES =====
 let historicoMovimentacoes = [];
@@ -157,7 +158,12 @@ function fecharModuloEstoque() {
 // ============================================================
 // ===== CADASTRAR MOVIMENTAÇÃO =====
 // ============================================================
-function cadastrarMovimentacaoEstoque() {
+async function cadastrarMovimentacaoEstoque() {
+    if (movimentacaoEstoqueEmAndamento) {
+        mostrarToastEstoque('⚠️ Aguarde a movimentação atual ser concluída.', 'aviso');
+        return;
+    }
+
     const tipoKit = document.getElementById('estoqueTipoKit').value;
     let lote = document.getElementById('estoqueLote').value.trim().toUpperCase();
     const validade = document.getElementById('estoqueValidade').value;
@@ -183,78 +189,103 @@ function cadastrarMovimentacaoEstoque() {
         document.getElementById('estoqueResponsavel')?.focus();
         return;
     }
+    if (typeof carregarEstoqueDaNuvem !== 'function'
+        || typeof salvarEstoqueNaNuvem !== 'function') {
+        mostrarToastEstoque('❌ A sincronização com a nuvem não está disponível. A movimentação não foi registrada.', 'erro');
+        return;
+    }
 
-    let itemExistente = estoqueItens.find(item => 
-        item.tipoKit === tipoKit && 
-        item.lote === lote &&
-        item.validade === validade
-    );
+    movimentacaoEstoqueEmAndamento = true;
+    try {
+        if (!await carregarEstoqueDaNuvem({ silencioso: true })) {
+            mostrarToastEstoque('❌ Não foi possível atualizar o estoque pela nuvem. A movimentação não foi registrada.', 'erro');
+            return;
+        }
 
-    const dataHora = new Date().toLocaleString('pt-BR');
-    const agora = new Date().toISOString();
+        const itemExistente = estoqueItens.find(item =>
+            item.tipoKit === tipoKit &&
+            item.lote === lote &&
+            item.validade === validade
+        );
 
-    if (itemExistente) {
-        if (tipoMovimento === 'entrada') {
-            itemExistente.entrada += quantidade;
+        const dataHora = new Date().toLocaleString('pt-BR');
+        const agora = new Date().toISOString();
+
+        if (itemExistente) {
+            if (tipoMovimento === 'entrada') {
+                itemExistente.entrada += quantidade;
+            } else {
+                if (itemExistente.entrada - itemExistente.saida < quantidade) {
+                    alert(`⚠️ Saldo insuficiente! Saldo atual: ${itemExistente.entrada - itemExistente.saida} frascos.`);
+                    return;
+                }
+                itemExistente.saida += quantidade;
+            }
+            itemExistente.saldo = itemExistente.entrada - itemExistente.saida;
+            itemExistente.observacao = observacao || itemExistente.observacao;
+            itemExistente.ultimaMovimentacao = dataHora;
         } else {
-            if (itemExistente.entrada - itemExistente.saida < quantidade) {
-                alert(`⚠️ Saldo insuficiente! Saldo atual: ${itemExistente.entrada - itemExistente.saida} frascos.`);
+            if (tipoMovimento === 'saida') {
+                alert('⚠️ Saldo insuficiente! Saldo atual: 0 frascos.');
                 return;
             }
-            itemExistente.saida += quantidade;
+            const novoItem = {
+                id: estoqueIdCounter++,
+                tipoKit: tipoKit,
+                lote: lote,
+                validade: validade,
+                entrada: quantidade,
+                saida: 0,
+                saldo: quantidade,
+                observacao: observacao || '',
+                dataCadastro: dataHora,
+                ultimaMovimentacao: dataHora
+            };
+            estoqueItens.push(novoItem);
         }
-        itemExistente.saldo = itemExistente.entrada - itemExistente.saida;
-        itemExistente.observacao = observacao || itemExistente.observacao;
-        itemExistente.ultimaMovimentacao = dataHora;
-    } else {
-        const novoItem = {
-            id: estoqueIdCounter++,
+
+        const precoUnitarioAplicado = tipoMovimento === 'saida'
+            && typeof precosKits !== 'undefined'
+            ? Number(precosKits[tipoKit]) || 0
+            : null;
+        const eventoHistorico = {
+            id: historicoIdCounter++,
+            timestamp: agora,
+            dataHora: dataHora,
+            tipoMovimento: tipoMovimento,
             tipoKit: tipoKit,
             lote: lote,
             validade: validade,
-            entrada: tipoMovimento === 'entrada' ? quantidade : 0,
-            saida: tipoMovimento === 'saida' ? quantidade : 0,
-            saldo: tipoMovimento === 'entrada' ? quantidade : 0,
-            observacao: observacao || '',
-            dataCadastro: dataHora,
-            ultimaMovimentacao: dataHora
+            quantidade: quantidade,
+            precoUnitarioAplicado: precoUnitarioAplicado,
+            responsavel: responsavel,
+            observacao: observacao || (tipoMovimento === 'entrada'
+                ? 'Entrada no estoque'
+                : 'Saída para uso em marcação'),
+            dataEntrada: tipoMovimento === 'entrada' ? dataHora : null,
+            dataSaida: tipoMovimento === 'saida' ? dataHora : null,
+            motivo: tipoMovimento === 'saida' ? 'Uso em marcação' : 'Recebimento'
         };
-        estoqueItens.push(novoItem);
+
+        historicoMovimentacoes.push(eventoHistorico);
+
+        salvarEstoque();
+        atualizarTabelaEstoque();
+        atualizarTabelaHistorico();
+
+        if (!await salvarEstoqueNaNuvem()) {
+            return;
+        }
+        limparCamposEstoque();
+
+        const tipoTexto = tipoMovimento === 'entrada' ? 'entrada' : 'saída';
+        alert(`✅ Movimentação de ${tipoTexto} cadastrada com sucesso!\n\nKit: ${tipoKit}\nLote: ${lote}\nQuantidade: ${quantidade} frascos\nResponsável: ${responsavel}`);
+    } catch (error) {
+        console.error('Erro ao cadastrar movimentação de estoque:', error);
+        mostrarToastEstoque('❌ Erro ao cadastrar movimentação: ' + error.message, 'erro');
+    } finally {
+        movimentacaoEstoqueEmAndamento = false;
     }
-
-    // 🆕 REGISTRAR NO HISTÓRICO
-    const precoUnitarioAplicado = tipoMovimento === 'saida'
-        && typeof precosKits !== 'undefined'
-        ? Number(precosKits[tipoKit]) || 0
-        : null;
-    const eventoHistorico = {
-        id: historicoIdCounter++,
-        timestamp: agora,
-        dataHora: dataHora,
-        tipoMovimento: tipoMovimento,
-        tipoKit: tipoKit,
-        lote: lote,
-        validade: validade,
-        quantidade: quantidade,
-        precoUnitarioAplicado: precoUnitarioAplicado,
-        responsavel: responsavel,
-        observacao: observacao || (tipoMovimento === 'entrada' 
-            ? 'Entrada no estoque' 
-            : 'Saída para uso em marcação'),
-        dataEntrada: tipoMovimento === 'entrada' ? dataHora : null,
-        dataSaida: tipoMovimento === 'saida' ? dataHora : null,
-        motivo: tipoMovimento === 'saida' ? 'Uso em marcação' : 'Recebimento'
-    };
-
-    historicoMovimentacoes.push(eventoHistorico);
-
-    salvarEstoque();
-    atualizarTabelaEstoque();
-    atualizarTabelaHistorico();
-    limparCamposEstoque();
-
-    const tipoTexto = tipoMovimento === 'entrada' ? 'entrada' : 'saída';
-    alert(`✅ Movimentação de ${tipoTexto} cadastrada com sucesso!\n\nKit: ${tipoKit}\nLote: ${lote}\nQuantidade: ${quantidade} frascos\nResponsável: ${responsavel}`);
 }
 
 // ============================================================

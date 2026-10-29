@@ -148,22 +148,22 @@ async function salvarEstoqueNaNuvem() {
     try {
         if (typeof firebase === 'undefined' || !firebase.auth) {
             mostrarToastEstoque('⚠️ Firebase não inicializado', 'erro');
-            return;
+            return false;
         }
         
         const userInfo = await verificarUsuarioLogado();
         if (!userInfo) {
             mostrarToastEstoque('⚠️ Faça login para salvar na nuvem', 'erro');
-            return;
+            return false;
         }
         if (!userInfo.organizacao) {
             mostrarToastEstoque('⚠️ Usuário não vinculado a uma organização', 'erro');
-            return;
+            return false;
         }
         if (!dbEstoque) await inicializarFirestore();
         if (!dbEstoque) {
             mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
-            return;
+            return false;
         }
 
         mostrarToastEstoque('💾 Salvando estoque na nuvem...', 'carregando');
@@ -216,6 +216,7 @@ async function salvarEstoqueNaNuvem() {
 
         // ===== 2) SALVAR HISTÓRICO DE MOVIMENTAÇÕES =====
         let historicoSalvos = 0;
+        let errosHistorico = 0;
         if (typeof historicoMovimentacoes !== 'undefined' && historicoMovimentacoes.length > 0) {
             const historicoRef = dbEstoque.collection('organizacoes')
                 .doc(userInfo.organizacao)
@@ -235,6 +236,7 @@ async function salvarEstoqueNaNuvem() {
                     historicoSalvos++;
                 } catch (error) {
                     console.error('❌ Erro ao salvar evento histórico:', error);
+                    errosHistorico++;
                 }
             }
         }
@@ -256,21 +258,25 @@ async function salvarEstoqueNaNuvem() {
         console.log(`✅ Estoque: ${salvos} itens, ${erros} erros`);
         console.log(`✅ Histórico: ${historicoSalvos} eventos`);
         
-        if (erros > 0) {
-            mostrarToastEstoque(`⚠️ ${salvos} itens salvos, ${erros} erros!`, 'aviso');
+        if (erros > 0 || errosHistorico > 0) {
+            mostrarToastEstoque(`⚠️ ${salvos} itens e ${historicoSalvos} eventos salvos, ${erros + errosHistorico} erros!`, 'aviso');
         } else {
             mostrarToastEstoque(`✅ ${salvos} itens + ${historicoSalvos} eventos salvos!`, 'sucesso');
         }
 
-        if (erros === 0 && historicoSalvos === historicoMovimentacoes.length) {
+        const sincronizado = erros === 0 && errosHistorico === 0
+            && historicoSalvos === historicoMovimentacoes.length;
+        if (sincronizado) {
             salvarEstoque(true);
         }
         
-        atualizarIndicadorEstoqueNuvem(true);
+        atualizarIndicadorEstoqueNuvem(sincronizado);
+        return sincronizado;
 
     } catch (error) {
         console.error('❌ Erro ao salvar estoque:', error);
         mostrarToastEstoque('❌ Erro ao salvar: ' + error.message, 'erro');
+        return false;
     }
 }
 
@@ -329,24 +335,25 @@ function coletarDadosEstoque() {
  * Carrega os dados do estoque do Firestore
  * 🔥 CORRIGIDO: Carrega TODOS os itens da coleção com o nome do kit correto
  */
-async function carregarEstoqueDaNuvem() {
+async function carregarEstoqueDaNuvem(opcoes = {}) {
+    const silencioso = opcoes.silencioso === true;
     try {
         const userInfo = await verificarUsuarioLogado();
         if (!userInfo) {
-            mostrarToastEstoque('⚠️ Faça login para carregar dados', 'erro');
-            return;
+            if (!silencioso) mostrarToastEstoque('⚠️ Faça login para carregar dados', 'erro');
+            return false;
         }
         if (!userInfo.organizacao) {
-            mostrarToastEstoque('⚠️ Usuário não vinculado a uma organização', 'erro');
-            return;
+            if (!silencioso) mostrarToastEstoque('⚠️ Usuário não vinculado a uma organização', 'erro');
+            return false;
         }
         if (!dbEstoque) await inicializarFirestore();
         if (!dbEstoque) {
-            mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
-            return;
+            if (!silencioso) mostrarToastEstoque('⚠️ Não foi possível conectar ao Firestore', 'erro');
+            return false;
         }
 
-        mostrarToastEstoque(`📥 Carregando estoque...`, 'carregando');
+        if (!silencioso) mostrarToastEstoque(`📥 Carregando estoque...`, 'carregando');
 
         // ===== 1) CARREGAR SALDO ATUAL =====
         const estoqueRef = dbEstoque.collection('organizacoes')
@@ -361,6 +368,7 @@ async function carregarEstoqueDaNuvem() {
             if (doc.id === '_resumo') return;
             const nomeKit = data.tipoKit || data.kit || '';
             itens.push({
+                id: itens.length,
                 firebaseId: doc.id,
                 tipoKit: nomeKit,
                 kit: nomeKit,
@@ -395,6 +403,7 @@ async function carregarEstoqueDaNuvem() {
                 lote: data.lote || '',
                 validade: data.validade || '',
                 quantidade: data.quantidade || 0,
+                precoUnitarioAplicado: data.precoUnitarioAplicado ?? null,
                 responsavel: data.responsavel || '',
                 observacao: data.observacao || '',
                 dataEntrada: data.dataEntrada || null,
@@ -404,35 +413,46 @@ async function carregarEstoqueDaNuvem() {
         });
 
         // ===== 3) ATUALIZAR ARRAYS GLOBAIS =====
-        if (itens.length > 0) {
-            if (typeof estoqueItens !== 'undefined') {
-                estoqueItens = itens;
+        if (typeof estoqueItens !== 'undefined') {
+            estoqueItens = itens;
+            if (typeof estoqueIdCounter !== 'undefined') {
+                estoqueIdCounter = itens.length;
             }
+        }
+
+        if (typeof historicoMovimentacoes !== 'undefined') {
+            historicoMovimentacoes = eventos;
+            historicoMovimentacoes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            if (typeof historicoIdCounter !== 'undefined') {
+                historicoIdCounter = eventos.length > 0
+                    ? Math.max(...eventos.map(e => e.id || 0)) + 1
+                    : 0;
+            }
+        }
+
+        if (typeof preencherEstoqueNaInterface === 'function') {
             await preencherEstoqueNaInterface(itens);
-            atualizarIndicadorEstoqueNuvem(true);
+        } else if (typeof atualizarTabelaEstoque === 'function') {
+            atualizarTabelaEstoque();
         }
-
-        if (eventos.length > 0) {
-            if (typeof historicoMovimentacoes !== 'undefined') {
-                historicoMovimentacoes = eventos;
-                historicoMovimentacoes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                if (typeof historicoIdCounter !== 'undefined') {
-                    historicoIdCounter = Math.max(...eventos.map(e => e.id || 0)) + 1;
-                }
-                if (typeof atualizarTabelaHistorico === 'function') {
-                    atualizarTabelaHistorico();
-                }
-            }
+        if (typeof atualizarTabelaHistorico === 'function') {
+            atualizarTabelaHistorico();
         }
+        if (typeof salvarEstoque === 'function') salvarEstoque(true);
+        atualizarIndicadorEstoqueNuvem(true);
 
-        mostrarToastEstoque(
-            `✅ ${itens.length} itens + ${eventos.length} eventos carregados!`,
-            'sucesso'
-        );
+        if (!silencioso) {
+            mostrarToastEstoque(
+                `✅ ${itens.length} itens + ${eventos.length} eventos carregados!`,
+                'sucesso'
+            );
+        }
+        return true;
 
     } catch (error) {
         console.error('❌ Erro ao carregar estoque:', error);
-        mostrarToastEstoque('❌ Erro ao carregar: ' + error.message, 'erro');
+        if (!silencioso) mostrarToastEstoque('❌ Erro ao carregar: ' + error.message, 'erro');
+        return false;
     }
 }
 

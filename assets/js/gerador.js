@@ -277,6 +277,7 @@ function limparCamposGerador() {
 // ============================================================
 
 function atualizarTabelaGeradorHistorico() {
+    atualizarContadoresGerador(registrosGerador);
     const tbody = document.getElementById('corpoTabelaGeradoresModal');
     if (!tbody) return;
     
@@ -763,16 +764,18 @@ async function atualizarGeradorNaNuvem(item) {
 // ===== ATUALIZAR CONTADORES =====
 // ============================================================
 
-function atualizarContadoresGerador() {
-    const total = registrosGerador.length;
-    const ativos = registrosGerador.filter(r => r.status !== 'devolvido').length;
-    const devolvidos = registrosGerador.filter(r => r.status === 'devolvido').length;
+function atualizarContadoresGerador(lista = registrosGerador) {
+    const total = lista.length;
+    const ativos = lista.filter(r => r.status !== 'devolvido').length;
+    const devolvidos = lista.filter(r => r.status === 'devolvido').length;
     
     const totalEl = document.getElementById('totalGeradoresModal');
+    const totalCabecalhoEl = document.getElementById('totalGeradoresCabecalho');
     const ativosEl = document.getElementById('ativosGeradoresModal');
     const devolvidosEl = document.getElementById('devolvidosGeradoresModal');
     
     if (totalEl) totalEl.textContent = total;
+    if (totalCabecalhoEl) totalCabecalhoEl.textContent = total;
     if (ativosEl) ativosEl.textContent = ativos;
     if (devolvidosEl) devolvidosEl.textContent = devolvidos;
 }
@@ -794,6 +797,7 @@ function aplicarFiltroGeradorModal() {
         mostrarFeedbackGerador('⚠️ A data inicial não pode ser maior que a data final!', 'erro');
         return;
     }
+    atualizarContadoresGerador(registrosGerador);
     
     const tbody = document.getElementById('corpoTabelaGeradoresModal');
     if (!tbody) return;
