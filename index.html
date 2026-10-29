@@ -2103,7 +2103,7 @@
         <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
             <span>📋</span>
             Histórico de Geradores
-            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualGerador">(Total: <span id="totalGeradoresModal">0</span> registros)</span>
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualGerador">(Total: <span id="totalGeradoresCabecalho">0</span> registros)</span>
         </h4>
 
         <div class="table-gerador-wrapper" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
@@ -2417,7 +2417,14 @@
                 <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartCustoMes"></canvas></div>
                 <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartDosesMes"></canvas></div>
                 <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartCategorias"></canvas></div>
-                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartTopRadio"></canvas></div>
+                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; display: flex; flex-direction: column;">
+                    <h4 style="margin: 0 0 10px; color: #b9c9bd; font-size: 0.9rem;">📊 Quantidade de Doses por Radiofármaco</h4>
+                    <div style="position: relative; flex: 1; min-height: 0;"><canvas id="dashChartTopRadio"></canvas></div>
+                </div>
+                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; display: flex; flex-direction: column;">
+                    <h4 style="margin: 0 0 10px; color: #b9c9bd; font-size: 0.9rem;">🥧 Distribuição % por Radiofármaco</h4>
+                    <div style="position: relative; flex: 1; min-height: 0;"><canvas id="dashChartPizzaRadio"></canvas></div>
+                </div>
             </div>
             <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
                 <table style="width: 100%; border-collapse: collapse; min-width: 680px; font-size: 0.82rem;"><thead style="background: rgba(0,210,255,0.12);"><tr>
