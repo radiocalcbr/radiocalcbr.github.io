@@ -647,7 +647,7 @@ function atualizarGraficoPlanejamento(isotopo, nomeIsot, cor, lambda, atividadeM
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#ccc', font: { size: 10 }, boxWidth: 15, padding: 12 } } },
+                    plugins: { legend: { display: false } },
                     scales: { x: { ticks: { color: '#888', font: { size: 9 } }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }, y: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: 'rgba(255, 255, 255, 0.05)' }, beginAtZero: true } }
                 }
             });

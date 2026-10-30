@@ -1006,8 +1006,12 @@ async function salvarEdicaoItem() {
             return;
         }
         
+        const selectKit = document.getElementById('editarKit');
+        const kitCodigo = selectKit.value;
+
         const dadosEditados = {
-            kit: document.getElementById('editarKit').value,
+            kit: kitCodigo,
+            tipoKit: kitCodigo,
             lote: document.getElementById('editarLote').value.trim(),
             validade: document.getElementById('editarValidade').value,
             entrada: parseInt(document.getElementById('editarEntrada').value) || 0,
@@ -1024,64 +1028,30 @@ async function salvarEdicaoItem() {
             return;
         }
         
-        const tbody = document.getElementById('corpoEstoque');
-        const rows = tbody.querySelectorAll('tr');
-        
-        if (rows[index]) {
-            const cols = rows[index].querySelectorAll('td');
-            
-            const selectKit = document.getElementById('editarKit');
-            const kitNome = selectKit.options[selectKit.selectedIndex]?.text || dadosEditados.kit;
-            
-            cols[1].textContent = kitNome;
-            cols[2].textContent = dadosEditados.lote;
-            
-            const dataParts = dadosEditados.validade.split('-');
-            const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
-            cols[3].textContent = dataFormatada;
-            
-            cols[4].textContent = dadosEditados.entrada;
-            cols[5].textContent = dadosEditados.saida;
-            
-            const saldo = dadosEditados.entrada - dadosEditados.saida;
-            cols[6].textContent = saldo;
-            cols[6].style.color = saldo === 0 ? '#888' : '#ffd700';
-            
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            const validadeDate = new Date(dadosEditados.validade + 'T00:00:00');
-            const diffDias = Math.ceil((validadeDate - hoje) / (1000 * 60 * 60 * 24));
-            
-            let status = '✅ Válido';
-            let statusColor = '#2ecc71';
-            
-            if (diffDias < 0) {
-                status = '❌ Vencido';
-                statusColor = '#e74c3c';
-            } else if (diffDias <= 30) {
-                status = `⚠️ Vence em ${diffDias} dias`;
-                statusColor = '#f1c40f';
-            }
-            
-            if (saldo <= 2 && saldo > 0) {
-                status += ' 🔴 Estoque baixo';
-            } else if (saldo === 0) {
-                status = '⚪ Esgotado';
-                statusColor = '#888';
-            }
-            
-            cols[7].innerHTML = `<span style="color: ${statusColor};">${status}</span>`;
-            cols[8].textContent = dadosEditados.observacao;
+        if (typeof estoqueItens !== 'undefined' && estoqueItens[index]) {
+            estoqueItens[index].tipoKit = dadosEditados.tipoKit;
+            estoqueItens[index].kit = dadosEditados.kit;
+            estoqueItens[index].lote = dadosEditados.lote;
+            estoqueItens[index].validade = dadosEditados.validade;
+            estoqueItens[index].entrada = dadosEditados.entrada;
+            estoqueItens[index].saida = dadosEditados.saida;
+            estoqueItens[index].saldo = dadosEditados.entrada - dadosEditados.saida;
+            estoqueItens[index].observacao = dadosEditados.observacao;
+            estoqueItens[index].ultimaMovimentacao = new Date().toLocaleString('pt-BR');
         }
-        
-        const itensAtuais = coletarDadosEstoque();
-        atualizarResumoEstoque(itensAtuais);
-        
+
+        if (typeof atualizarTabelaEstoque === 'function') {
+            atualizarTabelaEstoque();
+        }
+        if (typeof salvarEstoque === 'function') {
+            salvarEstoque();
+        }
+
         await salvarEstoqueNaNuvem();
         
         fecharModalEdicao();
         
-        mostrarToastEstoque('✅ Item editado com sucesso!', 'sucesso');
+        mostrarToastEstoque('✅ Item editado e sincronizado com a nuvem com sucesso!', 'sucesso');
         
     } catch (error) {
         console.error('❌ Erro ao editar item:', error);

@@ -40,8 +40,8 @@ function atualizarGraficoPlanejamento(isotopo, nomeIsot, cor, lambda, atividadeM
                             label: `Decaimento do Kit (${nomeIsot})`, 
                             data: dadosDecaimento, 
                             borderColor: cor, 
-                            backgroundColor: `rgba(0, 210, 255, 0.05)`, 
-                            borderWidth: 2.5, 
+                            backgroundColor: `rgba(99, 102, 241, 0.1)`, 
+                            borderWidth: 3, 
                             pointRadius: 0, 
                             tension: 0.4, 
                             fill: true 
@@ -49,11 +49,11 @@ function atualizarGraficoPlanejamento(isotopo, nomeIsot, cor, lambda, atividadeM
                         { 
                             label: 'Dose Disponível na Injeção', 
                             data: dadosInjecoes, 
-                            borderColor: '#ff6b6b', 
-                            backgroundColor: '#ff6b6b', 
+                            borderColor: '#10b981', 
+                            backgroundColor: '#10b981', 
                             borderWidth: 0, 
-                            pointRadius: 7, 
-                            pointBackgroundColor: '#ff6b6b', 
+                            pointRadius: 6, 
+                            pointBackgroundColor: '#10b981', 
                             pointBorderColor: '#ffffff', 
                             pointBorderWidth: 2, 
                             showLine: false, 
@@ -62,10 +62,10 @@ function atualizarGraficoPlanejamento(isotopo, nomeIsot, cor, lambda, atividadeM
                         { 
                             label: 'Dose Alvo por Paciente', 
                             data: Array(labels.length).fill(dosePorPaciente), 
-                            borderColor: '#ffd700', 
+                            borderColor: '#f59e0b', 
                             backgroundColor: 'transparent', 
-                            borderWidth: 1.5, 
-                            borderDash: [5, 5], 
+                            borderWidth: 2, 
+                            borderDash: [6, 4], 
                             pointRadius: 0, 
                             fill: false 
                         }
@@ -75,23 +75,26 @@ function atualizarGraficoPlanejamento(isotopo, nomeIsot, cor, lambda, atividadeM
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { 
+                        datalabels: { display: false },
                         legend: { 
+                            display: false,
                             labels: { 
-                                color: '#ccc', 
-                                font: { size: 10 }, 
-                                boxWidth: 15, 
-                                padding: 12 
+                                color: '#94a3b8', 
+                                font: { size: 11, weight: '600' }, 
+                                boxWidth: 12, 
+                                padding: 15,
+                                usePointStyle: true
                             } 
                         } 
                     },
                     scales: { 
                         x: { 
-                            ticks: { color: '#888', font: { size: 9 } }, 
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' } 
+                            ticks: { color: '#64748b', font: { size: 10 } }, 
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' } 
                         }, 
                         y: { 
-                            ticks: { color: '#888', font: { size: 10 } }, 
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
+                            ticks: { color: '#64748b', font: { size: 10 } }, 
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' }, 
                             beginAtZero: true 
                         } 
                     }

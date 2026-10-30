@@ -675,14 +675,18 @@ function renderizarGraficoCustos(porMesKits = {}, porMesGeradores = {}) {
                         data: meses.map(mes => Number(porMesKits?.[mes]) || 0),
                         backgroundColor: '#2ecc71',
                         borderColor: '#2ecc71',
-                        borderWidth: 1
+                        borderWidth: 1,
+                        borderRadius: 5,
+                        borderSkipped: false
                     },
                     {
                         label: '⚛️ Geradores',
                         data: meses.map(mes => Number(porMesGeradores?.[mes]) || 0),
                         backgroundColor: '#00d2ff',
                         borderColor: '#00d2ff',
-                        borderWidth: 1
+                        borderWidth: 1,
+                        borderRadius: 5,
+                        borderSkipped: false
                     }
                 ]
             },
@@ -690,33 +694,66 @@ function renderizarGraficoCustos(porMesKits = {}, porMesGeradores = {}) {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { stacked: true, ticks: { color: '#b9c9bd' }, grid: { color: 'rgba(255,255,255,0.06)' } },
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: {
+                            color: '#b9c9bd',
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            font: { size: 10 }
+                        },
+                        border: { display: false }
+                    },
                     y: {
                         stacked: true,
                         beginAtZero: true,
                         ticks: {
                             color: '#b9c9bd',
-                            callback: valor => formatarMoeda(valor)
+                            callback: valor => formatarMoeda(valor),
+                            font: { size: 10 },
+                            padding: 8
                         },
-                        grid: { color: 'rgba(255,255,255,0.08)' }
+                        grid: { color: 'rgba(255,255,255,0.07)' },
+                        border: { display: false }
                     }
                 },
-                                plugins: {
-                    legend: { labels: { color: '#fff' } },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#e5f1e9',
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 8,
+                            padding: 18
+                        }
+                    },
                     tooltip: {
+                        backgroundColor: '#101a16',
+                        titleColor: '#e5f1e9',
+                        bodyColor: '#c7d8cd',
+                        borderColor: 'rgba(255,255,255,0.12)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 10,
                         callbacks: {
                             label: contexto => `${contexto.dataset.label}: ${formatarMoeda(contexto.raw)}`
                         }
                     },
-                    // 🔥 ADICIONA RÓTULOS NO GRÁFICO DE BARRAS EMPILHADAS
                     datalabels: {
                         color: '#fff',
-                        font: { weight: 'bold', size: 10 },
+                        font: { weight: 'bold', size: 9 },
                         anchor: 'center',
                         align: 'center',
+                        display: contexto => {
+                            const valor = Number(contexto.dataset.data[contexto.dataIndex]) || 0;
+                            const maiorValor = Math.max(...contexto.dataset.data.map(Number));
+                            return valor > 0 && valor >= maiorValor * 0.1;
+                        },
                         formatter: (valor) => {
                             if (!valor || valor === 0) return '';
-                            // Formato compacto: 30000 → "30k"
                             if (valor >= 1000) return (valor / 1000).toFixed(1) + 'k';
                             return Number(valor).toFixed(0);
                         }
@@ -774,7 +811,26 @@ function renderizarGraficosDashboard(dados) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { labels: { color: '#fff' } }
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#e5f1e9',
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    boxWidth: 8,
+                    padding: 16,
+                    font: { size: 11 }
+                }
+            },
+            tooltip: {
+                backgroundColor: '#101a16',
+                titleColor: '#e5f1e9',
+                bodyColor: '#c7d8cd',
+                borderColor: 'rgba(255,255,255,0.12)',
+                borderWidth: 1,
+                padding: 12,
+                cornerRadius: 10
+            }
         }
     };
 
@@ -786,27 +842,39 @@ function renderizarGraficosDashboard(dados) {
         data: {
             labels: meses.map(formatarMesGraficoCustos),
             datasets: [
-                { label: '📦 Kits', data: meses.map(mes => dados.custosKits.porMes[mes] || 0), backgroundColor: '#2ecc71' },
-                { label: '⚛️ Geradores', data: meses.map(mes => dados.custosGeradores.porMes[mes] || 0), backgroundColor: '#00d2ff' }
+                { label: '📦 Kits', data: meses.map(mes => dados.custosKits.porMes[mes] || 0), backgroundColor: '#2ecc71', borderRadius: 5, borderSkipped: false },
+                { label: '⚛️ Geradores', data: meses.map(mes => dados.custosGeradores.porMes[mes] || 0), backgroundColor: '#00d2ff', borderRadius: 5, borderSkipped: false }
             ]
         },
         options: {
             ...opcoesComuns,
             scales: {
-                x: { stacked: true, ticks: { color: '#b9c9bd' } },
+                x: {
+                    stacked: true,
+                    grid: { display: false },
+                    ticks: { color: '#b9c9bd', maxRotation: 0, autoSkip: true, maxTicksLimit: 10, font: { size: 10 } },
+                    border: { display: false }
+                },
                 y: {
                     stacked: true,
                     beginAtZero: true,
-                    ticks: { color: '#b9c9bd', callback: valor => formatarMoeda(valor) }
+                    ticks: { color: '#b9c9bd', callback: valor => formatarMoeda(valor), font: { size: 10 }, padding: 8 },
+                    grid: { color: 'rgba(255,255,255,0.07)' },
+                    border: { display: false }
                 }
             },
             plugins: {
                 ...opcoesComuns.plugins,
                 datalabels: {
                     color: '#fff',
-                    font: { weight: 'bold', size: 10 },
+                    font: { weight: 'bold', size: 9 },
                     anchor: 'center',
                     align: 'center',
+                    display: contexto => {
+                        const valor = Number(contexto.dataset.data[contexto.dataIndex]) || 0;
+                        const maiorValor = Math.max(...contexto.dataset.data.map(Number));
+                        return valor > 0 && valor >= maiorValor * 0.1;
+                    },
                     formatter: (valor) => {
                         if (!valor || valor === 0) return '';
                         return formatarMoeda(valor).replace('R$ ', '');
@@ -829,25 +897,38 @@ function renderizarGraficosDashboard(dados) {
                 borderColor: '#00d2ff',
                 backgroundColor: 'rgba(0,210,255,0.15)',
                 fill: true,
-                tension: 0.25
+                tension: 0.35,
+                borderWidth: 3,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#00d2ff',
+                pointBorderColor: '#151f1b',
+                pointBorderWidth: 2
             }]
         },
         options: {
             ...opcoesComuns,
             scales: {
-                x: { ticks: { color: '#b9c9bd' } },
-                y: { beginAtZero: true, ticks: { color: '#b9c9bd', precision: 0 } }
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#b9c9bd', maxRotation: 0, autoSkip: true, maxTicksLimit: 10, font: { size: 10 } },
+                    border: { display: false }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#b9c9bd', precision: 0, font: { size: 10 }, padding: 8 },
+                    grid: { color: 'rgba(255,255,255,0.07)' },
+                    border: { display: false }
+                }
             },
             plugins: {
                 ...opcoesComuns.plugins,
                 datalabels: {
                     color: '#00d2ff',
-                    backgroundColor: 'rgba(0,0,0,0.6)',
-                    borderRadius: 4,
-                    padding: { top: 3, bottom: 3, left: 6, right: 6 },
-                    font: { weight: 'bold', size: 11 },
+                    font: { weight: 'bold', size: 10 },
                     align: 'top',
                     offset: 6,
+                    display: contexto => contexto.dataset.data.length <= 8 && contexto.dataset.data[contexto.dataIndex] > 0,
                     formatter: (valor) => valor > 0 ? valor : ''
                 }
             }
@@ -875,12 +956,17 @@ function renderizarGraficosDashboard(dados) {
                 ...opcoesComuns.plugins,
                 datalabels: {
                     color: '#fff',
-                    font: { weight: 'bold', size: 12 },
+                    backgroundColor: 'rgba(16, 26, 22, 0.78)',
+                    borderRadius: 5,
+                    padding: 5,
+                    font: { weight: 'bold', size: 10 },
+                    display: 'auto',
                     formatter: (valor, contexto) => {
-                        if (!valor) return '';
+                        if (Number(valor) <= 0) return '';
                         const total = contexto.dataset.data.reduce((s, v) => s + (Number(v) || 0), 0);
                         const perc = total > 0 ? ((valor / total) * 100).toFixed(1) : 0;
-                        return `${formatarMoeda(valor)}\n${perc}%`;
+                        const categoria = contexto.chart.data.labels[contexto.dataIndex];
+                        return `${categoria}\n${formatarMoeda(valor)} · ${perc}%`;
                     },
                     textAlign: 'center'
                 }
@@ -900,7 +986,9 @@ function renderizarGraficosDashboard(dados) {
             datasets: [{
                 label: 'Doses',
                 data: topRadio.map(item => item.doses),
-                backgroundColor: '#00d2ff'
+                backgroundColor: '#00d2ff',
+                borderRadius: 5,
+                borderSkipped: false
             }]
         },
         options: {
@@ -910,10 +998,16 @@ function renderizarGraficosDashboard(dados) {
             scales: {
                 x: {
                     beginAtZero: true,
-                    ticks: { color: '#b9c9bd', precision: 0 },
+                    ticks: { color: '#b9c9bd', precision: 0, font: { size: 10 }, padding: 8 },
+                    grid: { color: 'rgba(255,255,255,0.07)' },
+                    border: { display: false },
                     grace: '5%'
                 },
-                y: { ticks: { color: '#b9c9bd' } }
+                y: {
+                    ticks: { color: '#b9c9bd', font: { size: 10 } },
+                    grid: { display: false },
+                    border: { display: false }
+                }
             },
             plugins: {
                 ...opcoesComuns.plugins,
@@ -972,9 +1066,14 @@ function renderizarGraficosDashboard(dados) {
             plugins: {
                 ...opcoesComuns.plugins,
                 legend: {
-                    position: 'right',
+                    position: 'bottom',
                     labels: {
-                        color: '#fff',
+                        color: '#e5f1e9',
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8,
+                        padding: 10,
+                        font: { size: 10 },
                         generateLabels: grafico => grafico.data.labels.map((nome, index) => {
                             const doses = Number(grafico.data.datasets[0].data[index]) || 0;
                             const percentual = totalDosesRadiofarmacos > 0
@@ -1005,15 +1104,19 @@ function renderizarGraficosDashboard(dados) {
                 },
                 datalabels: {
                     color: '#fff',
-                    backgroundColor: 'rgba(0,0,0,0.55)',
-                    borderRadius: 4,
+                    backgroundColor: 'rgba(16, 26, 22, 0.78)',
+                    borderRadius: 5,
                     padding: 4,
-                    font: { weight: 'bold', size: 10 },
-                    formatter: valor => {
+                    font: { weight: 'bold', size: 9 },
+                    display: 'auto',
+                    formatter: (valor, contexto) => {
+                        if (Number(valor) <= 0) return '';
                         const percentual = totalDosesRadiofarmacos > 0
                             ? (Number(valor) / totalDosesRadiofarmacos * 100).toFixed(1)
                             : 0;
-                        return valor > 0 ? `${percentual}%` : '';
+                        const nome = contexto.chart.data.labels[contexto.dataIndex];
+                        const doses = Number(valor) || 0;
+                        return `${nome}\n${doses} dose${doses === 1 ? '' : 's'} · ${percentual}%`;
                     }
                 }
             }
