@@ -2304,7 +2304,7 @@
                 <div style="margin-top: 12px; color: #a5c0b1; font-size: 0.76rem;">ℹ️ Este indicador usa apenas o custo dos geradores como numerador, pois é o principal insumo do serviço.</div>
             </div>
 
-            <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr); gap: 20px; align-items: start;">
+            <div class="custos-analysis-grid" style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr); gap: 20px; align-items: start;">
                 <div>
                     <h4 style="color: #2ecc71; margin: 0 0 10px;">📦 Custos com Kits</h4>
                     <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
@@ -2334,9 +2334,10 @@
                     </div>
                 </div>
 
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px;">
-                    <h4 style="color: #2ecc71; margin: 0 0 12px;">📈 Distribuição dos Custos</h4>
-                    <div style="position: relative; min-height: 250px;"><canvas id="graficoCustos"></canvas></div>
+                <div class="custos-chart-card custos-chart-card--analise">
+                    <h4>📈 Custos por mês</h4>
+                    <p class="custos-chart-subtitle">Comparativo entre kits e geradores</p>
+                    <div class="custos-chart-area custos-chart-area--analise"><canvas id="graficoCustos"></canvas></div>
                 </div>
             </div>
 
@@ -2413,18 +2414,32 @@
                 <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #a8b8ae; border-radius: 14px; padding: 16px;"><div style="color: #a8b8ae; font-size: 0.78rem;">📅 Custo/Dia Corrido</div><strong id="dashCustoDiaCorrido" style="display: block; color: #dfece3; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
                 <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #c084fc; border-radius: 14px; padding: 16px;"><div style="color: #c9a7e8; font-size: 0.78rem;">💉 Custo/Dia Produtivo</div><strong id="dashCustoDiaProdutivo" style="display: block; color: #c084fc; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-bottom: 22px;">
-                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartCustoMes"></canvas></div>
-                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartDosesMes"></canvas></div>
-                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px;"><canvas id="dashChartCategorias"></canvas></div>
-                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; display: flex; flex-direction: column;">
-                    <h4 style="margin: 0 0 10px; color: #b9c9bd; font-size: 0.9rem;">📊 Quantidade de Doses por Radiofármaco</h4>
-                    <div style="position: relative; flex: 1; min-height: 0;"><canvas id="dashChartTopRadio"></canvas></div>
-                </div>
-                <div style="height: 280px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; display: flex; flex-direction: column;">
-                    <h4 style="margin: 0 0 10px; color: #b9c9bd; font-size: 0.9rem;">🥧 Distribuição % por Radiofármaco</h4>
-                    <div style="position: relative; flex: 1; min-height: 0;"><canvas id="dashChartPizzaRadio"></canvas></div>
-                </div>
+            <div class="custos-dashboard-charts">
+                <section class="custos-chart-card custos-chart-card--wide">
+                    <h4>📊 Custos por mês</h4>
+                    <p class="custos-chart-subtitle">Participação de kits e geradores no período selecionado</p>
+                    <div class="custos-chart-area"><canvas id="dashChartCustoMes"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>💉 Doses por mês</h4>
+                    <p class="custos-chart-subtitle">Evolução mensal de doses administradas</p>
+                    <div class="custos-chart-area"><canvas id="dashChartDosesMes"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>🍩 Composição dos custos</h4>
+                    <p class="custos-chart-subtitle">Distribuição entre kits e geradores</p>
+                    <div class="custos-chart-area"><canvas id="dashChartCategorias"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>📊 Doses por radiofármaco</h4>
+                    <p class="custos-chart-subtitle">Radiofármacos com maior volume</p>
+                    <div class="custos-chart-area"><canvas id="dashChartTopRadio"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>🥧 Distribuição por radiofármaco</h4>
+                    <p class="custos-chart-subtitle">Participação de cada radiofármaco no total de doses</p>
+                    <div class="custos-chart-area"><canvas id="dashChartPizzaRadio"></canvas></div>
+                </section>
             </div>
             <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
                 <table style="width: 100%; border-collapse: collapse; min-width: 680px; font-size: 0.82rem;"><thead style="background: rgba(0,210,255,0.12);"><tr>
