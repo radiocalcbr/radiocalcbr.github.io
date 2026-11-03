@@ -15,7 +15,7 @@ let geradorIdCounter = 0;
 // ============================================================
 
 let paginaAtualHistoricoGerador = 1;
-const ITENS_POR_PAGINA_HISTORICO_GERADOR = 10;   // 🔥 RENOMEADO
+const ITENS_POR_PAGINA_HISTORICO_GERADOR = 30;
 let historicoGeradorFiltrado = [];
 const STORAGE_GERADORES_CACHE_SINCRONIZADO = 'radiocalc_geradores_cache_sincronizado';
 
@@ -87,13 +87,16 @@ function salvarGeradores(sincronizadoComNuvem = false) {
 // ===== FUNÇÕES PARA ABRIR/FECHAR MODAL =====
 // ============================================================
 
-function abrirModalGerador() {
+async function abrirModalGerador() {
     console.log('⚛️⬇️ Abrindo modal de gerador...');
     const modal = document.getElementById('modalGerador');
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('ativo');
         carregarGeradoresSalvos();
+        if (typeof window.carregarGeradoresDaNuvem === 'function') {
+            await window.carregarGeradoresDaNuvem();
+        }
         preencherDatasPadrao();
         atualizarHistoricoGeradorComPaginacao();
         verificarAdminGerador();

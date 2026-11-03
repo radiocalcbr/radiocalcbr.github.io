@@ -79,7 +79,7 @@ function verificarEAtualizarStatusGeradores(registros) {
 }
 
 // ============================================================
-// ===== SALVAR GERADORES NA NUVEM (DOCUMENTO ÚNICO) =====
+// ===== SALVAR GERADORES NA NUVEM (MESCLANDO A ORGANIZAÇÃO) =====
 // ============================================================
 
 async function salvarGeradoresNaNuvem() {
@@ -115,32 +115,56 @@ async function salvarGeradoresNaNuvem() {
             .doc(userData.organizacao)
             .collection('geradores');
         
-        // 🔥 ESTRATÉGIA: SALVAR COMO UM ÚNICO DOCUMENTO COM ID FIXO
-        // Isso evita múltiplos documentos e problemas de sincronização
         const docRef = orgGeradoresRef.doc('todos_geradores');
+        const chaveRegistro = registro => {
+            const lote = String(registro.lote || '').trim().toLocaleLowerCase();
+            if (lote) {
+                return `lote:${lote}|recebimento:${registro.dataRecebimento || ''}`;
+            }
+            if (registro.id !== undefined && registro.id !== null) {
+                return `id:${registro.id}`;
+            }
+            return `registro:${JSON.stringify(registro)}`;
+        };
+        let registrosUnificados = [];
+        const dataBackup = new Date().toISOString();
 
-        const documentoAtual = await docRef.get();
-        const registrosNuvem = documentoAtual.exists && Array.isArray(documentoAtual.data().registros)
-            ? documentoAtual.data().registros
-            : [];
-        const registrosPorId = new Map();
-        registrosNuvem.forEach(registro => registrosPorId.set(String(registro.id), registro));
-        registrosGerador.forEach(registro => registrosPorId.set(String(registro.id), registro));
-        registrosGerador = Array.from(registrosPorId.values());
+        await db.runTransaction(async transaction => {
+            const documentoAtual = await transaction.get(docRef);
+            const registrosNuvem = documentoAtual.exists
+                && Array.isArray(documentoAtual.data().registros)
+                ? documentoAtual.data().registros
+                : [];
+            const registrosPorChave = new Map();
+
+            registrosNuvem.forEach(registro => {
+                if (registro && typeof registro === 'object') {
+                    registrosPorChave.set(chaveRegistro(registro), registro);
+                }
+            });
+            registrosGerador.forEach(registro => {
+                if (registro && typeof registro === 'object') {
+                    registrosPorChave.set(chaveRegistro(registro), registro);
+                }
+            });
+            registrosUnificados = Array.from(registrosPorChave.values());
+
+            transaction.set(docRef, {
+                registros: registrosUnificados,
+                organizacao: userData.organizacao,
+                ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp(),
+                total: registrosUnificados.length,
+                atualizadoPor: userData.uid,
+                atualizadoPorEmail: userData.email,
+                dataBackup
+            });
+        });
+
+        registrosGerador = registrosUnificados;
         geradorIdCounter = Math.max(
             geradorIdCounter,
             ...registrosGerador.map(registro => (Number(registro.id) || 0) + 1)
         );
-        
-        await docRef.set({
-            registros: registrosGerador,
-            organizacao: userData.organizacao,
-            ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp(),
-            total: registrosGerador.length,
-            atualizadoPor: userData.uid,
-            atualizadoPorEmail: userData.email,
-            dataBackup: new Date().toISOString()
-        });
         
         console.log(`✅ ${registrosGerador.length} geradores salvos na nuvem!`);
 
