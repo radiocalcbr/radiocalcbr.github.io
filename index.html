@@ -19,9 +19,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- ===== BIBLIOTECA BROWSER PRINT ZEBRA ===== -->
-<script src="https://cdn.jsdelivr.net/npm/browserprint@3.0.216/dist/BrowserPrint-3.0.216.min.js"></script>
-    
     <!-- ===== BIBLIOTECAS DO FIREBASE ===== -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -592,29 +589,6 @@
     <button class="btn-primary marcacao-main-btn" onclick="calcularMarcacao()" data-translate="marc_btn_calcular">📊 Calcular Marcação</button>
     
 </div>
-
-<!-- STATUS E BOTÃO ZEBRA -->
-<!-- STATUS E BOTÃO ZEBRA -->
-<div class="zebra-actions">
-    <button class="btn-zebra zebra-print-btn" onclick="imprimirEtiquetaZebra()" id="btnZebra" disabled>
-        <span class="icon">🏷️</span> Imprimir Zebra
-    </button>
-    
-    <div id="statusZebraContainer" class="zebra-status-container">
-        <span class="zebra-status-icon">🖨️</span>
-        <span id="statusZebra" class="zebra-status-text">Verificando...</span>
-        <button class="zebra-refresh-btn" onclick="verificarStatusImpressoraZebra()">
-            🔄
-        </button>
-    </div>
-</div>
-
-<!-- MENSAGEM INFORMATIVA (aparece quando não tem Browser Print) -->
-<div id="mensagemZebraInfo" class="zebra-info">
-    ℹ️ Para imprimir na Zebra, é necessário instalar o software 
-    <strong>Browser Print da Zebra</strong>.
-</div>
-
 
     </div>
     <!-- ===== EFICIÊNCIA DE MARCAÇÃO ===== -->
@@ -2084,6 +2058,16 @@
             <div style="display: flex; align-items: center; gap: 8px;">
                 <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
                 <input type="date" id="filtroDataFimGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Status:</label>
+                <select id="filtroStatusGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+                <option value="">Todos os status</option>
+                <option value="aguardando">🔵 Aguardando decaimento</option>
+                <option value="pronto">🟡 Pronto para liberação</option>
+                <option value="transito">🟠 Em trânsito</option>
+                <option value="devolvido">✅ Devolvido</option>
+                </select>
             </div>
             
             <button onclick="aplicarFiltroGeradorModal()" style="padding: 6px 20px; background: linear-gradient(90deg, #9b59b6, #8e44ad); border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
