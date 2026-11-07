@@ -784,15 +784,16 @@ function atualizarContadoresGerador(lista = registrosGerador) {
 }
 
 // ============================================================
-// ===== FILTROS =====
+// ===== FILTROS (DATA E STATUS) =====
 // ============================================================
 
 function aplicarFiltroGeradorModal() {
     const dataInicio = document.getElementById('filtroDataInicioGerador')?.value || '';
     const dataFim = document.getElementById('filtroDataFimGerador')?.value || '';
+    const statusFiltro = document.getElementById('filtroStatusGerador')?.value || '';
     
-    if (!dataInicio && !dataFim) {
-        mostrarFeedbackGerador('⚠️ Selecione pelo menos uma data para filtrar.', 'aviso');
+    if (!dataInicio && !dataFim && !statusFiltro) {
+        mostrarFeedbackGerador('⚠️ Selecione pelo menos um filtro (data ou status).', 'aviso');
         return;
     }
     
@@ -800,13 +801,13 @@ function aplicarFiltroGeradorModal() {
         mostrarFeedbackGerador('⚠️ A data inicial não pode ser maior que a data final!', 'erro');
         return;
     }
-    atualizarContadoresGerador(registrosGerador);
     
     const tbody = document.getElementById('corpoTabelaGeradoresModal');
     if (!tbody) return;
     
     let filtrados = [...registrosGerador];
     
+    // Filtragem por Data de Recebimento
     if (dataInicio) {
         filtrados = filtrados.filter(r => r.dataRecebimento >= dataInicio);
     }
@@ -814,15 +815,22 @@ function aplicarFiltroGeradorModal() {
         filtrados = filtrados.filter(r => r.dataRecebimento <= dataFim);
     }
     
+    // 🆕 Filtragem pelo Status selecionado
+    if (statusFiltro) {
+        filtrados = filtrados.filter(r => r.status === statusFiltro);
+    }
+    
+    atualizarContadoresGerador(filtrados);
+    
     if (filtrados.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="15" style="text-align: center; padding: 40px; color: #888;">
-                    🔍 Nenhum registro encontrado no período selecionado.
+                    🔍 Nenhum registro encontrado com os critérios selecionados.
                 </td>
             </tr>
         `;
-        atualizarInfoFiltroGerador(dataInicio, dataFim);
+        atualizarInfoFiltroGerador(dataInicio, dataFim, statusFiltro);
         return;
     }
     
@@ -852,39 +860,50 @@ function aplicarFiltroGeradorModal() {
                 <td style="padding: 10px;">${item.dataDevolucaoReal ? formatarDataBR(item.dataDevolucaoReal) : '-'}</td>
                 <td style="padding: 10px; font-size: 0.8rem; color: #ff6b6b;">${item.taxaExposicaoBalde ? item.taxaExposicaoBalde + ' cpm' : '-'}</td>
                 <td style="padding: 10px; text-align: center; white-space: nowrap;">
-                    <button onclick="editarGerador(${item.id})" style="
-                        background: rgba(0, 210, 255, 0.15);
-                        border: 1px solid rgba(0, 210, 255, 0.2);
-                        color: #00d2ff;
-                        padding: 4px 10px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        font-size: 0.7rem;
-                        transition: 0.3s;
-                        margin-right: 4px;
-                    " onmouseover="this.style.background='rgba(0,210,255,0.25)'" onmouseout="this.style.background='rgba(0,210,255,0.15)'" title="Editar registro">
-                        ✏️
-                    </button>
-                    <button onclick="removerGerador(${item.id})" style="
-                        background: rgba(255,107,107,0.15);
-                        border: 1px solid rgba(255,107,107,0.2);
-                        color: #ff6b6b;
-                        padding: 4px 10px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        font-size: 0.7rem;
-                        transition: 0.3s;
-                    " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'" title="Remover registro (local + nuvem se for admin)">
-                        🗑️
-                    </button>
+                    <button onclick="editarGerador(${item.id})" style="background: rgba(0, 210, 255, 0.15); border: 1px solid rgba(0, 210, 255, 0.2); color: #00d2ff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; margin-right: 4px;" title="Editar registro">✏️</button>
+                    <button onclick="removerGerador(${item.id})" style="background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.2); color: #ff6b6b; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem;" title="Remover registro">🗑️</button>
                 </td>
             </tr>
         `;
     });
     
     tbody.innerHTML = html;
-    atualizarInfoFiltroGerador(dataInicio, dataFim);
+    atualizarInfoFiltroGerador(dataInicio, dataFim, statusFiltro);
     mostrarFeedbackGerador('✅ Filtro aplicado com sucesso!', 'success');
+}
+
+function limparFiltroGeradorModal() {
+    if (document.getElementById('filtroDataInicioGerador')) document.getElementById('filtroDataInicioGerador').value = '';
+    if (document.getElementById('filtroDataFimGerador')) document.getElementById('filtroDataFimGerador').value = '';
+    if (document.getElementById('filtroStatusGerador')) document.getElementById('filtroStatusGerador').value = '';
+    
+    atualizarTabelaGeradorHistorico();
+    atualizarInfoFiltroGerador('', '', '');
+    mostrarFeedbackGerador('✅ Filtro removido. Mostrando todos os registros.', 'info');
+}
+
+function atualizarInfoFiltroGerador(dataInicio, dataFim, statusFiltro) {
+    const infoEl = document.getElementById('infoFiltroGerador');
+    if (!infoEl) return;
+    
+    if (!dataInicio && !dataFim && !statusFiltro) {
+        infoEl.textContent = '📋 Mostrando todos os registros';
+        infoEl.style.color = '#666';
+        return;
+    }
+    
+    let detalhes = [];
+    if (dataInicio && dataFim) detalhes.push(`de ${formatarDataBR(dataInicio)} até ${formatarDataBR(dataFim)}`);
+    else if (dataInicio) detalhes.push(`a partir de ${formatarDataBR(dataInicio)}`);
+    else if (dataFim) detalhes.push(`até ${formatarDataBR(dataFim)}`);
+    
+    if (statusFiltro) {
+        const infoStatus = getStatusInfo(statusFiltro);
+        detalhes.push(`status: ${infoStatus.label}`);
+    }
+    
+    infoEl.textContent = `🔍 Filtro: ${detalhes.join(' | ')}`;
+    infoEl.style.color = '#00d2ff';
 }
 
 function limparFiltroGeradorModal() {
