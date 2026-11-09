@@ -236,6 +236,9 @@ function registrarGerador() {
     
     registrosGerador.push(novoRegistro);
     salvarGeradores();
+    if (typeof invalidarCacheGeradores === 'function') {
+        invalidarCacheGeradores();
+    }
     atualizarHistoricoGeradorComPaginacao();
     atualizarTabelaGeradorHistorico();
     limparCamposGerador();
@@ -713,33 +716,32 @@ async function atualizarGeradorNaNuvem(item) {
             .doc(userData.organizacao)
             .collection('geradores');
         
-        console.log(`🔍 Buscando documento com lote: ${item.lote}`);
-        
-        const snapshot = await orgGeradoresRef
-            .where('lote', '==', item.lote)
-            .limit(1)
-            .get();
-        
-        console.log(`📄 Documentos encontrados: ${snapshot.size}`);
-        
-        if (!snapshot.empty) {
-            const docRef = snapshot.docs[0].ref;
-            const data = snapshot.docs[0].data();
-            const registros = data.registros || [];
-            
-            const idx = registros.findIndex(r => r.id === item.id);
-            console.log(`🔍 Registro encontrado no índice: ${idx}`);
-            
-            if (idx !== -1) {
-                registros[idx] = item;
-                await docRef.update({
-                    registros: registros,
+        console.log(`🔍 Buscando gerador ${item.id} (${item.lote}) nos documentos da organização`);
+
+        const snapshot = await orgGeradoresRef.get();
+        let atualizado = false;
+        await Promise.all(snapshot.docs.map(async documento => {
+            const data = documento.data();
+            const registros = Array.isArray(data.registros) ? data.registros : [];
+            const indice = registros.findIndex(registro =>
+                registro
+                && registro.id === item.id
+                && registro.lote === item.lote
+                && registro.dataRecebimento === item.dataRecebimento
+            );
+
+            if (indice !== -1) {
+                registros[indice] = item;
+                await documento.ref.update({
+                    registros,
                     ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                console.log(`✅ Gerador ${item.id} atualizado na nuvem com sucesso!`);
-            } else {
-                console.warn(`⚠️ Registro ${item.id} não encontrado no documento da nuvem`);
+                atualizado = true;
             }
+        }));
+
+        if (atualizado) {
+            console.log(`✅ Gerador ${item.id} atualizado na nuvem com sucesso!`);
         } else {
             console.warn(`⚠️ Nenhum documento encontrado na nuvem para o lote: ${item.lote}`);
             console.log('📌 Criando novo documento na nuvem...');
@@ -756,8 +758,14 @@ async function atualizarGeradorNaNuvem(item) {
             });
             console.log(`✅ Novo documento criado na nuvem para o lote: ${item.lote}`);
         }
+        if (typeof invalidarCacheGeradores === 'function') {
+            invalidarCacheGeradores();
+        }
         
     } catch (error) {
+        if (typeof invalidarCacheGeradores === 'function') {
+            invalidarCacheGeradores();
+        }
         console.error('❌ Erro ao atualizar na nuvem:', error);
         throw error;
     }

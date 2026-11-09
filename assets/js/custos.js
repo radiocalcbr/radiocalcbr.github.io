@@ -1663,15 +1663,6 @@ async function abrirModalCustos() {
         }
 
         try {
-            if (typeof carregarGeradoresDaNuvem === 'function') {
-                console.log('⚛️ Carregando geradores da nuvem...');
-                await carregarGeradoresDaNuvem();
-            }
-        } catch (erroGerador) {
-            console.warn('⚠️ Erro ao carregar geradores da nuvem:', erroGerador);
-        }
-
-        try {
             if (typeof carregarDosesDaNuvem === 'function') {
                 console.log('💉 Carregando doses da nuvem...');
                 await carregarDosesDaNuvem();
@@ -1701,7 +1692,7 @@ async function abrirModalCustos() {
         renderizarListaPrecosGeradores();
         renderizarHistoricoAlteracoes();
         modal.style.display = 'flex';
-        trocarAbaCustos('dashboard');
+        await trocarAbaCustos('dashboard');
     } catch (erro) {
         // 🔇 Garante que a flag é desligada mesmo em caso de erro
         window._silenciarToastsCustos = false;
@@ -1718,7 +1709,7 @@ function fecharModalCustos() {
     }
 }
 
-function trocarAbaCustos(aba) {
+async function trocarAbaCustos(aba) {
     try {
         const abaSolicitada = aba === 'analise' ? 'dashboard' : aba;
         const abas = {
@@ -1757,8 +1748,18 @@ function trocarAbaCustos(aba) {
         if (abaSolicitada === 'dashboard') {
             const campoInicio = document.getElementById('dashboardDataInicio');
             const campoFim = document.getElementById('dashboardDataFim');
-            if (!campoInicio?.value || !campoFim?.value) aplicarPeriodoDashboard(90);
-            else atualizarDashboardUnificado();
+            if (!campoInicio?.value || !campoFim?.value) {
+                const hoje = new Date();
+                const dataInicio = new Date(hoje);
+                dataInicio.setDate(dataInicio.getDate() - 90);
+                if (campoInicio) campoInicio.value = formatarDataInputCustos(dataInicio);
+                if (campoFim) campoFim.value = formatarDataInputCustos(hoje);
+            }
+
+            if (typeof carregarGeradoresDaNuvem === 'function') {
+                await carregarGeradoresDaNuvem(true);
+            }
+            calcularDashboard();
         }
     } catch (erro) {
         console.error('❌ Erro ao trocar aba de custos:', erro);
