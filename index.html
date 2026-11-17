@@ -1,0 +1,2703 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioCalc - Planejamento de Radiofármacos</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90' fill='%23ffd700'%3ER%3C/text%3E%3C/svg%3E">
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DPC2HP7XXF"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-DPC2HP7XXF');
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- ===== BIBLIOTECAS DO FIREBASE ===== -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- ===== CSS ===== -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- ===== TELA DE LOGIN ===== -->
+<div id="telaLogin" class="auth-screen">
+    <div class="auth-panel">
+        <div class="auth-header">
+            <div class="auth-icon">☢️🩺</div>
+            <h1 class="auth-title">RadioCalc BR</h1>
+            <p class="auth-subtitle">Sistema de Planejamento de Radiofármacos</p>
+        </div>
+
+        <div class="auth-field">
+            <label class="auth-label">📧 Email</label>
+            <input type="email" id="emailLogin" class="auth-input" placeholder="seu@email.com">
+        </div>
+
+        <div class="auth-field compact">
+            <label class="auth-label">🔑 Senha</label>
+            <input type="password" id="senhaLogin" class="auth-input" placeholder="Digite sua senha" onkeypress="if(event.key==='Enter') fazerLogin()">
+        </div>
+
+        <button class="auth-button" onclick="fazerLogin()">
+            🔓 Entrar
+        </button>
+
+        <div class="auth-link-row">
+            <a href="#" class="auth-link" onclick="esqueciSenha()">
+                🔑 Esqueci minha senha
+            </a>
+        </div>
+
+        <div id="erroLogin" class="auth-message"></div>
+
+        <div class="auth-footer">
+            <span class="auth-footer-muted">Não tem uma conta?</span>
+            <a href="#" class="auth-switch-link" onclick="mostrarCadastro()">
+                📝 Criar conta
+            </a>
+        </div>
+
+        <div class="auth-access-note">🔒 Acesso restrito</div>
+    </div>
+</div>
+<!-- ===== TELA DE CADASTRO ===== -->
+<div id="telaCadastro" class="auth-screen hidden">
+    <div class="auth-panel">
+        <div class="auth-header">
+            <div class="auth-icon">📝</div>
+            <h1 class="auth-title">Criar Conta</h1>
+            <p class="auth-subtitle">Preencha os dados para se cadastrar</p>
+        </div>
+
+        <div class="auth-field">
+            <label class="auth-label">📧 Email</label>
+            <input type="email" id="emailCadastro" class="auth-input" placeholder="seu@email.com">
+        </div>
+
+        <div class="auth-field">
+            <label class="auth-label">🔑 Senha</label>
+            <input type="password" id="senhaCadastro" class="auth-input" placeholder="Mínimo 6 caracteres">
+        </div>
+
+        <div class="auth-field compact">
+            <label class="auth-label">🔑 Confirmar Senha</label>
+            <input type="password" id="confirmarSenhaCadastro" class="auth-input" placeholder="Digite a senha novamente">
+        </div>
+
+        <button class="auth-button" onclick="fazerCadastro()">
+            📝 Criar Conta
+        </button>
+
+        <div id="erroCadastro" class="auth-message"></div>
+
+        <div class="auth-footer">
+            <span class="auth-footer-muted">Já tem uma conta?</span>
+            <a href="#" class="auth-switch-link" onclick="mostrarLogin()">Fazer login</a>
+        </div>
+    </div>
+</div>
+<!-- ===== CONTEÚDO PRINCIPAL (começo) ===== -->
+<div id="conteudoPrincipal" style="display: none;">
+     <!-- Banner do usuário -->
+    <div class="user-banner">
+        <span>
+            👤 <strong id="nomeUsuarioLogado">Carregando...</strong>
+        </span>
+        <button class="logout-btn" onclick="fazerLogout()">
+            🚪 Sair
+        </button>
+    </div>
+<!-- ===== HEADER (CABEÇALHO) ===== -->
+<header class="header">
+    <div class="container">
+        <h1>
+            <div class="logo-container">
+                <span class="logo-icon">
+                    <span class="radiation">☢️</span>
+                    <span class="stethoscope">🩺</span>
+                </span>
+                <span class="logo-text">
+                    RadioCalc
+                    <span class="br">BR</span>
+                </span>
+                <span class="logo-badge">v1.6 beta</span>
+            </div>
+        </h1>
+        <p class="subtitle" data-translate="subtitulo">Planejamento de Radiofármacos · Tc-99m · F-18 · I-123</p>
+        <div class="header-actions">
+            <button class="header-action-btn primary" onclick="salvarTodosOsDados()">
+                💾 Salvar Dados
+            </button>
+
+            <button class="header-action-btn danger" onclick="limparDadosSalvos()">
+                🗑️ Limpar Dados
+            </button>
+
+            <button class="header-action-btn secondary" onclick="abrirSobre()">
+                ℹ️ Sobre
+            </button>
+
+            <button class="header-action-btn lang" onclick="toggleLanguage()">
+                🌐 <span id="langLabel">PT</span> <span style="font-size: 0.6rem; opacity: 0.6;">▼</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+    <!-- DISCLAIMER -->
+    <div class="disclaimer-box" id="disclaimerBox">
+        <div class="disclaimer-flex">
+            <span class="disclaimer-icon">⚠️</span>
+            <div style="text-align: left;">
+                <span class="disclaimer-title" data-translate="disclaimer_title">Aviso de Responsabilidade</span><br>
+                <span data-translate="disclaimer_text">Esta calculadora destina-se ao <span class="disclaimer-highlight">auxílio de profissionais habilitados</span> em medicina nuclear e <span class="disclaimer-highlight">não substitui</span>:</span>
+                <ul>
+                    <li data-translate="disclaimer_item1">Protocolos institucionais e diretrizes locais</li>
+                    <li data-translate="disclaimer_item2">Julgamento clínico do médico nuclear</li>
+                    <li data-translate="disclaimer_item3">Verificação manual dos cálculos e doses</li>
+                    <li data-translate="disclaimer_item4">Recomendações do fabricante do radiofármaco</li>
+                </ul>
+                <span class="disclaimer-note" data-translate="disclaimer_note">O usuário é o único responsável pela validação e aplicação dos resultados.</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="trocarAba('planejamento')" data-translate="aba_planejamento">📋 Planejamento</button>
+        <button class="tab-btn" onclick="trocarAba('marcacao')" data-translate="aba_marcacao">🧪 Marcação</button>
+        <button class="tab-btn" onclick="trocarAba('pacientes')" data-translate="aba_pacientes">👥 Pacientes</button>
+        <button class="tab-btn" onclick="trocarAba('pediatrica')" data-translate="aba_pediatrica">👶 Dose Pediátrica</button>
+         <button class="tab-btn tab-btn-tools" onclick="trocarAba('ferramentas')">
+        🔧 Outras Ferramentas
+    </button>
+    </div>
+
+       <!-- ===== ABA 1: PLANEJAMENTO OTIMIZADO ===== -->
+    <div id="aba-planejamento" class="tab-content active">
+        <div class="card">
+            <h3 class="card-title card-title-pink" data-translate="plan_title">📋 Planejamento de Atividade</h3>
+            <p class="section-intro" data-translate="plan_desc">
+                <strong class="highlight-text">Calcule a atividade necessária para marcar o kit</strong> considerando o número de pacientes, 
+                dose por paciente e o decaimento do isótopo ao longo do tempo.
+                <span class="inline-support">
+                    Suporte para Tc-99m, F-18 e I-123
+                </span>
+                <span class="inline-badge success">
+                    ⚡ Otimizado para sobra mínima
+                </span>
+            </p>
+
+            <!-- ===== CALCULADORA DE MÚLTIPLAS ELUIÇÕES (DENTRO DO CARD) ===== -->
+            <div id="calculadora-multi-eluicoes" class="calculator-panel">
+                <h3 class="multi-eluicao-title">🔄 Calculadora de Múltiplas Eluições</h3>
+                <p class="multi-eluicao-desc">
+                    Calcule a atividade de <strong style="color: #00d2ff;">Tc-99m</strong> disponível para uma <strong style="color: #ffd700;">nova eluição</strong>, 
+                    considerando o tempo de recrescimento após a <strong style="color: #ff6b6b;">última eluição</strong> realizada.
+                </p>
+
+                <div class="multi-eluicao-grid">
+                    <div class="multi-eluicao-column gerador">
+                        <h4>⚛️⬇️ Dados do Gerador</h4>
+                        <div class="input-group multi-eluicao-field">
+                            <label>Atividade nominal do Mo-99 (mCi):</label>
+                            <select id="atividade-nominal-multi" class="multi-eluicao-select">
+                                <option value="2000">2000 mCi</option>
+                                <option value="1500" selected>1500 mCi</option>
+                                <option value="1250">1250 mCi</option>
+                                <option value="1000">1000 mCi</option>
+                                <option value="750">750 mCi</option>
+                                <option value="500">500 mCi</option>
+                                <option value="250">250 mCi</option>
+                            </select>
+                            <small>Atividade do Mo-99 no momento da calibração</small>
+                        </div>
+                        <div class="input-group multi-eluicao-field" style="margin-top: 12px;">
+                            <label>Data/Hora da calibração:</label>
+                            <input type="datetime-local" id="data-calibracao-multi" class="multi-eluicao-input">
+                            <small>Data e hora fornecidas pelo fabricante</small>
+                        </div>
+                    </div>
+
+                    <div class="multi-eluicao-column elucao">
+                        <h4>⏰ Eluições</h4>
+                        <div class="input-group multi-eluicao-field">
+                            <label>Data/Hora da Última Eluição:</label>
+                            <input type="datetime-local" id="data-ultima-eluicao-multi" class="multi-eluicao-input">
+                            <small>Quando você eluiu pela última vez</small>
+                        </div>
+                        <div class="input-group multi-eluicao-field" style="margin-top: 12px;">
+                            <label>Data/Hora da Nova Eluição:</label>
+                            <input type="datetime-local" id="data-nova-eluicao-multi" class="multi-eluicao-input">
+                            <small>Quando você quer eluir agora</small>
+                        </div>
+                        <button class="multi-eluicao-button" onclick="calcularMultiEluicao()">
+                            ⚡ Calcular Nova Eluição
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultado-multi-eluicoes" class="multi-eluicao-result"></div>
+            </div>
+
+            <div class="mode-selector" id="modeSelector">
+                <span class="mode-selector-title">Modo:</span>
+                <label class="active" id="labelModoSimplificado">
+                    <input type="radio" name="modoPlanejamento" value="simplificado" checked onchange="toggleModoPlanejamento()">
+                    📊 Simplificado (intervalo fixo)
+                </label>
+                <label id="labelModoAgenda">
+                    <input type="radio" name="modoPlanejamento" value="agenda" onchange="toggleModoPlanejamento()">
+                    📅 Por Agenda (horários individuais)
+                </label>
+            </div>
+
+            <!-- Campos do modo simplificado -->
+            <div id="camposSimplificado">
+                <div class="grid-3">
+                    <div class="input-group">
+                        <label data-translate="plan_isotopo">Isótopo</label>
+                        <select id="planIsotopo" onchange="calcularPlanejamento()">
+                            <option value="tc" selected>🔵 Tc-99m (meia-vida: 362 min)</option>
+                            <option value="f18">🟢 F-18 (meia-vida: 109.77 min)</option>
+                            <option value="i123">🟡 I-123 (meia-vida: 792 min)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="plan_num_pacientes">Número de Pacientes</label>
+                        <input type="number" id="planNumPacientes" value="1" min="1" max="50">
+                        <small data-translate="plan_num_pacientes_small">Total de pacientes agendados</small>
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="plan_dose_paciente">Dose por Paciente (mCi)</label>
+                        <input type="number" id="planDosePorPaciente" value="15" step="0.1" min="0.1">
+                        <small data-translate="plan_dose_paciente_small">Atividade a ser injetada em cada paciente</small>
+                    </div>
+                </div>
+
+             <div class="grid-3">
+    <div class="input-group">
+        <label data-translate="plan_horario_marcacao">Horário da Marcação</label>
+        <input type="datetime-local" id="planHorarioMarcacao">
+        <small data-translate="plan_horario_marcacao_small">Momento em que o kit será marcado</small>
+    </div>
+    <div class="input-group">
+        <label data-translate="plan_horario_primeira">Horário da 1ª Injeção</label>
+        <input type="datetime-local" id="planHorarioPrimeira">
+        <small data-translate="plan_horario_primeira_small">Momento da primeira administração</small>
+    </div>
+    <div class="input-group">
+        <label data-translate="plan_horario_ultimo">Horário da Última Injeção</label>
+        <input type="datetime-local" id="planHorarioUltimo">
+        <small data-translate="plan_horario_ultimo_small">Momento da última administração</small>
+    </div>
+</div>
+<!-- ===== ALERTA DE INTERVALO DE DATAS ===== -->
+<div id="alertaIntervalo" class="status-alert">
+    ✅ Intervalo adequado
+</div>
+
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label data-translate="plan_intervalo">Intervalo entre Injeções (minutos)</label>
+                        <input type="number" id="planIntervaloInjecoes" value="30" step="1" min="0">
+                        <small data-translate="plan_intervalo_small">Tempo médio entre cada paciente</small>
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="plan_margem">Margem de Segurança (%)</label>
+                        <input type="number" id="planMargemSeguranca" value="5" step="1" min="0" max="50" onchange="calcularPlanejamento()">
+                        <small data-translate="plan_margem_small">Compensa perdas e erros (recomendado: 5-10%)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campos do modo agenda -->
+            <div id="camposAgenda" class="campo-oculto">
+                <div class="grid-3">
+                    <div class="input-group">
+                        <label data-translate="plan_isotopo">Isótopo</label>
+                        <select id="planIsotopoAgenda" onchange="calcularPlanejamento()">
+                            <option value="tc" selected>🔵 Tc-99m (meia-vida: 362 min)</option>
+                            <option value="f18">🟢 F-18 (meia-vida: 109.77 min)</option>
+                            <option value="i123">🟡 I-123 (meia-vida: 792 min)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="plan_horario_marcacao">Horário da Marcação</label>
+                        <input type="datetime-local" id="planHorarioMarcacaoAgenda">
+                        <small data-translate="plan_horario_marcacao_small">Momento em que o kit será marcado</small>
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="plan_margem">Margem de Segurança (%)</label>
+                        <input type="number" id="planMargemSegurancaAgenda" value="5" step="1" min="0" max="50" onchange="calcularPlanejamento()">
+                        <small data-translate="plan_margem_small">Compensa perdas e erros (recomendado: 5-10%)</small>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label data-translate="plan_dose_paciente">Dose por Paciente (mCi)</label>
+                        <input type="number" id="planDosePorPacienteAgenda" value="15" step="0.1" min="0.1">
+                        <small data-translate="plan_dose_paciente_small">Atividade a ser injetada em cada paciente</small>
+                    </div>
+                    <div style="display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #ccc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Pacientes</label>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <span style="color: #aaa; font-size: 0.9rem; background: rgba(255,255,255,0.05); padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                                    Total: <strong id="totalPacientesAgenda" style="color: #ffd700;">5</strong>
+                                </span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button class="btn-secondary btn-sm" onclick="adicionarPacienteAgenda()" style="padding: 8px 14px;">+ Adicionar</button>
+                            <button class="btn-secondary btn-sm" onclick="adicionarPacientesLoteAgenda()" style="padding: 8px 14px;">+ 5</button>
+                            <button class="btn-danger btn-sm" onclick="removerUltimoPacienteAgenda()" style="padding: 8px 14px;">✕ Remover</button>
+                            <button class="btn-secondary btn-sm" onclick="limparPacientesAgenda()" style="padding: 8px 14px; border-color: rgba(255,107,107,0.3); color: #ff6b6b;">🗑️ Limpar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper" style="margin-top: 15px;">
+                    <table class="agenda-table" id="tabelaAgenda">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th style="min-width: 150px;">Horário da Injeção</th>
+                                <th style="min-width: 80px;">Dose Alvo (mCi)</th>
+                                <th style="min-width: 80px;">Dose Disponível (mCi)</th>
+                                <th style="min-width: 80px;">Dose Retirada (mCi)</th>
+                                <th style="min-width: 80px;">Ativ. Restante (mCi)</th>
+                                <th style="min-width: 80px;">Δt (min)</th>
+                                <th style="min-width: 80px;">Status</th>
+                                <th style="width: 35px;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoAgenda"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Botões de ação -->
+            <div class="grid-2 action-row">
+                <div class="action-stack left">
+                    <button class="btn-primary action-btn-primary" onclick="calcularPlanejamentoComValidacao()" data-translate="plan_btn_calcular">🎯 Calcular Atividade do Kit</button>
+                    <button class="btn-success action-btn-success" onclick="aplicarPlanejamento()" data-translate="plan_btn_aplicar">⚡ Aplicar à Marcação</button>
+                </div>
+                <div class="action-stack right">
+                   <button class="btn-pdf btn-pdf-cyan" onclick="gerarExcelPlanejamento()">
+    📊 Excel
+</button>
+                    <button class="btn-secondary action-btn-clear" onclick="limparHistorico()" data-translate="plan_btn_limpar">🗑️</button>
+                </div>
+            </div>
+
+            <div id="resultadoPlanejamento" class="plan-result-section">
+                <div id="alertContainer"></div>
+
+                <div class="grid-3 plan-result-grid">
+                    <div class="stat-card destaque" style="border-color: rgba(255,215,0,0.4);">
+                        <div class="rotulo" data-translate="plan_atividade_kit">🎯 Atividade de Marcação</div>
+                        <div class="valor" id="planAtividadeFinal" style="font-size: 2.3rem; color: #ffd700;">--</div>
+                    </div>
+                    <div class="stat-card" style="border-color: rgba(0,255,100,0.3);">
+                        <div class="rotulo">✅ Sobra no Frasco</div>
+                        <div class="valor" id="planSobraFinal" style="font-size: 1.8rem; color: #00ff64;">--</div>
+                    </div>
+                    <div class="stat-card" style="border-color: rgba(255,107,107,0.3);">
+                        <div class="rotulo">📉 Aproveitamento do Kit</div>
+                        <div class="valor" id="planAproveitamento" style="font-size: 1.5rem; color: #ff6b6b;">--</div>
+                    </div>
+                </div>
+
+                <div class="grid-5" id="planejamentoStats" style="margin-top: 15px;">
+                    <div class="stat-card"><div class="rotulo" data-translate="plan_pacientes">Pacientes</div><div class="valor" id="planPacientes" style="font-size: 1.5rem;">--</div></div>
+                    <div class="stat-card"><div class="rotulo" data-translate="plan_dose_paciente_label">Dose por Paciente</div><div class="valor" id="planDosePaciente" style="font-size: 1.5rem;">--</div></div>
+                    <div class="stat-card"><div class="rotulo">Dose Total sem Decaimento</div><div class="valor" id="planDoseTotalSemDec" style="font-size: 1.3rem;">--</div></div>
+                    <div class="stat-card"><div class="rotulo" data-translate="plan_tempo_total">Tempo Total</div><div class="valor" id="planTempoTotal" style="font-size: 1.3rem;">--</div></div>
+                    <div class="stat-card"><div class="rotulo" data-translate="plan_margem_label">Margem</div><div class="valor" id="planMargemDisplay" style="font-size: 1.3rem;">--</div></div>
+                    <div class="stat-card" id="planStatusCard"><div class="rotulo" data-translate="plan_status">Status</div><div class="valor" id="planStatus" style="font-size: 1.2rem;">--</div></div>
+                </div>
+
+                <div class="info-box otimizacao plan-info-box">
+                    <strong style="color: #00ff64;">⚡ Otimização Ativa:</strong>
+                    <span id="infoOtimizacao" style="color: #aaa;">
+                        A atividade de marcação foi calculada para que o último paciente receba a dose correta e sobre o mínimo possível no frasco.
+                    </span>
+                </div>
+
+                <div class="card plan-graph-card">
+                    <h4 class="plan-graph-title" data-translate="plan_grafico_titulo">
+                        📉 Curva de Decaimento do Kit
+                        <span id="isotopoLegenda" class="badge-tc plan-legend-tag">Tc-99m</span>
+                    </h4>
+                    <div class="grafico-wrapper"><canvas id="graficoDecaimento"></canvas></div>
+                    <div class="legenda-grafico">
+                        <div class="item"><div class="cor" id="corDecaimento" style="background: #00d2ff;"></div><span id="labelDecaimento" data-translate="plan_grafico_decaimento">Decaimento do Kit</span></div>
+                        <div class="item"><div class="cor-ponto" style="background: #ff6b6b; border-color: #ff6b6b;"></div><span data-translate="plan_grafico_dose_disponivel">Dose Disponível na Injeção</span></div>
+                        <div class="item"><div class="cor" style="background: #ffd700; height: 3px; border-radius: 2px; width: 20px;"></div><span data-translate="plan_grafico_dose_alvo">Dose Alvo por Paciente</span></div>
+                    </div>
+                </div>
+
+                <div class="card plan-graph-card">
+                    <h4 class="plan-table-title" data-translate="plan_tabela_titulo">📋 Distribuição por Paciente</h4>
+                    <div class="table-wrapper">
+                        <table class="table-compact">
+                            <thead>
+                                <tr>
+                                    <th data-translate="plan_tabela_num">#</th>
+                                    <th data-translate="plan_tabela_horario">Horário</th>
+                                    <th data-translate="plan_tabela_dose_alvo">Dose Alvo (mCi)</th>
+                                    <th data-translate="plan_tabela_dose_disponivel">Dose Disponível (mCi)</th>
+                                    <th>Dose Retirada (mCi)</th>
+                                    <th data-translate="plan_tabela_restante">Atividade Restante (mCi)</th>
+                                    <th data-translate="plan_tabela_status">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaDistribuicao"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="info-box planejamento plan-info-box">
+                    <strong style="color: #ff6b9d;" data-translate="plan_recomendacao">💡 Recomendação:</strong> 
+                    <span id="recomendacaoPlanejamento" data-translate="plan_recomendacao_texto">Preencha os dados e clique em "Calcular".</span>
+                </div>
+
+                <div class="card plan-history-card">
+                    <h4 class="plan-history-title" data-translate="plan_historico">📜 Histórico de Cálculos</h4>
+                    <div id="historicoContainer">
+                        <div style="color: #888; font-size: 0.85rem; text-align: center; padding: 20px;" data-translate="plan_historico_vazio">Nenhum cálculo salvo ainda.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box planejamento example-box">
+                <strong data-translate="plan_exemplo">📌 Exemplo Prático:</strong>
+                <span data-translate="plan_exemplo_texto">
+                    <strong>15 pacientes</strong> · Dose: <strong>15 mCi</strong> cada · 1ª injeção: <strong>07:30</strong> · Última: <strong>14:30</strong><br>
+                    Tc-99m (meia-vida: 362 min) · Margem: 10%<br>
+                    → Atividade de marcação otimizada: <strong style="color: #ffd700;">~405 mCi</strong> (sobra mínima!)
+                </span>
+            </div>
+
+        </div>  
+    </div>      
+
+
+    <!-- ===== ABA 2: MARCAÇÃO ===== -->
+<div id="aba-marcacao" class="tab-content">
+    <div class="card">
+        <h3 class="card-title" data-translate="marc_title">🧪 Marcação de Radiofármacos</h3>
+        <div class="grid-2">
+            <div>
+                <div class="input-group">
+                    <label data-translate="marc_radiofarmaco">Radiofármaco</label>
+                    <select id="radiofarmacoMestre" onchange="atualizarInfoIsotopo()">
+                        <optgroup label="🔵 Tc-99m (SPECT) - Meia-vida: 362 min">
+                            <option value="DMSA" data-isotopo="tc">DMSA</option>
+                            <option value="DTPA" data-isotopo="tc">DTPA</option>
+                            <option value="FITATO" data-isotopo="tc">FITATO</option>
+                            <option value="MDP" data-isotopo="tc">MDP</option>
+                            <option value="MIBI" data-isotopo="tc">MIBI</option>
+                            <option value="PIRO" data-isotopo="tc">PIRO</option>
+                        </optgroup>
+                        <optgroup label="🟢 F-18 (PET-CT) - Meia-vida: 109.77 min">
+                            <option value="FDG" data-isotopo="f18">FDG</option>
+                            <option value="FES" data-isotopo="f18">FES</option>
+                            <option value="F-PSMA" data-isotopo="f18">F-PSMA</option>
+                        </optgroup>
+                        <optgroup label="🟡 I-123 - Meia-vida: 792 min">
+                            <option value="MIBG" data-isotopo="i123">MIBG</option>
+                            <option value="NaI" data-isotopo="i123">NaI</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div id="infoIsotopoSelecionado" class="info-isotopo tc">
+                    🔬 Isótopo: Tc-99m | Meia-vida: 362 minutos
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label data-translate="marc_horario">Horário da Marcação</label>
+                    <input type="datetime-local" id="horarioMarcacaoMestre">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div>
+                <div class="input-group">
+                    <label data-translate="marc_atividade_total">Atividade Total de Marcação (mCi)</label>
+                    <input type="number" id="atividadeMarcacaoMestre" value="360" step="any" min="0.1" onchange="calcularPacientes()">
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label data-translate="marc_atividade_disponivel">Atividade Disponível (mCi)</label>
+                    <input type="number" id="atividadeDisponivelMestre" value="360" step="any" min="0.1">
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== NOVOS CAMPOS MANUAIS PARA ETIQUETA ===== -->
+<div class="grid-2 marcacao-top-fields">
+    <div class="input-group">
+        <label>📦 Lote do Frasco</label>
+        <input type="text" id="loteFrasco" placeholder="Ex: L12345678" value="">
+        <small>Número do lote do frasco do radiofármaco</small>
+    </div>
+    <div class="input-group">
+        <label>📅 Validade do Frasco</label>
+        <input type="date" id="validadeFrasco" value="">
+        <small>Data de validade do frasco do radiofármaco</small>
+    </div>
+</div>
+
+<!-- ===== ADICIONE ESTE CAMPO ===== -->
+<div class="grid-2">
+    <div class="input-group">
+        <label>🧪 Volume Total do Frasco (mL)</label>
+        <input type="number" id="volumeFrasco" value="5.0" step="0.1" min="0.1">
+        <small>Volume total do frasco do radiofármaco</small>
+    </div>
+    <div class="input-group">
+        <label>⏰ Horário de Marcação do Kit</label>
+        <input type="time" id="horaMarcacaoKit" step="60" value="08:00">
+        <small>Horário em que o kit foi marcado</small>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="input-group">
+        <label>⏰ Horário Limite de Uso (USAR ATÉ)</label>
+        <input type="time" id="horaLimiteUso" step="60" value="14:00">
+        <small>Horário limite para uso do radiofármaco marcado</small>
+    </div>
+</div>
+
+    <div class="marcacao-button-row">
+    <button class="btn-primary marcacao-main-btn" onclick="calcularMarcacao()" data-translate="marc_btn_calcular">📊 Calcular Marcação</button>
+    
+</div>
+
+    </div>
+    <!-- ===== EFICIÊNCIA DE MARCAÇÃO ===== -->
+<div id="secaoEficienciaMarcacao" class="efficiency-section">
+    <h4>🧪 Eficiência de Marcação</h4>
+    <p class="efficiency-note">
+        Calcule a pureza radioquímica do radiofármaco marcado com base nas atividades das frações cromatográficas.
+        <span class="efficiency-badge">
+            Referência: USP 40 e bulas dos fabricantes
+        </span>
+    </p>
+
+    <div class="grid-3 efficiency-grid">
+        <div class="input-group">
+            <label class="efficiency-input-label">Radiofármaco / Kit</label>
+            <select id="kitMarcacao" class="efficiency-select" onchange="atualizarCamposEficiencia()">
+                <option value="eluato" selected>Eluato</option>
+                <option value="kardia">MIBI</option>
+                <option value="osteo">MDP</option>
+                <option value="limpha">FITATO</option>
+                <option value="reno">DMSA</option>
+                <option value="nefro">DTPA</option>
+                <option value="piro">PIRO</option>
+            </select>
+            <small>Selecione o kit para ver as fórmulas específicas</small>
+        </div>
+
+        <!-- ===== DADOS DA PLACA 1 ===== -->
+        <div class="efficiency-panel success">
+            <h5>📊 Placa 1</h5>
+            <div class="input-group mb-8">
+                <label class="efficiency-input-label">Atividade Fração 1 (cpm/mCi)</label>
+                <input type="number" id="placa1Fracao1" class="efficiency-input" value="95" step="any" min="0" oninput="calcularEficienciaMarcacao()">
+            </div>
+            <div class="input-group mb-0">
+                <label class="efficiency-input-label">Atividade Fração 2 (cpm/mCi)</label>
+                <input type="number" id="placa1Fracao2" class="efficiency-input" value="5" step="any" min="0" oninput="calcularEficienciaMarcacao()">
+            </div>
+        </div>
+
+        <!-- ===== DADOS DA PLACA 2 ===== -->
+        <div class="efficiency-panel warning">
+            <h5>📊 Placa 2</h5>
+            <div class="input-group mb-8">
+                <label class="efficiency-input-label">Atividade Fração 1 (cpm/mCi)</label>
+                <input type="number" id="placa2Fracao1" class="efficiency-input" value="2" step="any" min="0" oninput="calcularEficienciaMarcacao()">
+            </div>
+            <div class="input-group mb-0">
+                <label class="efficiency-input-label">Atividade Fração 2 (cpm/mCi)</label>
+                <input type="number" id="placa2Fracao2" class="efficiency-input" value="98" step="any" min="0" oninput="calcularEficienciaMarcacao()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão Calcular -->
+    <div class="efficiency-actions">
+        <button class="btn-purple" onclick="calcularEficienciaMarcacao()">
+            🔬 Calcular Eficiência de Marcação
+        </button>
+        <button class="btn-secondary" onclick="limparCamposEficiencia()">
+            🗑️ Limpar
+        </button>
+    </div>
+
+    <!-- Resultados -->
+    <div id="resultadoEficienciaMarcacao" class="efficiency-result">
+        <div class="efficiency-result-box">
+            <h4>✅ Resultado da Eficiência de Marcação</h4>
+
+            <!-- Cards de Resultado -->
+            <div class="efficiency-score-grid">
+                <div class="efficiency-score success">
+                    <strong>Placa 1</strong><br>
+                    <span id="resultadoPlaca1" style="color: #2ecc71;">--%</span>
+                    <br><small id="placa1Detalhe">--</small>
+                </div>
+                <div class="efficiency-score warning">
+                    <strong>Placa 2</strong><br>
+                    <span id="resultadoPlaca2" style="color: #f1c40f;">--%</span>
+                    <br><small id="placa2Detalhe">--</small>
+                </div>
+                <div class="efficiency-score info">
+                    <strong>🧪 Pureza Radioquímica</strong><br>
+                    <span id="resultadoPureza" style="color: #00d2ff;">--%</span>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div id="statusEficienciaContainer" class="efficiency-status">
+                <strong id="statusEficienciaTitulo">✅ APROVADO</strong>
+                <span id="statusEficienciaTexto">
+                    A pureza radioquímica está dentro dos padrões exigidos.
+                </span>
+            </div>
+
+            <!-- Informações do Kit -->
+            <div class="efficiency-details">
+                <strong>📋 Detalhes do Cálculo:</strong><br>
+                <span>
+                    • Kit: <strong id="kitNomeResultado" style="color: #fff;">--</strong><br>
+                    • Fórmula: <span id="formulaEficiencia" style="color: #ffd700;">--</span>
+                </span>
+            </div>
+
+            <!-- Referência -->
+            <div class="efficiency-reference">
+                Referência: USP 40 – Technetium Tc 99m e bulas dos fabricantes
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações do Kit (Fórmulas) -->
+    <div id="infoKitEficiencia" class="efficiency-kit-info">
+        <strong>📌 Fórmula do Kit Selecionado:</strong><br>
+        <span id="infoKitTexto">
+            KARDIA (MIBI): Placa 1 = (Fração 2 / Fração 1 + 2) × 100 | Placa 2 = (Fração 1 / Fração 1 + 2) × 100 | Pureza ≥ 90%
+        </span>
+    </div>
+</div>
+</div>
+
+    <!-- ===== ABA 3: PACIENTES ===== -->
+    <div id="aba-pacientes" class="tab-content">
+        <div class="card">
+            <h3 class="card-title" data-translate="pac_title">👥 Administração de Pacientes</h3>
+            <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 15px;" data-translate="pac_desc">
+                <strong style="color: #ffd700;">Baseado na Planilha v2.3</strong> · 
+                λ = 0.693 / meia-vida (min) · 
+                Δt = Horário Injeção - Marcação
+            </p>
+
+            <div class="controles-pacientes">
+                <div class="info-pacientes"><span data-translate="pac_total">Total de Pacientes:</span> <strong id="totalPacientes">0</strong> <span data-translate="pac_max">(máximo 30)</span></div>
+                <button class="btn-secondary" onclick="adicionarPaciente()" data-translate="pac_btn_adicionar">+ Adicionar Paciente</button>
+                <button class="btn-secondary" onclick="adicionarPacientesLote()" style="border-color: rgba(255,215,0,0.3);" data-translate="pac_btn_lote">+ Adicionar 5 Pacientes</button>
+                <button class="btn-primary" onclick="calcularPacientes()" style="width: auto; padding: 8px 24px; margin-top: 0;" data-translate="pac_btn_calcular">📊 Calcular Todos</button>
+<button class="btn-pdf" onclick="gerarExcelPacientes()" style="padding: 8px 24px; background: rgba(0, 210, 255, 0.15); border: 1px solid rgba(0, 210, 255, 0.3); color: #00d2ff;">
+    📊 Excel
+</button>            </div>
+
+            <div class="table-wrapper">
+                <table class="paciente-table" id="tabelaPacientes">
+                    <thead>
+                        <tr>
+                            <th style="width: 25px;" data-translate="pac_col_num">#</th>
+                            <th style="min-width: 55px;" data-translate="pac_col_id">ID</th>
+                            <th style="min-width: 45px;" data-translate="pac_col_peso">Peso (kg)</th>
+                            <th style="min-width: 60px;" data-translate="pac_col_dose_kg">Dose/kg (mCi/kg)</th>
+                            <th style="min-width: 70px;" data-translate="pac_col_dose_calc">Dose Calc. (mCi)</th>
+                            <th style="min-width: 110px;" data-translate="pac_col_hora">Hora Injeção</th>
+                            <th style="min-width: 70px;" data-translate="pac_col_dose_medida">Dose Medida (mCi)</th>
+                            <th style="min-width: 75px;" data-translate="pac_col_dose_admin">Dose Admin. (mCi)</th>
+                            <th style="min-width: 80px;" data-translate="pac_col_rejeito">Rejeito (mCi)</th>
+                          <th style="min-width: 110px;" data-translate="pac_col_hora_rejeito" title="Informe o horário em que o rejeito foi medido. O sistema corrigirá automaticamente o valor do rejeito considerando o decaimento radioativo entre a injeção e a medição.">📅 Hora Medição Rejeito</th>
+                            <th style="min-width: 75px;" data-translate="pac_col_dt">Δt (min)</th>
+                            <th style="min-width: 85px;" data-translate="pac_col_restante">Ativ. Restante (mCi)</th>
+                            <th style="min-width: 65px;" data-translate="pac_col_status">Status</th>
+                            <th style="width: 25px;" data-translate="pac_col_acao">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoPacientes"></tbody>
+                </table>
+            </div>
+
+            <div id="resumoPacientes" style="display: none;">
+                <div class="stats-grid" id="statsPacientes"></div>
+            </div>
+
+          <div class="info-box" id="infoBoxPacientes" style="text-align: left !important;">
+    <strong style="display: block;" data-translate="pac_info_box">📌 Fórmulas (Planilha v2.3):</strong>
+    <span id="infoTextoPacientes" style="display: block;" data-translate="pac_info_texto">
+        <strong>Dose Calculada</strong> = Peso × Dose/kg<br>
+        <strong>Dose Administrada</strong> = Dose Medida - Rejeito<br>
+        <strong>Rejeito</strong> = Dose Medida - (Dose Medida - Dose Pós-Admin)<br>
+        <strong>Δt</strong> = Horário Injeção - Horário Marcação (minutos)<br>
+        <strong>Fator Decaimento</strong> = exp(-0.693/meia-vida × Δt)<br>
+        <strong>Atividade Teórica</strong> = Dose Medida / Fator Decaimento<br>
+        <strong>Atividade Restante Real</strong> = Atividade Inicial - Σ(Dose Medida) - Decaimento
+    </span>
+    <br>
+    <span style="color: #aaa; font-size: 0.85rem; display: block;" data-translate="pac_meia_vida">
+        ⏱️ Meia-vida: <strong id="meiaVidaDisplay">362 min</strong> (Tc-99m) · 
+        λ = <strong id="lambdaDisplay">0.001914</strong> min⁻¹
+    </span>
+</div>
+            </div>
+        </div>
+    
+    <!-- ===== ABA 4: DOSE PEDIÁTRICA ===== -->
+    <div id="aba-pediatrica" class="tab-content" style="text-align: left;">
+    <div class="card">
+            <h3 class="card-title" style="color: #ff6b9d;" data-translate="ped_title">
+                👶 Dose Pediátrica 
+                <span class="snmmi-badge" data-translate="ped_badge">SNMMI 2024</span>
+            </h3>
+ <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px; text-align: left;" data-translate="ped_desc">
+    Cálculo baseado em diretrizes internacionais para atividades de radiofármacos em pediatria:
+    <strong>SNMMI 2024</strong> (Norte-Americana) e <strong>EANM 2005</strong> (Europeia).
+</p>
+
+            <div class="grid-2">
+                <div>
+                    <div class="input-group">
+                        <label data-translate="ped_radiofarmaco">Radiofármaco / Exame</label>
+                        <select id="radiofarmacoPediatrico" onchange="calcularDosePediatrica()">
+                            <optgroup label="🔵 Tc-99m">
+                                <option value="MDP" data-dose="0.25" data-min="1.0" data-max="20.0">MDP (Ósseo)</option>
+                                <option value="DMSA" data-dose="0.05" data-min="0.5" data-max="2.7">DMSA (Renal)</option>
+                                <option value="DTPA" data-dose="0.15" data-min="1.0" data-max="4.0">DTPA (Renal)</option>
+                                <option value="IDA" data-dose="0.05" data-min="0.5" data-max="3.0">IDA (Hepatobiliar)</option>
+                                <option value="pertec_tireoide" data-dose="0.03" data-min="0.19" data-max="2.5">Pertecnetato (Tireoide)</option>
+                                <option value="sestamibi" data-dose="0.15" data-min="5.0" data-max="10.0">Sestamibi (Miocárdio)</option>
+                            </optgroup>
+                            <optgroup label="🟢 F-18">
+                                <option value="FDG_corpo" data-dose="0.10" data-min="0.7" data-max="10.0">FDG (Corpo)</option>
+                                <option value="NaF" data-dose="0.05" data-min="0.5" data-max="4.0">NaF (Ósseo PET)</option>
+                            </optgroup>
+                            <optgroup label="🟡 I-123">
+                                <option value="MIBG" data-dose="0.14" data-min="1.0" data-max="10.0">MIBG</option>
+                            </optgroup>
+                        </select>
+                        <small data-translate="ped_radio_small">Baseado nas diretrizes SNMMI 2024</small>
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="ped_metodo">Método de Cálculo</label>
+                      <select id="metodoPediatrico" onchange="calcularDosePediatrica()">
+    <option value="snmmi" data-translate="ped_metodo_snmmi">SNMMI 2024 (peso + limites mín/máx)</option>
+    <option value="eanm" data-translate="ped_metodo_eanm">EANM 2005 (multiplicador por peso + mínimo)</option>
+    <option value="peso_simples" data-translate="ped_metodo_peso">Peso Simples (sem limites)</option>
+</select>
+                    </div>
+                </div>
+                <div>
+                    <div class="input-group">
+                        <label data-translate="ped_peso">Peso da Criança (kg)</label>
+                        <input type="number" id="pesoPediatrico" value="18" step="0.1" min="1" max="200" oninput="calcularDosePediatrica()">
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="ped_idade">Idade (anos) - referência</label>
+                        <input type="number" id="idadePediatrica" value="5" step="0.5" min="0" max="18" oninput="calcularDosePediatrica()">
+                    </div>
+                    <div class="input-group">
+                        <label data-translate="ped_fator">Fator de Correção (opcional)</label>
+                        <input type="number" id="fatorCorrecaoPediatrica" value="1.0" step="0.05" min="0.5" max="1.5" oninput="calcularDosePediatrica()">
+                        <small data-translate="ped_fator_small">Ajuste adicional (ex: 0.8 = redução de 20%)</small>
+                    </div>
+                    <button class="btn-pediatric" onclick="calcularDosePediatrica()" style="width: 100%; margin-top: 8px;" data-translate="ped_btn_calcular">🔬 Calcular Dose SNMMI</button>
+                </div>
+            </div>
+
+            <div id="resultadoPediatrico" style="display: none;">
+                <div class="card" style="border-color: rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05);">
+                    <h4 style="color: #00d4ff; margin-bottom: 15px;" data-translate="ped_resultado_titulo">
+                        📊 Resultado SNMMI 2024
+                        <span style="font-size: 0.7rem; color: #888; font-weight: normal; margin-left: 10px;" data-translate="ped_resultado_sub">North American Consensus Guidelines</span>
+                    </h4>
+                    <div class="grid-4" id="resultadoPediatricoGrid">
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_dose_recomendada">Dose Recomendada</div><div class="valor" id="doseRecomendadaPediatrica" style="font-size: 2rem;">--</div></div>
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_dose_kg">Dose/kg Base</div><div class="valor" id="dosePorPesoPediatrica" style="font-size: 1.2rem;">--</div></div>
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_limite_min">Limite Mínimo</div><div class="valor" id="doseMinPediatrica" style="font-size: 1.2rem; color: #ffd700;">--</div></div>
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_limite_max">Limite Máximo</div><div class="valor" id="doseMaxPediatrica" style="font-size: 1.2rem; color: #ff6b6b;">--</div></div>
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_faixa_etaria">Faixa Etária</div><div class="valor" id="faixaEtariaPediatrica" style="font-size: 1.2rem;">--</div></div>
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_status">Status</div><div class="valor" id="statusDosePediatrica" style="font-size: 1.2rem;">--</div></div>
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_percentual_adulto">% Dose Adulto (70kg)</div><div class="valor" id="percentualAdultoPediatrico" style="font-size: 1.2rem;">--</div></div>
+                        <div class="stat-card snmmi"><div class="rotulo" data-translate="ped_volume">Volume Estimado</div><div class="valor" id="volumePediatrico" style="font-size: 1.2rem;">--</div></div>
+                    </div>
+                </div>
+
+              <div class="info-box snmmi" id="infoBoxPediatrica" style="margin-top: 15px; text-align: left !important;">
+    <strong style="color: #00d4ff; display: block;" data-translate="ped_info_titulo">📋 Diretriz SNMMI 2024:</strong>
+    <span id="infoTextoPediatrica" style="color: #aaa; display: block;" data-translate="ped_info_texto">Selecione um radiofármaco e insira o peso da criança para calcular a dose recomendada.</span>
+</div>
+
+                <div class="info-box snmmi" style="margin-top: 15px; border-left-color: #00d4ff; background: rgba(0, 212, 255, 0.05);">
+                    <strong style="color: #00d4ff;" data-translate="ped_notas">📌 Notas Importantes (SNMMI 2024):</strong><br>
+                    <span style="color: #aaa; font-size: 0.85rem;">
+                        <span data-translate="ped_nota1">• Para pacientes com peso &gt; 70 kg, a dose máxima não deve exceder peso × dose/kg.</span><br>
+                        <span data-translate="ped_nota2">• Para PET digital, considerar doses na parte inferior da faixa.</span><br>
+                        <span data-translate="ped_nota3">• A atividade administrada pode ser ajustada conforme ordem do médico nuclear.</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- ===== ABA 5: OUTRAS FERRAMENTAS ===== -->
+<div id="aba-ferramentas" class="tab-content">
+    <div class="card">
+        <h3 class="card-title" style="color: #9b59b6;">
+            🔧 Outras Ferramentas
+            <span class="snmmi-badge" style="background: rgba(155,89,182,0.2); color: #9b59b6; border-color: rgba(155,89,182,0.3);">
+                v1.0 beta
+            </span>
+        </h3>
+        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">
+            Selecione uma ferramenta abaixo para abrir seu módulo completo.
+        </p>
+
+        <!-- ===== MENU DE FERRAMENTAS ===== -->
+<div class="tools-grid">
+
+    <!-- Card 1: Doses Administradas -->
+    <div class="tool-card" data-ferramenta="doses" onclick="abrirModalDoses()">
+        <span class="tool-icon">💉📊</span>
+        <span class="tool-name">Doses Administradas</span>
+        <span class="tool-desc">Registro de doses injetadas.</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
+
+    <!-- Card 2: Registro de Marcação -->
+    <div class="tool-card" data-ferramenta="registro-marcacao" onclick="abrirPaginaFerramenta('registro-marcacao')">
+        <span class="tool-icon">📋</span>
+        <span class="tool-name">Registro de Marcação</span>
+        <span class="tool-desc">Registre todas as marcações de radiofármacos realizadas.</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
+
+    <!-- Card 3: Gerência de Estoque de Kits -->
+    <div class="tool-card" data-ferramenta="estoque" onclick="
+        var modal = document.getElementById('modalEstoque');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('ativo');
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+            if (typeof carregarEstoqueSalvo === 'function') {
+                carregarEstoqueSalvo();
+            }
+        }
+    ">
+        <span class="tool-icon">📦📋</span>
+        <span class="tool-name">Gerência de Estoque de Kits</span>
+        <span class="tool-desc">Controle de <strong style="color: #ffd700;">entrada e saída</strong> de frascos</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
+
+    <!-- Card 4: Registro de Rejeitos -->
+    <div class="tool-card" data-ferramenta="rejeitos" onclick="abrirModalRejeitos()">
+        <span class="tool-icon">🗑️☢️</span>
+        <span class="tool-name">Registro de Rejeitos</span>
+        <span class="tool-desc">Controle todos os rejeitos radioativos do setor.</span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
+
+    <!-- Card 5: Registro de Gerador -->
+    <div class="tool-card" data-ferramenta="gerador" onclick="abrirModalGerador()">
+        <span class="tool-icon">⚛️⬇️</span>
+        <span class="tool-name">Registro de Gerador</span>
+        <span class="tool-desc">Gerencie o ciclo de vida do gerador <strong style="color: #ffd700;">Mo-99/Tc-99m</strong></span>
+        <span class="tool-badge">Clique para abrir ➜</span>
+    </div>
+
+    <!-- Card 6: Análise de Custos (só supervisor/admin) -->
+    <div id="cardCustos" class="tool-card" data-ferramenta="custos" onclick="abrirModalCustos()" style="display: none;">
+        <span class="tool-icon">💰📊</span>
+        <span class="tool-name">Análise de Custos</span>
+        <span class="tool-desc">Analise os custos e indicadores financeiros do sistema.</span>
+        <span class="tool-badge">👑 Área do Supervisor</span>
+    </div>
+
+</div>
+    </div>
+</div>
+
+<!-- ===== CONTEÚDO PRINCIPAL (fim) ===== -->
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="disclaimer-footer" id="footerDisclaimer">
+        <span style="color: #ffd700;">⚠️</span>
+        <strong>Aviso de Responsabilidade:</strong>
+        Esta ferramenta destina-se ao <span class="highlight">auxílio de profissionais habilitados</span> em medicina nuclear.
+        Os resultados devem ser validados clinicamente e
+        <span class="highlight">não substituem protocolos institucionais, julgamento clínico ou recomendações do fabricante</span>.
+        O usuário é o único responsável pela validação e aplicação dos resultados.
+    </div>
+    <p id="footerText">
+        ☢️ RadioCalc &bull; Ferramenta para planejamento de radiofármacos em medicina nuclear
+        <br>
+        Baseado nas diretrizes SNMMI 2024 e Planilha v2.3
+        <br>
+        Desenvolvido para uso profissional &bull;
+        <a href="#" onclick="abrirSobre(); return false;">ℹ️ Sobre</a> &bull;
+        <a href="#">Voltar ao topo</a>
+    </p>
+</footer>
+<!-- ===== TOAST DE NOTIFICAÇÃO ===== -->
+<div id="toastNotificacao" class="toast">
+    <span id="toastMensagem"></span>
+</div>
+
+<!-- ===== BOTÃO FLUTUANTE DE FEEDBACK ===== -->
+<button class="feedback-button-floating" onclick="abrirFeedback()">
+    💬 Feedback
+    <span class="count">1</span>
+</button>
+
+<!-- ===== MODAL SOBRE ===== -->
+<div class="modal-sobre-overlay" id="modalSobre" onclick="fecharSobreExterno(event)">
+    <div class="modal-sobre">
+        <button class="fechar" onclick="fecharSobre()">✕</button>
+
+        <div class="header-sobre">
+            <span class="icon">☢️🩺</span>
+            <div>
+                <h2>RadioCalc BR</h2>
+                <span class="versao">v1.6 beta</span>
+            </div>
+        </div>
+
+        <div class="descricao">
+            O <strong>RadioCalc BR</strong> é uma ferramenta computacional em desenvolvimento, idealizada para auxiliar profissionais e estudantes da Medicina Nuclear na realização de cálculos relacionados ao preparo, controle de qualidade e administração de radiofármacos.
+            <br><br>
+            O projeto tem como objetivo contribuir para a <strong>padronização dos cálculos</strong>, reduzir a possibilidade de erros operacionais e otimizar a rotina dos serviços de Medicina Nuclear, por meio de uma interface simples, acessível e de fácil utilização, disponível diretamente em navegador web.
+            <br><br>
+            As funcionalidades do sistema estão sendo desenvolvidas com base em referências técnicas e científicas reconhecidas nacional e internacionalmente, buscando atender às recomendações e boas práticas aplicáveis à área. Novas ferramentas e atualizações serão incorporadas continuamente durante o desenvolvimento do projeto.
+        </div>
+
+        <div class="grid-sobre">
+            <div class="item">
+                <div class="emoji">🎯</div>
+                <h4>Objetivo</h4>
+                <p>Auxiliar no planejamento, marcação e administração segura de radiofármacos, com suporte para Tc-99m, F-18 e I-123.</p>
+            </div>
+            <div class="item">
+                <div class="emoji">📋</div>
+                <h4>Funcionalidades</h4>
+                <p>Planejamento de atividade, marcação, gestão de pacientes e dose pediátrica baseada nas diretrizes SNMMI 2024.</p>
+            </div>
+            <div class="item">
+                <div class="emoji">👶</div>
+                <h4>Dose Pediátrica</h4>
+                <p>Diretriz SNMMI 2024 com limites mínimos e máximos por faixa etária e peso, com fator de correção ajustável.</p>
+            </div>
+            <div class="item">
+                <div class="emoji">📊</div>
+                <h4>Relatórios</h4>
+                <p>Geração de PDFs detalhados do planejamento e da lista de pacientes para documentação e arquivamento.</p>
+            </div>
+        </div>
+
+        <div class="aviso" style="text-align: left;">
+            <span class="icone">⚠️</span>
+            <div>
+                <strong>Importante</strong>
+                <p>
+                    O <span class="highlight">RadioCalc BR</span> constitui uma ferramenta de apoio à prática profissional e 
+                    <span class="highlight">não substitui</span> a análise técnica, o julgamento do profissional habilitado, 
+                    os protocolos institucionais nem a legislação e as normas vigentes. 
+                    Os resultados fornecidos devem ser sempre conferidos antes de sua aplicação na rotina clínica.
+                </p>
+            </div>
+        </div>
+
+        <div class="rodape-sobre">
+            <span class="info">🔬 Baseado em SNMMI 2024 · Planilha v2.3</span>
+           <a href="#" class="contato" onclick="enviarEmailContato(event)">📧 fisixassessoria@gmail.com</a>
+            <span class="versao-rodape">v1.6 beta</span>
+        </div>
+    </div>
+</div>
+<!-- ===== MODAL DE GERÊNCIA DE ESTOQUE (VERSÃO SIMPLIFICADA) ===== -->
+<div id="modalEstoque" class="estoque-modal">
+    <div class="modal-conteudo estoque-modal-content">
+     <!-- Cabeçalho -->
+<div class="estoque-header">
+    <div>
+        <h3 class="estoque-title">📦 Gerência de Estoque de Kits</h3>
+        <p class="estoque-subtitle">
+            Controle de entrada e saída de frascos de kits para marcação
+        </p>
+    </div>
+    <div class="estoque-header-actions">
+        <!-- INDICADOR DE NUVEM -->
+        <span id="indicadorEstoqueNuvem" class="estoque-cloud-status">
+            ☁️ Verificando...
+        </span>
+        
+        <!-- BOTÃO SALVAR NA NUVEM -->
+        <button class="estoque-cloud-btn salvar" onclick="salvarEstoqueNaNuvem()">
+            ☁️ Salvar Nuvem
+        </button>
+        
+        <!-- BOTÃO CARREGAR DA NUVEM -->
+        <button class="estoque-cloud-btn carregar" onclick="carregarEstoqueDaNuvem()">
+            ☁️ Carregar Nuvem
+        </button>
+        
+        <!-- BOTÃO FECHAR -->
+        <button class="estoque-close-btn" onclick="
+            var modal = document.getElementById('modalEstoque');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                modal.classList.remove('ativo');
+            }
+        ">✕</button>
+    </div>
+</div>
+
+        <!-- ===== FORMULÁRIO DE CADASTRO ===== -->
+        <div class="estoque-form-panel">
+            <h4 class="estoque-form-title">📝 Cadastrar Movimentação</h4>
+            <div class="estoque-form-grid">
+                
+                <!-- Tipo do Kit -->
+                <div class="input-group">
+                    <label class="estoque-label">🧪 Tipo do Kit</label>
+                    <select id="estoqueTipoKit" class="estoque-input">
+                        <optgroup label="🔵 Tc-99m">
+                            <option value="MIBI">MIBI (Miocárdio)</option>
+                            <option value="MDP">MDP (Ósseo)</option>
+                            <option value="DMSA">DMSA (Renal Est.)</option>
+                            <option value="DTPA">DTPA (Renal Din.)</option>
+                            <option value="FITATO">FITATO (Fígado)</option>
+                            <option value="PIRO">PIRO (Pirofosfato)</option>
+                            <option value="TRODAT">TRODAT (Transp.Dop)</option>
+                    </select>
+                </div>
+
+                <!-- Lote -->
+                <div class="input-group">
+                    <label class="estoque-label">🔢 Lote</label>
+                    <input type="text" id="estoqueLote" class="estoque-input" placeholder="Ex: L12345678">
+                </div>
+
+                <!-- Validade -->
+                <div class="input-group">
+                    <label class="estoque-label">📅 Validade</label>
+                    <input type="date" id="estoqueValidade" class="estoque-input">
+                </div>
+
+                <!-- Quantidade de Frascos -->
+                <div class="input-group">
+                    <label class="estoque-label">📦 Quant. de Frascos</label>
+                    <input type="number" id="estoqueQuantidade" class="estoque-input" value="1" min="1" step="1">
+                </div>
+
+                <!-- Tipo de Movimentação -->
+                <div class="input-group">
+                    <label class="estoque-label">🔄 Tipo de Movimentação</label>
+                    <select id="estoqueTipoMovimento" class="estoque-input">
+                        <option value="entrada" style="color: #2ecc71;">✅ Entrada (Chegou ao setor)</option>
+                        <option value="saida" style="color: #e74c3c;" selected>❌ Saída (Utilizado/Retirado)</option>
+                    </select>
+                </div>
+
+                <!-- Observação -->
+                <div class="input-group" style="grid-column: span 1;">
+                    <label class="estoque-label">📝 Observação </label>
+                    <input type="text" id="estoqueObservacao" class="estoque-input" placeholder="Ex: Recebido do fornecedor X">
+                </div>
+            </div>
+            <!-- 👤 Responsável pela Movimentação -->
+<div class="input-group">
+    <label class="estoque-label">👤 Responsável pela Movimentação</label>
+    <input type="text" id="estoqueResponsavel" class="estoque-input" placeholder="Nome de quem está registrando">
+    <small class="estoque-help">Preenchido automaticamente com o usuário logado</small>
+</div>
+
+            <!-- Botões -->
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                <button onclick="cadastrarMovimentacaoEstoque()" style="
+                    padding: 12px 30px;
+                    background: linear-gradient(135deg, #8e44ad, #9b59b6);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 1em;
+                    font-weight: bold;
+                    transition: 0.3s;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    📝 Cadastrar Movimentação
+                </button>
+                <button onclick="limparCamposEstoque()" style="
+                    padding: 12px 20px;
+                    background: rgba(255,255,255,0.05);
+                    color: #888;
+                    border: 1px solid #444;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                    transition: 0.3s;
+                " onmouseover="this.style.borderColor='#ffd700'" onmouseout="this.style.borderColor='#444'">
+                    🗑️ Limpar Campos
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== RESULTADOS / TABELA DE ESTOQUE ===== -->
+        <div class="estoque-results">
+            <div class="estoque-results-header">
+                <h4 class="estoque-results-title">📊 Estoque Atual</h4>
+                <div class="estoque-results-actions">
+                    <button class="estoque-export-btn" onclick="exportarEstoqueExcel()">
+                        📊 Exportar Excel
+                    </button>
+                    <button class="estoque-clear-btn" onclick="limparHistoricoEstoque()">
+                        🗑️ Limpar Histórico
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cards Resumo -->
+            <div class="estoque-summary-grid" id="estoqueResumoCards">
+                <div class="estoque-summary-card green">
+                    <div class="estoque-summary-label">Total de Frascos</div>
+                    <div class="estoque-summary-value" id="totalFrascosEstoque">0</div>
+                </div>
+                <div class="estoque-summary-card blue">
+                    <div class="estoque-summary-label">Tipos de Kits</div>
+                    <div class="estoque-summary-value" id="totalTiposEstoque">0</div>
+                </div>
+                <div class="estoque-summary-card yellow">
+                    <div class="estoque-summary-label">Lotes Diferentes</div>
+                    <div class="estoque-summary-value" id="totalLotesEstoque">0</div>
+                </div>
+                <div class="estoque-summary-card red">
+                    <div class="estoque-summary-label">Alertas de Validade</div>
+                    <div class="estoque-summary-value" id="totalAlertasEstoque">0</div>
+                </div>
+            </div>
+
+            <!-- ===== TABELA DE SALDO ATUAL ===== -->
+<h4 class="estoque-balance-title">📊 Saldo Atual (por Lote)</h4>
+<div class="table-wrapper estoque-balance-wrapper">
+    <table class="estoque-balance-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>🧪 Kit</th>
+                <th>🔢 Lote</th>
+                <th>📅 Validade</th>
+                <th>📦 Entrada</th>
+                <th>📦 Saída</th>
+                <th class="saldo">📊 Saldo</th>
+                <th>⚠️ Status</th>
+                <th>📝 Observação</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody id="corpoEstoque">
+            <tr>
+                <td colspan="10" class="estoque-empty-state">
+                    Nenhum item cadastrado. Adicione a primeira movimentação!
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ===== 🆕 HISTÓRICO DE MOVIMENTAÇÕES ===== -->
+<div style="margin-top: 35px; padding-top: 20px; border-top: 2px solid rgba(0,210,255,0.2);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+        <div>
+            <h4 style="color: #00d2ff; margin: 0;">
+                📋 Histórico de Movimentações
+                <span style="font-size: 0.7rem; color: #888; font-weight: normal;">
+                </span>
+            </h4>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <select id="filtroTipoMovimento" onchange="atualizarTabelaHistorico()" style="
+                padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
+                <option value="">Todos os tipos</option>
+                <option value="entrada">📥 Apenas entradas</option>
+                <option value="saida">📤 Apenas saídas</option>
+            </select>
+            <select id="filtroKitMovimento" onchange="atualizarTabelaHistorico()" style="
+                padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
+                <option value="">Todos os kits</option>
+            </select>
+            <input type="text" id="filtroLoteMovimento" placeholder="Filtrar por lote..."
+                oninput="atualizarTabelaHistorico()" style="
+                padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem; min-width: 140px;">
+        </div>
+    </div>
+
+    <!-- 🆕 FILTRO DE PERÍODO (com preset de 180 dias) -->
+    <div style="background: rgba(0,210,255,0.04); border: 1px solid rgba(0,210,255,0.15); border-radius: 10px; padding: 14px 18px; margin-bottom: 15px;">
+        
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;">
+            <span style="color: #00d2ff; font-weight: 600; font-size: 0.85rem;">🔍 Período:</span>
+
+            <button id="btnPreset180" onclick="aplicarPreset180Dias()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600; transition: 0.3s;
+                background: rgba(0,210,255,0.15); border: 2px solid rgba(0,210,255,0.4); color: #00d2ff;">
+                📅 Últimos 180 dias (padrão)
+            </button>
+
+            <button id="btnPeriodoCustom" onclick="togglePeriodoCustomizado()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600; transition: 0.3s;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: #aaa;">
+                📆 Período Personalizado
+            </button>
+
+            <button onclick="carregarHistoricoDaNuvemPorPeriodo()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600; transition: 0.3s;
+                background: rgba(52,152,219,0.15); border: 1px solid rgba(52,152,219,0.3); color: #3498db;
+                margin-left: auto;">
+                📥 Carregar da Nuvem
+            </button>
+
+            <button onclick="exportarHistoricoExcel()" style="
+                padding: 6px 16px; border-radius: 20px; cursor: pointer;
+                font-size: 0.8rem; font-weight: 600;
+                background: rgba(0,210,255,0.15); border: 1px solid rgba(0,210,255,0.3); color: #00d2ff;">
+                📊 Excel
+            </button>
+        </div>
+
+        <div id="periodoCustomizadoCampos" style="
+            display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+            
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+                <input type="date" id="filtroDataInicioHistorico" style="
+                    padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                    background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+                <input type="date" id="filtroDataFimHistorico" style="
+                    padding: 6px 12px; border-radius: 6px; border: 1px solid #444;
+                    background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem;">
+            </div>
+
+            <span style="color: #666; font-size: 0.75rem;">Atalhos:</span>
+            <button onclick="aplicarPeriodoRapido(30)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                30 dias
+            </button>
+            <button onclick="aplicarPeriodoRapido(90)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                90 dias
+            </button>
+            <button onclick="aplicarPeriodoRapido(180)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                180 dias
+            </button>
+            <button onclick="aplicarPeriodoRapido(365)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa;">
+                1 ano
+            </button>
+            <button onclick="aplicarPeriodoRapido(0)" style="
+                padding: 4px 10px; font-size: 0.7rem; border-radius: 12px; cursor: pointer;
+                background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.2); color: #ffd700;">
+                Tudo
+            </button>
+
+            <button onclick="aplicarFiltroHistoricoPersonalizado()" style="
+                padding: 6px 16px; border-radius: 6px; cursor: pointer;
+                background: linear-gradient(90deg, #8e44ad, #9b59b6); border: none;
+                color: #fff; font-weight: bold; font-size: 0.8rem;">
+                🔍 Aplicar Filtro
+            </button>
+
+            <button onclick="limparFiltrosHistorico()" style="
+                padding: 6px 14px; border-radius: 6px; cursor: pointer;
+                background: rgba(255,255,255,0.05); border: 1px solid #444; color: #888; font-size: 0.8rem;">
+                ✕ Limpar
+            </button>
+        </div>
+
+        <div id="indicadorPeriodoHistorico" style="
+            margin-top: 8px; padding: 6px 12px; border-radius: 6px;
+            background: rgba(0,210,255,0.08); border-left: 3px solid #00d2ff;
+            color: #00d2ff; font-size: 0.78rem; display: inline-block;">
+            📅 Mostrando últimos 180 dias
+        </div>
+    </div>
+
+    <div class="table-wrapper" style="max-height: 450px; overflow-y: auto;">
+        <table style="min-width: 1000px; font-size: 0.78rem; width: 100%; border-collapse: collapse;">
+            <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
+                <tr style="border-bottom: 2px solid rgba(0,210,255,0.3);">
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">#</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">🕐 Data/Hora</th>
+                    <th style="padding: 8px; text-align: center; color: #00d2ff;">Tipo</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">🧪 Kit</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">🔢 Lote</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">📅 Validade</th>
+                    <th style="padding: 8px; text-align: center; color: #00d2ff;">📦 Qtd</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">👤 Responsável</th>
+                    <th style="padding: 8px; text-align: left; color: #00d2ff;">📝 Motivo/Obs</th>
+                    <th style="padding: 8px; text-align: center; color: #00d2ff;">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoHistoricoEstoque">
+                <tr>
+                    <td colspan="10" style="text-align: center; padding: 30px; color: #888;">
+                        Nenhuma movimentação registrada ainda.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="paginacaoHistorico" style="
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: 12px; padding: 10px 15px; flex-wrap: wrap; gap: 10px;
+        background: rgba(0,210,255,0.03); border-radius: 8px;
+        border: 1px solid rgba(0,210,255,0.1);">
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 12px; padding: 10px 15px; background: rgba(0,210,255,0.05); border-radius: 8px; border: 1px solid rgba(0,210,255,0.1);">
+        <div style="display: flex; gap: 25px; flex-wrap: wrap;">
+            <span style="color: #aaa; font-size: 0.8rem;">
+                📥 Entradas: <strong id="totalEntradasHistorico" style="color: #2ecc71;">0</strong> frascos
+            </span>
+            <span style="color: #aaa; font-size: 0.8rem;">
+                📤 Saídas: <strong id="totalSaidasHistorico" style="color: #e74c3c;">0</strong> frascos
+            </span>
+            <span style="color: #aaa; font-size: 0.8rem;">
+                📋 Total de eventos: <strong id="totalEventosHistorico" style="color: #ffd700;">0</strong>
+            </span>
+        </div>
+        <span id="infoFiltroHistorico" style="color: #666; font-size: 0.75rem;">Mostrando todos os eventos</span>
+    </div>
+</div>
+</div>
+
+            <!-- Legendas -->
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #2ecc71; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Válido
+                </span>
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #f1c40f; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Vence em ≤ 30 dias
+                </span>
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #e74c3c; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Vencido
+                </span>
+                <span style="color: #888; font-size: 0.75rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #e67e22; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                    Estoque baixo (≤ 2)
+                </span>
+            </div>
+        </div>
+    </div>
+    <!-- ===== MODAL DE EDIÇÃO DE ITEM ===== -->
+<div id="modalEditarEstoque" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+    z-index: 100001;
+    align-items: center;
+    justify-content: center;
+">
+    <div style="
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        border: 2px solid rgba(52,152,219,0.3);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: #3498db; margin: 0;">✏️ Editar Item do Estoque</h3>
+            <button onclick="fecharModalEdicao()" style="
+                background: rgba(255,255,255,0.05);
+                border: none;
+                color: #888;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 0 10px;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+        </div>
+
+        <form id="formEditarEstoque">
+            <input type="hidden" id="editarIndex" value="">
+            
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">🧪 Kit</label>
+                <select id="editarKit" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+                    <optgroup label="🔵 Tc-99m">
+                        <option value="MIBI">MIBI (Miocárdio)</option>
+                        <option value="MDP">MDP (Ósseo)</option>
+                        <option value="DMSA">DMSA (Renal)</option>
+                        <option value="DTPA">DTPA (Renal)</option>
+                        <option value="FITATO">FITATO (Fígado)</option>
+                        <option value="PIRO">PIRO (Pirofosfato)</option>
+                </select>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">🔢 Lote</label>
+                <input type="text" id="editarLote" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📅 Validade</label>
+                <input type="date" id="editarValidade" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📦 Entrada</label>
+                <input type="number" id="editarEntrada" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📦 Saída</label>
+                <input type="number" id="editarSaida" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="color: #ccc; font-size: 0.85rem;">📝 Observação</label>
+                <input type="text" id="editarObservacao" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff;">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" onclick="salvarEdicaoItem()" style="
+                    flex: 2;
+                    padding: 12px;
+                    background: linear-gradient(135deg, #3498db, #2980b9);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    transition: 0.3s;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    💾 Salvar Alterações
+                </button>
+                <button type="button" onclick="fecharModalEdicao()" style="
+                    flex: 1;
+                    padding: 12px;
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid #444;
+                    border-radius: 8px;
+                    color: #888;
+                    cursor: pointer;
+                    transition: 0.3s;
+                " onmouseover="this.style.borderColor='#ff6b6b'" onmouseout="this.style.borderColor='#444'">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+<!-- ===== MODAL DE REGISTRO DE REJEITOS ===== -->
+<div id="modalRejeitos" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 99998;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 1400px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        border: 1px solid rgba(255,107,107,0.3);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        position: relative;
+    ">
+        <!-- Cabeçalho -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h3 style="color: #ff6b6b; margin: 0;">
+                    <span style="color: #ff6b6b;">☢️</span>
+                    <span style="color: #ffd700;">🗑️</span>
+                    Registro de Rejeitos Radioativos
+                    <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                        (Resíduos sólidos e líquidos)
+                    </span>
+                </h3>
+                <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
+                    Registre todos os rejeitos radioativos gerados no serviço.
+                    <span class="badge-info" id="infoTotalLinhasModal">📋 Página 1 · 18 linhas</span>
+                </p>
+            </div>
+            <button onclick="fecharModalRejeitos()" style="
+                background: rgba(255,255,255,0.05);
+                border: none;
+                color: #888;
+                font-size: 1.8rem;
+                cursor: pointer;
+                padding: 0 15px;
+                transition: 0.3s;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+        </div>
+
+        <!-- FILTRO -->
+        <div class="filtro-container">
+            <span class="filtro-label">🔍 Filtrar por período:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+                <input type="date" id="filtroDataInicioModal">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+                <input type="date" id="filtroDataFimModal">
+            </div>
+            <button class="btn-filtrar" onclick="aplicarFiltroRejeitosModal()">🔍 Filtrar</button>
+            <button class="btn-limpar-filtro" onclick="limparFiltroRejeitosModal()">✕ Limpar</button>
+            <span class="info-filtro" id="infoFiltroRejeitosModal">Mostrando todos os registros</span>
+        </div>
+
+        <!-- ALERTA PÁGINA COMPLETA -->
+        <div class="alerta-pagina-completa" id="alertaPaginaCompletaModal">
+            ✅ Todas as 18 linhas desta página foram preenchidas! 
+            <strong>Clique em "📄 + Nova Página" para continuar.</strong>
+        </div>
+
+        <!-- PAGINAÇÃO -->
+        <div class="paginacao-container" id="paginacaoContainerModal"></div>
+
+        <!-- TABELA -->
+        <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>📋</span>
+            Planilha de Rejeitos Radioativos
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualModal">(Página 1)</span>
+        </h4>
+
+        <div class="table-rejeitos-wrapper">
+            <table id="tabelaRejeitosModal">
+                <thead>
+                    <tr>
+                        <th style="min-width: 35px; width: 35px;">#</th>
+                        <th style="min-width: 110px;">Data de Segregação</th>
+                        <th style="min-width: 100px;">Radionuclídeo</th>
+                        <th style="min-width: 100px;">Identificação</th>
+                        <th style="min-width: 90px;">Contêiner</th>
+                        <th style="min-width: 100px;">Tipo da Embalagem</th>
+                        <th style="min-width: 90px;">Peso/Volume</th>
+                        <th style="min-width: 110px;">Taxa de Exposição (μSv/h)</th>
+                        <th style="min-width: 110px;">Atividade Estimada (mCi)</th>
+                        <th style="min-width: 120px;">Data Estimada de Descarte</th>
+                        <th style="min-width: 140px;">Responsável pela Segregação</th>
+                        <th style="min-width: 120px;">Data do Descarte</th>
+                        <th style="min-width: 110px;">Taxa de Exposição (μSv/h)</th>
+                        <th style="min-width: 110px;">Atividade Estimada (mCi)</th>
+                        <th style="min-width: 140px;">Responsável pelo Descarte</th>
+                        <th style="min-width: 40px; width: 40px;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaRejeitosModal"></tbody>
+            </table>
+        </div>
+
+        <!-- SUPERVISOR -->
+        <div class="linha-supervisor">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
+                <span style="color: #ffd700; font-weight: 600; font-size: 0.9rem;">✅ Conferido e validado por supervisor de radioproteção:</span>
+                <input type="text" id="supervisorRejeitosModal" placeholder="Nome do Supervisor" style="flex: 1; min-width: 180px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="color: #888; font-size: 0.75rem;">📅 Data:</span>
+                <input type="date" id="dataValidacaoRejeitosModal" style="min-width: 130px;">
+                <button class="btn-validar" onclick="validarRejeitosModal()">✅ Validar</button>
+            </div>
+        </div>
+
+        <!-- BOTÕES -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button class="btn-salvar-rejeitos" onclick="salvarTabelaRejeitosModal()">💾 Salvar Registro</button>
+            <button class="btn-excel-rejeitos" onclick="exportarExcelRejeitosModal()">📊 Exportar Excel</button>
+        </div>
+
+        <!-- HISTÓRICO -->
+        <div class="historico-rejeitos">
+            <h5>📋 Registros Salvos</h5>
+            <div class="container" id="historicoRejeitosContainerModal">
+                <div class="historico-vazio">Nenhum registro salvo ainda.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL DE REGISTRO DE GERADOR (VERSÃO ATUALIZADA) ===== -->
+<div id="modalGerador" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 99997;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 1200px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        border: 1px solid rgba(255,215,0,0.3);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        position: relative;
+    ">
+        <!-- Cabeçalho com botões da nuvem -->
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+    <div>
+        <h3 style="color: #ffd700; margin: 0;">
+            <span>⚛️⬇️</span>
+            Registro de Gerador Mo-99/Tc-99m
+            <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                (Ciclo de vida do gerador)
+            </span>
+        </h3>
+         <!-- 🔥 ADICIONE AQUI O BADGE DE ADMIN -->
+        <div id="adminBadgeGerador" style="display: none; margin-top: 5px;">
+            <span style="
+                background: rgba(255,215,0,0.15);
+                border: 1px solid rgba(255,215,0,0.3);
+                color: #ffd700;
+                padding: 2px 12px;
+                border-radius: 12px;
+                font-size: 0.65rem;
+                font-weight: 600;
+            ">
+                👑 Modo Admin - Exclusão na nuvem habilitada
+            </span>
+        </div>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <p style="color: #888; margin: 5px 0 0 0; font-size: 0.85rem;">
+            Preencha os dados do gerador e clique em <strong style="color: #ffd700;">"📝 Registrar Gerador"</strong> para salvar no histórico.
+        </p>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <!-- INDICADOR DE NUVEM -->
+        <span id="indicadorGeradorNuvem" style="
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: #888;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        ">
+            ☁️ Verificando...
+        </span>
+        
+        <!-- BOTÃO SALVAR NA NUVEM -->
+        <button onclick="salvarGeradoresNaNuvem()" class="btn-nuvem-gerador" style="
+            background: rgba(46,204,113,0.15);
+            border: 1px solid rgba(46,204,113,0.3);
+            color: #2ecc71;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        " onmouseover="this.style.background='rgba(46,204,113,0.25)';this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(46,204,113,0.15)';this.style.transform='scale(1)'">
+            ☁️ Salvar Nuvem
+        </button>
+        
+        <!-- BOTÃO CARREGAR DA NUVEM -->
+        <button onclick="carregarGeradoresDaNuvem()" class="btn-nuvem-gerador" style="
+            background: rgba(52,152,219,0.15);
+            border: 1px solid rgba(52,152,219,0.3);
+            color: #3498db;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        " onmouseover="this.style.background='rgba(52,152,219,0.25)';this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(52,152,219,0.15)';this.style.transform='scale(1)'">
+            ☁️ Carregar Nuvem
+        </button>
+        
+        <!-- BOTÃO FECHAR -->
+        <button onclick="fecharModalGerador()" style="
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0 10px;
+            transition: 0.3s;
+        " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+    </div>
+</div>
+        <!-- ===== FORMULÁRIO DE CADASTRO ===== -->
+        <div style="
+            background: rgba(255,215,0,0.05);
+            border: 1px solid rgba(255,215,0,0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        ">
+            <h4 style="color: #ffd700; margin: 0 0 15px 0; font-size: 1rem;">📝 Cadastrar Gerador</h4>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                
+                <!-- Data Recebimento -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📅 Data Recebimento</label>
+                    <input type="date" id="gerDataRecebimento" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Data Calibração -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">⚛️ Data Calibração</label>
+                    <input type="datetime-local" id="gerDataCalibracao" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+                <!-- Atividade de Calibração -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">⚛️ ATIVIDADE (mCi)</label>
+    <input type="number" id="gerAtividade" placeholder="Ex: 1500" step="0.1" min="0" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Atividade nominal do Mo-99 na data de calibração (fornecida pelo fabricante)</small>
+</div>
+
+                <!-- Lote -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📦 Lote</label>
+                    <input type="text" id="gerLote" placeholder="Ex: G12345678" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Validade -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📅 Validade</label>
+                    <input type="date" id="gerDataValidade" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Data Devolução -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📅 Data Prevista Para Devolução</label>
+                    <input type="date" id="gerDataDevolucao" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+                <!-- Taxa de Exposição do Balde -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">☢️ Levantamento de contaminação do Balde (cpm)</label>
+    <input type="number" id="gerTaxaExposicaoBalde" placeholder="Ex: 2500" step="0.1" min="0" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Medição da taxa de exposição do balde do gerador (recebimento)</small>
+</div>
+
+                <!-- Responsável Recebimento -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">👤 Resp. Recebimento</label>
+                    <input type="text" id="gerResponsavelRecebimento" placeholder="Nome do responsável" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+
+                <!-- Status -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">📌 Status</label>
+                    <select id="gerStatus" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                        <option value="aguardando">🔵 Aguardando decaimento</option>
+                        <option value="pronto">🟡 Pronto para liberação</option>
+                        <option value="transito">🟠 Em trânsito</option>
+                        <option value="devolvido">✅ Devolvido</option>
+                    </select>
+                </div>
+
+                <!-- Responsável Liberação -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">👤 Resp. Liberação</label>
+                    <input type="text" id="gerResponsavelLiberacao" placeholder="Nome do responsável" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+                <!-- 🆕 Data de Liberação -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">✅ Data de Liberação</label>
+    <input type="date" id="gerDataLiberacao" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Data em que o gerador foi liberado para transporte</small>
+</div>
+
+                <!-- Responsável Devolução -->
+                <div class="input-group">
+                    <label style="color: #ccc; font-size: 0.85rem;">👤 Resp. Devolução</label>
+                    <input type="text" id="gerResponsavelDevolucao" placeholder="Nome do responsável" style="
+                        width: 100%;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        background: rgba(255,255,255,0.05);
+                        color: #fff;
+                        font-size: 0.95rem;
+                    ">
+                </div>
+                <!-- 🆕 Data de Devolução Real -->
+<div class="input-group">
+    <label style="color: #ccc; font-size: 0.85rem;">📤 Data de Devolução Real</label>
+    <input type="date" id="gerDataDevolucaoReal" style="
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.95rem;
+    ">
+    <small style="color: #888; font-size: 0.75rem;">Data em que o gerador foi efetivamente devolvido</small>
+</div>
+            </div>
+
+            <!-- Botões -->
+<div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;" id="formGerador">
+    <button id="btnRegistrarGerador" class="btn-salvar-gerador" onclick="registrarGerador()" style="
+        padding: 12px 35px;
+        background: linear-gradient(135deg, #ffd700, #f7971e);
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: bold;
+        transition: 0.3s;
+    " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+        📝 Registrar Gerador
+    </button>
+    <button onclick="limparCamposGerador()" style="
+        padding: 12px 20px;
+        background: rgba(255,255,255,0.05);
+        color: #888;
+        border: 1px solid #444;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: 0.3s;
+    " onmouseover="this.style.borderColor='#ffd700'" onmouseout="this.style.borderColor='#444'">
+        🗑️ Limpar Campos
+    </button>
+</div>
+        </div>
+
+        <!-- FILTRO -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(155,89,182,0.2); border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <span style="color: #ffd700; font-weight: 600; font-size: 0.9rem;">🔍 Filtrar por período:</span>
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">De:</label>
+                <input type="date" id="filtroDataInicioGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Até:</label>
+                <input type="date" id="filtroDataFimGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #aaa; font-size: 0.8rem;">Status:</label>
+                <select id="filtroStatusGerador" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem;">
+                <option value="">Todos os status</option>
+                <option value="aguardando">🔵 Aguardando decaimento</option>
+                <option value="pronto">🟡 Pronto para liberação</option>
+                <option value="transito">🟠 Em trânsito</option>
+                <option value="devolvido">✅ Devolvido</option>
+                </select>
+            </div>
+            
+            <button onclick="aplicarFiltroGeradorModal()" style="padding: 6px 20px; background: linear-gradient(90deg, #9b59b6, #8e44ad); border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                🔍 Filtrar
+            </button>
+            
+            <button onclick="limparFiltroGeradorModal()" style="padding: 6px 16px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px; color: #888; cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+                ✕ Limpar
+            </button>
+            
+            <span id="infoFiltroGerador" style="color: #666; font-size: 0.75rem; margin-left: auto;">
+                📋 Mostrando todos os registros
+            </span>
+        </div>
+
+        <!-- TABELA DE HISTÓRICO -->
+        <h4 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>📋</span>
+            Histórico de Geradores
+            <span style="font-size: 0.65rem; color: #888; font-weight: normal;" id="infoPaginaAtualGerador">(Total: <span id="totalGeradoresCabecalho">0</span> registros)</span>
+        </h4>
+
+        <div class="table-gerador-wrapper" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+            <table id="tabelaGeradoresModal" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                <thead style="position: sticky; top: 0; background: #1a1a2e; z-index: 10;">
+                    <tr style="border-bottom: 2px solid rgba(255,215,0,0.3);">
+                        <th style="min-width: 35px; width: 35px; padding: 8px; color: #ffd700;">#</th>
+                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Recebimento</th>
+                        <th style="min-width: 120px; padding: 8px; color: #ffd700;">📅⚛️ Data Calibração</th>
+                        <th style="min-width: 100px; padding: 8px; color: #ffd700;">⚛️ Atividade (mCi)</th>
+                        <th style="min-width: 100px; padding: 8px; color: #ffd700;">📦 Lote</th>
+                        <th style="min-width: 100px; padding: 8px; color: #ffd700;">📅 Validade</th>
+                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">📅 Data Prevista de Devolução</th>
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Recebimento</th>
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">📌 Status</th>
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Liberação</th>
+                        <th style="min-width: 110px; padding: 8px; color: #ffd700;">✅ Data Liberação</th>           <!-- 🆕 NOVO -->
+                        <th style="min-width: 130px; padding: 8px; color: #ffd700;">👤 Resp. Devolução</th>
+                         <th style="min-width: 110px; padding: 8px; color: #ffd700;">📤 Data Devolução Real</th>      <!-- 🆕 NOVO -->
+                           <th style="min-width: 110px; padding: 8px; color: #ffd700;">☢️ Contaminação</th> <!-- 🔥 NOVO -->
+                        <th style="min-width: 40px; width: 40px; padding: 8px; color: #ffd700;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaGeradoresModal">
+    <tr>
+        <td colspan="15" style="text-align: center; padding: 40px; color: #888;">
+            Nenhum gerador registrado. Preencha o formulário acima e clique em "📝 Registrar Gerador".
+        </td>
+    </tr>
+</tbody>
+            </table>
+        </div>
+
+        <!-- RESUMO E CONTADORES -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 15px; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <span style="color: #aaa;">Total: <strong id="totalGeradoresModal" style="color: #ffd700;">0</strong></span>
+                <span style="color: #aaa;">Ativos: <strong id="ativosGeradoresModal" style="color: #00ff64;">0</strong></span>
+                <span style="color: #aaa;">Devolvidos: <strong id="devolvidosGeradoresModal" style="color: #ff6b6b;">0</strong></span>
+            </div>
+        </div>
+
+        <!-- BOTÕES DE AÇÃO -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button onclick="exportarExcelGeradoresModal()" style="
+                padding: 10px 25px;
+                background: rgba(0, 210, 255, 0.15);
+                border: 1px solid rgba(0, 210, 255, 0.3);
+                border-radius: 8px;
+                color: #00d2ff;
+                cursor: pointer;
+                font-weight: bold;
+                transition: 0.3s;
+            " onmouseover="this.style.background='rgba(0, 210, 255, 0.25)'" onmouseout="this.style.background='rgba(0, 210, 255, 0.15)'">
+                📊 Exportar Excel
+            </button>
+            <button onclick="limparHistoricoGerador()" style="
+                padding: 10px 25px;
+                background: rgba(255,107,107,0.15);
+                border: 1px solid rgba(255,107,107,0.3);
+                border-radius: 8px;
+                color: #ff6b6b;
+                cursor: pointer;
+                font-weight: bold;
+                transition: 0.3s;
+            " onmouseover="this.style.background='rgba(255,107,107,0.25)'" onmouseout="this.style.background='rgba(255,107,107,0.15)'">
+                🗑️ Limpar Histórico
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===== MODAL DE ANÁLISE DE CUSTOS ===== -->
+<div id="modalCustos" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(10px);
+    z-index: 99996;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #151f1b;
+        border: 1px solid #2ecc71;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        max-width: 1300px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        padding: 30px;
+        position: relative;
+        color: #fff;
+    ">
+        <!-- CABEÇALHO -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 22px;">
+            <div>
+                <h3 style="color: #2ecc71; margin: 0; font-size: 1.35rem;">💰📊 Análise de Custos</h3>
+                <p style="color: #8fa99a; margin: 6px 0 0; font-size: 0.85rem;">Gestão de preços, gastos e histórico financeiro.</p>
+            </div>
+            <button onclick="fecharModalCustos()" aria-label="Fechar análise de custos" style="
+                background: rgba(255,255,255,0.05);
+                border: none;
+                border-radius: 8px;
+                color: #8fa99a;
+                cursor: pointer;
+                font-size: 1.6rem;
+                line-height: 1;
+                padding: 6px 11px;
+            " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#8fa99a'">✕</button>
+        </div>
+
+        <!-- ABAS -->
+<div class="custos-tabs">
+    <button type="button" onclick="trocarAbaCustos('dashboard')" style="
+        background: rgba(0,210,255,0.12);
+        border: 1px solid #00d2ff;
+        border-radius: 8px;
+        color: #00d2ff;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 10px 15px;
+    ">📈 Dashboard</button>
+
+    <button type="button" onclick="trocarAbaCustos('precos')" style="
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        color: #a8b8ae;
+        cursor: pointer;
+        padding: 10px 15px;
+    ">💵 Cadastrar Preços</button>
+
+    <button type="button" onclick="trocarAbaCustos('historico')" style="
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        color: #a8b8ae;
+        cursor: pointer;
+        padding: 10px 15px;
+    ">📜 Histórico de Alterações</button>
+</div>
+
+        <!-- Tabelas de custos legadas são movidas para o dashboard no carregamento. -->
+        <div id="abaCustosAnalise" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                <strong style="color: #b9c9bd;">🔍 Período:</strong>
+                <label style="color: #8fa99a; font-size: 0.8rem;">De</label>
+                <input type="date" id="custoDataInicio" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <label style="color: #8fa99a; font-size: 0.8rem;">Até</label>
+                <input type="date" id="custoDataFim" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <button type="button" onclick="calcularCustosPeriodo()" style="padding: 9px 17px; border: 1px solid #2ecc71; border-radius: 7px; background: rgba(46,204,113,0.18); color: #2ecc71; cursor: pointer; font-weight: 700;">🔍 Calcular</button>
+                <span style="color: #718579; font-size: 0.78rem; margin-left: auto;">Atalhos:</span>
+                <button type="button" onclick="aplicarPeriodoCustos(30)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">30d</button>
+                <button type="button" onclick="aplicarPeriodoCustos(90)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">90d</button>
+                <button type="button" onclick="aplicarPeriodoCustos(180)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">180d</button>
+                <button type="button" onclick="aplicarPeriodoCustos(365)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">1 ano</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 22px;">
+                <div style="background: rgba(52,152,219,0.12); border: 1px solid rgba(52,152,219,0.35); border-radius: 12px; padding: 17px;">
+                    <div style="color: #8fb9d8; font-size: 0.8rem;">📦 Total Kits</div>
+                    <strong id="custoTotalKits" style="color: #5dade2; display: block; font-size: 1.55rem; margin-top: 7px;">R$ 0,00</strong>
+                </div>
+                <div style="background: rgba(155,89,182,0.12); border: 1px solid rgba(155,89,182,0.35); border-radius: 12px; padding: 17px;">
+                    <div style="color: #c6a6d4; font-size: 0.8rem;">⚛️ Total Geradores</div>
+                    <strong id="custoTotalGeradores" style="color: #bb8fce; display: block; font-size: 1.55rem; margin-top: 7px;">R$ 0,00</strong>
+                </div>
+                <div style="background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.4); border-radius: 12px; padding: 17px;">
+                    <div style="color: #8ed5a8; font-size: 0.8rem;">💰 Total Geral</div>
+                    <strong id="custoTotalGeral" style="color: #2ecc71; display: block; font-size: 1.55rem; margin-top: 7px;">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <div style="border: 1px solid rgba(46,204,113,0.5); border-radius: 14px; background: rgba(46,204,113,0.06); padding: 18px; margin-bottom: 22px;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(46,204,113,0.25); border-radius: 12px; padding: 18px; text-align: center;">
+                        <div style="color: #9ee5b4; font-size: 0.75rem;">💵 Custo por mCi</div>
+                        <strong id="custoPorMci" style="display: block; font-size: 1.6rem; margin-top: 8px; color: #888;">R$ 0,00</strong>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; color: #a5c0b1; font-size: 0.76rem;">ℹ️ Este indicador usa apenas o custo dos geradores como numerador, pois é o principal insumo do serviço.</div>
+            </div>
+
+            <div class="custos-analysis-grid" style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr); gap: 20px; align-items: start;">
+                <div>
+                    <h4 style="color: #2ecc71; margin: 0 0 10px;">📦 Custos com Kits</h4>
+                    <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 560px; font-size: 0.82rem;">
+                            <thead style="background: rgba(46,204,113,0.12);"><tr>
+                                <th style="padding: 11px; text-align: left; color: #9ee5b4;">Kit</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Preço Unit. / Frasco</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Qtd. Frascos</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Subtotal</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">%</th>
+                            </tr></thead>
+                            <tbody id="corpoCustosKits"><tr><td colspan="5" style="padding: 25px; text-align: center; color: #718579;">Nenhum custo de kit no período.</td></tr></tbody>
+                        </table>
+                    </div>
+
+                    <h4 style="color: #2ecc71; margin: 24px 0 10px;">⚛️ Custos com Geradores</h4>
+                    <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 560px; font-size: 0.82rem;">
+                            <thead style="background: rgba(46,204,113,0.12);"><tr>
+                                <th style="padding: 11px; text-align: left; color: #9ee5b4;">Lote</th>
+                                <th style="padding: 11px; text-align: left; color: #9ee5b4;">Recebimento</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Atividade</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Preço</th>
+                            </tr></thead>
+                            <tbody id="corpoCustosGeradores"><tr><td colspan="4" style="padding: 25px; text-align: center; color: #718579;">Nenhum gerador no período.</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="custos-chart-card custos-chart-card--analise">
+                    <h4>📈 Custos por mês</h4>
+                    <p class="custos-chart-subtitle">Comparativo entre kits e geradores</p>
+                    <div class="custos-chart-area custos-chart-area--analise"><canvas id="graficoCustos"></canvas></div>
+                </div>
+            </div>
+
+            <button type="button" onclick="exportarCustosExcel()" style="margin-top: 22px; padding: 10px 18px; border: 1px solid rgba(52,152,219,0.5); border-radius: 8px; background: rgba(52,152,219,0.15); color: #5dade2; cursor: pointer; font-weight: 700;">📊 Exportar Excel</button>
+        </div>
+
+        <!-- ABA 2: CADASTRAR PREÇOS -->
+        <div id="abaCustosPrecos" style="display: none;">
+            <h4 style="color: #2ecc71; margin: 0 0 15px;">💵 Preços Unitários dos Kits por Frasco</h4>
+            <div id="listaPrecosKitsEdit" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+                <label style="color: #b9c9bd; font-size: 0.85rem;">MIBI (R$)<input type="number" data-kit="MIBI" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">MDP (R$)<input type="number" data-kit="MDP" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">DMSA (R$)<input type="number" data-kit="DMSA" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">DTPA (R$)<input type="number" data-kit="DTPA" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">FITATO (R$)<input type="number" data-kit="FITATO" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">PIRO (R$)<input type="number" data-kit="PIRO" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+                <label style="color: #b9c9bd; font-size: 0.85rem;">TRODAT (R$)<input type="number" data-kit="TRODAT" step="0.01" min="0" placeholder="0,00" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;"></label>
+            </div>
+
+            <div style="border-top: 1px solid rgba(46,204,113,0.2); margin-top: 26px; padding-top: 22px;">
+                <h4 style="color: #2ecc71; margin: 0 0 14px;">⚛️ Preços por Atividade do Gerador</h4>
+                <p style="color: #8fa99a; font-size: 0.8rem; margin: 0 0 14px;">Defina um preço para cada atividade registrada na Gerência de Geradores.</p>
+                <div id="listaPrecosGeradoresEdit" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 25px;">
+                <button type="button" onclick="restaurarPrecosPadrao()" style="padding: 10px 17px; border: 1px solid #718579; border-radius: 8px; background: rgba(255,255,255,0.05); color: #b9c9bd; cursor: pointer;">🔄 Restaurar Padrões</button>
+                <button type="button" onclick="salvarTodosOsPrecos()" style="padding: 10px 17px; border: 1px solid #2ecc71; border-radius: 8px; background: rgba(46,204,113,0.18); color: #2ecc71; cursor: pointer; font-weight: 700;">💾 Salvar Todos os Preços</button>
+                <button type="button" onclick="importarPrecosCustosNuvem()" style="padding: 10px 17px; border: 1px solid rgba(52,152,219,0.5); border-radius: 8px; background: rgba(52,152,219,0.15); color: #5dade2; cursor: pointer; font-weight: 700;">☁️ Importar da Nuvem</button>
+                <button type="button" onclick="salvarPrecosCustosNuvemManual()" style="padding: 10px 17px; border: 1px solid rgba(46,204,113,0.5); border-radius: 8px; background: rgba(46,204,113,0.12); color: #2ecc71; cursor: pointer; font-weight: 700;">☁️ Salvar na Nuvem</button>
+            </div>
+        </div>
+
+        <!-- ABA 3: HISTÓRICO DE ALTERAÇÕES -->
+        <div id="abaCustosHistorico" style="display: none;">
+            <h4 style="color: #2ecc71; margin: 0 0 15px;">📜 Histórico de Alterações de Preços</h4>
+            <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 760px; font-size: 0.82rem;">
+                    <thead style="background: rgba(46,204,113,0.12);"><tr>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Data/Hora</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Usuário</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Item</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Valor Anterior</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Valor Novo</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Variação</th>
+                    </tr></thead>
+                    <tbody id="corpoHistoricoCustos"><tr><td colspan="6" style="padding: 30px; text-align: center; color: #718579;">Nenhuma alteração registrada.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ABA 4: DASHBOARD -->
+        <div id="abaCustosDashboard" class="custos-dashboard" style="display: grid;">
+            <div class="custos-period-filter" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,0.04); border: 1px solid rgba(0,210,255,0.25); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                <strong style="color: #b9c9bd;">🔍 Período:</strong>
+                <label style="color: #8fa99a; font-size: 0.8rem;">De</label><input type="date" id="dashboardDataInicio" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <label style="color: #8fa99a; font-size: 0.8rem;">Até</label><input type="date" id="dashboardDataFim" style="padding: 9px 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                <button type="button" onclick="calcularDashboard()" style="padding: 9px 17px; border: 1px solid #00d2ff; border-radius: 7px; background: rgba(0,210,255,0.15); color: #00d2ff; cursor: pointer; font-weight: 700;">🔍 Calcular</button>
+                <span style="color: #718579; font-size: 0.78rem; margin-left: auto;">Atalhos:</span>
+                <button type="button" onclick="aplicarPeriodoDashboard(30)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">30d</button>
+                <button type="button" onclick="aplicarPeriodoDashboard(90)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">90d</button>
+                <button type="button" onclick="aplicarPeriodoDashboard(180)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">180d</button>
+                <button type="button" onclick="aplicarPeriodoDashboard(365)" style="padding: 7px 10px; border: 1px solid #40554a; border-radius: 6px; background: transparent; color: #b9c9bd; cursor: pointer;">1 ano</button>
+            </div>
+            <div class="custos-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                <div style="background: rgba(46,204,113,0.1); border-left: 4px solid #2ecc71; border-radius: 14px; padding: 16px;"><div style="color: #9ee5b4; font-size: 0.78rem;">💰 Custo Total</div><strong id="dashCustoTotal" style="display: block; color: #2ecc71; font-size: 1.4rem; margin-top: 6px;">R$ 0,00</strong></div>
+                <div style="background: rgba(0,210,255,0.1); border-left: 4px solid #00d2ff; border-radius: 14px; padding: 16px;"><div style="color: #9cdeea; font-size: 0.78rem;">💉 Doses</div><strong id="dashDoses" style="display: block; color: #00d2ff; font-size: 1.4rem; margin-top: 6px;">0</strong></div>
+                <div style="background: rgba(46,204,113,0.1); border-left: 4px solid #2ecc71; border-radius: 14px; padding: 16px;"><div style="color: #9ee5b4; font-size: 0.78rem;">📦 Kits Usados</div><strong id="dashKits" style="display: block; color: #2ecc71; font-size: 1.4rem; margin-top: 6px;">0</strong></div>
+                <div style="background: rgba(0,210,255,0.1); border-left: 4px solid #00d2ff; border-radius: 14px; padding: 16px;"><div style="color: #9cdeea; font-size: 0.78rem;">⚛️ Geradores</div><strong id="dashGeradores" style="display: block; color: #00d2ff; font-size: 1.4rem; margin-top: 6px;">0</strong></div>
+            </div>
+            <div class="custos-kpi-grid custos-kpi-grid--secondary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 22px;">
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #ffd166; border-radius: 14px; padding: 16px;"><div style="color: #d9c78c; font-size: 0.78rem;">💵 Custo/mCi</div><strong id="dashCustoMci" style="display: block; color: #ffd166; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #ff9f43; border-radius: 14px; padding: 16px;"><div style="color: #e0b27d; font-size: 0.78rem;">👤 Custo/Dose</div><strong id="dashCustoDose" style="display: block; color: #ff9f43; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #a8b8ae; border-radius: 14px; padding: 16px;"><div style="color: #a8b8ae; font-size: 0.78rem;">📅 Custo/Dia Corrido</div><strong id="dashCustoDiaCorrido" style="display: block; color: #dfece3; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+                <div style="background: rgba(255,255,255,0.04); border-left: 4px solid #c084fc; border-radius: 14px; padding: 16px;"><div style="color: #c9a7e8; font-size: 0.78rem;">💉 Custo/Dia Produtivo</div><strong id="dashCustoDiaProdutivo" style="display: block; color: #c084fc; font-size: 1.25rem; margin-top: 6px;">—</strong></div>
+            </div>
+            <div class="custos-dashboard-charts">
+                <section class="custos-chart-card custos-chart-card--wide">
+                    <h4>📊 Custos por mês</h4>
+                    <p class="custos-chart-subtitle">Participação de kits e geradores no período selecionado</p>
+                    <div class="custos-chart-area"><canvas id="dashChartCustoMes"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>💉 Doses por mês</h4>
+                    <p class="custos-chart-subtitle">Evolução mensal de doses administradas</p>
+                    <div class="custos-chart-area"><canvas id="dashChartDosesMes"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>🍩 Composição dos custos</h4>
+                    <p class="custos-chart-subtitle">Distribuição entre kits e geradores</p>
+                    <div class="custos-chart-area"><canvas id="dashChartCategorias"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>📊 Doses por radiofármaco</h4>
+                    <p class="custos-chart-subtitle">Radiofármacos com maior volume</p>
+                    <div class="custos-chart-area"><canvas id="dashChartTopRadio"></canvas></div>
+                </section>
+                <section class="custos-chart-card">
+                    <h4>🥧 Distribuição por radiofármaco</h4>
+                    <p class="custos-chart-subtitle">Participação de cada radiofármaco no total de doses</p>
+                    <div class="custos-chart-area"><canvas id="dashChartPizzaRadio"></canvas></div>
+                </section>
+            </div>
+            <h4 class="custos-section-title">Fechamento do período</h4>
+            <div id="custosTabelasCompra" class="custos-summary-grid"></div>
+            <div class="custos-table-wrap">
+                <table class="custos-summary-table custos-summary-table--radio"><thead><tr>
+                    <th style="padding: 11px; text-align: left; color: #9cdeea;">Radiofármaco</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Doses</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Atividade</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Real</th><th style="padding: 11px; text-align: right; color: #9cdeea;">Custo/Dose</th>
+                </tr></thead><tbody id="dashTabelaResumo"><tr><td colspan="5" style="padding: 25px; text-align: center; color: #718579;">Nenhum dado no período.</td></tr></tbody></table>
+            </div>
+            <button type="button" class="custos-export-excel" onclick="exportarCustosExcel()">📊 Exportar Excel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL DE DOSES ADMINISTRADAS ===== -->
+<div id="modalDoses" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(10px);
+    z-index: 99996;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+">
+    <div style="
+        background: #151f1b;
+        border: 1px solid #2ecc71;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        max-width: 1300px;
+        width: 95%;
+        max-height: 95vh;
+        overflow-y: auto;
+        padding: 30px;
+        position: relative;
+        color: #fff;
+    ">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 22px; flex-wrap: wrap;">
+            <div>
+                <h3 style="color: #2ecc71; margin: 0; font-size: 1.35rem;">💉📊 Doses Administradas</h3>
+                <p style="color: #8fa99a; margin: 6px 0 0; font-size: 0.85rem;">Registro manual de doses administradas.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span id="indicadorDosesNuvem" style="padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; color: #b7c4bd; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);">☁️ Verificando...</span>
+                <button type="button" onclick="salvarDosesNaNuvem()" style="padding: 8px 14px; border: 1px solid #2ecc71; border-radius: 8px; background: rgba(46,204,113,0.18); color: #2ecc71; cursor: pointer; font-weight: 700;">☁️ Salvar Nuvem</button>
+                <button type="button" onclick="carregarDosesDaNuvem()" style="padding: 8px 14px; border: 1px solid rgba(52,152,219,0.5); border-radius: 8px; background: rgba(52,152,219,0.15); color: #5dade2; cursor: pointer; font-weight: 700;">☁️ Carregar Nuvem</button>
+                <button type="button" onclick="fecharModalDoses()" style="background: rgba(255,255,255,0.05); border: none; border-radius: 8px; color: #8fa99a; cursor: pointer; font-size: 1.6rem; line-height: 1; padding: 6px 11px;">✕</button>
+            </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px; margin-bottom: 18px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">📅 Data da administração</label>
+                    <input id="dosesData" type="date" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;">
+                </div>
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">🆔 Nº da ficha</label>
+                    <input id="dosesNumeroFicha" type="text" oninput="atualizarMotivoDuplicidadeDose()" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;" placeholder="Ex: 1045">
+                </div>
+                               <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">🧪 Radiofármaco</label>
+                    <select id="dosesRadiofarmaco" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;">
+                        <option value="">Selecione...</option>
+                        <optgroup label="🔵 Marcados com Tc-99m">
+                            <option value="MIBI">MIBI</option>
+                            <option value="MDP">MDP</option>
+                            <option value="DMSA">DMSA</option>
+                            <option value="DTPA">DTPA</option>
+                            <option value="FITATO">FITATO</option>
+                            <option value="PIRO">PIRO</option>
+                            <option value="TC-99m">TC-99m</option>
+                            <option value="TRODAT">TRODAT</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">⚖️ Peso em kg</label>
+                    <input id="dosesPeso" type="number" step="0.1" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;" placeholder="0.0">
+                </div>
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.82rem; margin-bottom:6px;">☢️ Atividade administrada (mCi)</label>
+                    <input id="dosesAtividade" type="number" step="0.01" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;" placeholder="0.00">
+                </div>
+                <div id="grupoMotivoDuplicidadeDose" style="display:none;">
+                    <label for="dosesMotivoDuplicidade" style="display:block; color:#ffd166; font-size:0.82rem; margin-bottom:6px;">⚠️ Motivo da repetição da ficha</label>
+                    <select id="dosesMotivoDuplicidade" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #d9a441; border-radius:7px; background:#202d26; color:#fff;">
+                        <option value="">Selecione o motivo</option>
+                        <option value="Artefato">Artefato</option>
+                        <option value="Falha na injeção">Falha na injeção</option>
+                        <option value="Radiofármaco incorreto">Radiofármaco incorreto</option>
+                        <option value="Protocolo incorreto">Protocolo incorreto</option>
+                        <option value="Falha na interpretação do pedido médico">Falha na interpretação do pedido médico</option>
+                        <option value="Quebra de equipamento">Quebra de equipamento</option>
+                        <option value="Cliente suspendeu o exame">Cliente suspendeu o exame</option>
+                        <option value="Complementação Médica">Complementação Médica</option>
+                        <option value="Falha na marcação do kit">Falha na marcação do kit</option>
+                        <option value="Troca de clientes">Troca de clientes</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
+                <button type="button" onclick="registrarDose()" style="padding: 11px 18px; border: 1px solid #2ecc71; border-radius: 8px; background: rgba(46,204,113,0.18); color: #2ecc71; cursor: pointer; font-weight:700;">📝 Registrar Dose</button>
+                <button type="button" onclick="limparCamposDoses()" style="padding: 11px 18px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; background: rgba(255,255,255,0.04); color: #cfe2d8; cursor: pointer;">🗑️ Limpar</button>
+            </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 18px;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: end;">
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.8rem; margin-bottom:6px;">📅 Data início</label>
+                    <input id="dosesFiltroDataInicio" type="date" style="padding:9px 10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;">
+                </div>
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.8rem; margin-bottom:6px;">📅 Data fim</label>
+                    <input id="dosesFiltroDataFim" type="date" style="padding:9px 10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff;">
+                </div>
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.8rem; margin-bottom:6px;">🆔 Nº ficha</label>
+                    <input id="dosesFiltroFicha" type="text" placeholder="Filtrar por ficha" style="padding:9px 10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff; min-width:180px;">
+                </div>
+                <div>
+                    <label style="display:block; color:#c4d3ca; font-size:0.8rem; margin-bottom:6px;">🧪 Radiofármaco</label>
+                    <input id="dosesFiltroRadiofarmaco" type="text" placeholder="Filtrar por radiofármaco" style="padding:9px 10px; border:1px solid #40554a; border-radius:7px; background:#202d26; color:#fff; min-width:180px;">
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button type="button" onclick="aplicarFiltroDoses()" style="padding: 9px 14px; border: 1px solid #2ecc71; border-radius: 7px; background: rgba(46,204,113,0.18); color: #2ecc71; cursor: pointer; font-weight: 700;">🔍 Filtrar</button>
+                    <button type="button" onclick="limparFiltroDoses()" style="padding: 9px 14px; border: 1px solid rgba(255,255,255,0.15); border-radius: 7px; background: rgba(255,255,255,0.04); color: #cfe2d8; cursor: pointer;">🧹 Limpar</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px;">
+            <div style="background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.35); border-radius: 12px; padding: 16px;">
+                <div style="color:#9ee5b4; font-size:0.8rem;">Total de Doses</div>
+                <strong id="dosesResumoTotal" style="display:block; color:#2ecc71; font-size:1.5rem; margin-top:7px;">0</strong>
+            </div>
+            <div style="background: rgba(52,152,219,0.12); border: 1px solid rgba(52,152,219,0.35); border-radius: 12px; padding: 16px;">
+                <div style="color:#a8d7f3; font-size:0.8rem;">Atividade Total (mCi)</div>
+                <strong id="dosesResumoAtividade" style="display:block; color:#5dade2; font-size:1.5rem; margin-top:7px;">0.00 mCi</strong>
+            </div>
+            <div style="background: rgba(155,89,182,0.12); border: 1px solid rgba(155,89,182,0.35); border-radius: 12px; padding: 16px;">
+                <div style="color:#d1b7de; font-size:0.8rem;">Peso Médio (kg)</div>
+                <strong id="dosesResumoPesoMedio" style="display:block; color:#bb8fce; font-size:1.5rem; margin-top:7px;">0.0 kg</strong>
+            </div>
+            <div style="background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.35); border-radius: 12px; padding: 16px;">
+                <div style="color:#f3d86d; font-size:0.8rem;">mCi/kg Médio</div>
+                <strong id="dosesResumoMciKg" style="display:block; color:#ffd700; font-size:1.5rem; margin-top:7px;">0.00 mCi/kg</strong>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; margin-bottom: 18px;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 760px; font-size: 0.82rem;">
+                <thead style="background: rgba(26,26,46,0.9); position: sticky; top: 0; z-index: 1;">
+                    <tr>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">#</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Data</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Nº Ficha</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Radiofármaco</th>
+                        <th style="padding: 11px; text-align: left; color: #9ee5b4;">Motivo</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Peso (kg)</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">Atividade (mCi)</th>
+                        <th style="padding: 11px; text-align: right; color: #9ee5b4;">mCi/kg</th>
+                        <th style="padding: 11px; text-align: center; color: #9ee5b4;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoDosesAdministradas">
+                    <tr>
+                        <td colspan="7" style="padding: 25px; text-align: center; color: #718579;">📭 Nenhuma dose registrada.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+               <div id="paginacaoDoses"></div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px;">
+            <button type="button" onclick="exportarExcelDoses()" style="padding: 10px 16px; border: 1px solid rgba(52,152,219,0.5); border-radius: 8px; background: rgba(52,152,219,0.15); color: #5dade2; cursor: pointer; font-weight: 700;">📊 Exportar Excel</button>
+            <button type="button" onclick="limparHistoricoDoses()" style="padding: 10px 16px; border: 1px solid rgba(255,107,107,0.4); border-radius: 8px; background: rgba(255,107,107,0.12); color: #ff7a7a; cursor: pointer; font-weight: 700;">🗑️ Limpar Histórico</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PDF CONTENT ===== -->
+<div id="pdfContent" class="pdf-content">
+    <div class="pdf-header">
+        <div class="logo">☢️ RadioCalc</div>
+        <div class="sub">Relatório de Planejamento de Radiofármacos</div>
+        <div style="font-size: 11px; color: #888; margin-top: 4px;">Gerado em: <span id="pdfDataHora"></span></div>
+    </div>
+    <div id="pdfBody"></div>
+    <div class="disclaimer-pdf">
+        <strong>⚠️ Aviso de Responsabilidade:</strong> Esta ferramenta destina-se ao auxílio de profissionais habilitados. 
+        Os resultados não substituem protocolos institucionais, julgamento clínico ou recomendações do fabricante. 
+        O usuário é o único responsável pela validação e aplicação dos resultados.
+    </div>
+    <div class="footer-pdf">RadioCalc &bull; Ferramenta para planejamento de radiofármacos em medicina nuclear</div>
+</div>
+
+
+<!-- ===== SCRIPTS ===== -->
+<script src="assets/js/config.js"></script>
+<script src="assets/js/traducoes.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/planejamento.js"></script>
+<script src="assets/js/pacientes.js"></script>
+<script src="assets/js/marcacao.js"></script>
+<script src="assets/js/pediatrico.js"></script>
+<script src="assets/js/interface.js"></script>
+<script src="assets/js/salvar.js"></script>
+<script src="assets/js/historico.js"></script>
+<script src="assets/js/graficos.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/firebase-auth.js"></script>
+<script src="assets/js/estoque.js"></script>
+<script src="assets/js/rejeitos.js"></script>
+<script src="assets/js/gerador.js"></script>
+<script src="assets/js/cloud-estoque.js"></script>
+<script src="assets/js/cloud-gerador.js"></script>
+<script src="assets/js/doses.js"></script>
+<script src="assets/js/custos.js"></script>
+<script src="assets/js/sessao-timeout.js"></script> 
+
+<!-- ===== INICIALIZAÇÃO DO GERADOR (VERSÃO CORRIGIDA - SEM LOOP) ===== -->
+<script>
+(function() {
+    // 🛡️ Guarda contra execução múltipla
+    if (window._geradorInitExecutado) {
+        console.log('⏭️ Inicialização do gerador já executada. Ignorando.');
+        return;
+    }
+    window._geradorInitExecutado = true;
+    
+    console.log('🔄 Inicializando módulo de gerador...');
+    
+    // 🛡️ Guarda específica da verificação de status
+    let _verificandoStatusGerador = false;
+    
+    async function verificarStatusGeradorSeguro() {
+        // Evita execuções paralelas
+        if (_verificandoStatusGerador) {
+            console.log('⏭️ Verificação já em andamento. Ignorando.');
+            return;
+        }
+        _verificandoStatusGerador = true;
+        
+        try {
+            // Só verifica se o usuário estiver logado
+            if (typeof getCurrentUser === 'function' && getCurrentUser()) {
+                if (typeof verificarStatusNuvemGerador === 'function') {
+                    await verificarStatusNuvemGerador();
+                }
+            } else {
+                console.log('⏳ Usuário não logado. Aguardando login...');
+                if (typeof atualizarIndicadorGeradorNuvem === 'function') {
+                    atualizarIndicadorGeradorNuvem('offline');
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ Erro ao verificar status do gerador:', e);
+        } finally {
+            _verificandoStatusGerador = false;
+        }
+    }
+    
+    // ✅ Executa 1 única vez após o DOM estar pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(verificarStatusGeradorSeguro, 1500);
+        });
+    } else {
+        setTimeout(verificarStatusGeradorSeguro, 1500);
+    }
+    
+    // ✅ Verifica novamente quando o usuário fizer login (só 1 vez)
+    document.addEventListener('userLoggedIn', () => {
+        console.log('👤 Usuário logado! Verificando status do gerador...');
+        setTimeout(verificarStatusGeradorSeguro, 1000);
+    });
+    
+    console.log('✅ Inicialização do gerador configurada (sem loop)');
+})();
+</script>

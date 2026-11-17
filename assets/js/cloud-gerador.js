@@ -1,0 +1,642 @@
+// ============================================================
+// ARQUIVO: assets/js/cloud-gerador.js
+// MÓDULO: Sincronização na Nuvem - Gerador Mo-99/Tc-99m
+// ============================================================
+
+// ============================================================
+// ===== FUNÇÃO PARA OBTER USUÁRIO E ORGANIZAÇÃO =====
+// ============================================================
+
+async function obterDadosUsuario() {
+    try {
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            console.error('❌ Firebase não disponível');
+            return null;
+        }
+        
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            console.warn('⚠️ Usuário não logado');
+            return null;
+        }
+        
+        // Buscar dados do usuário no Firestore
+        const db = firebase.firestore();
+        const doc = await db.collection('usuarios').doc(user.uid).get();
+        
+        if (!doc.exists) {
+            console.warn('⚠️ Usuário não tem dados no Firestore');
+            return { uid: user.uid, email: user.email, organizacao: null, role: 'tecnico' };
+        }
+        
+        const data = doc.data();
+        return {
+            uid: user.uid,
+            email: user.email,
+            organizacao: data.organizacao || null,
+            role: data.role || 'tecnico'
+        };
+    } catch (error) {
+        console.error('❌ Erro ao obter dados do usuário:', error);
+        return null;
+    }
+}
+
+// ============================================================
+// ===== VERIFICAR E ATUALIZAR STATUS POR DATA DE DEVOLUÇÃO =====
+// ============================================================
+
+function verificarEAtualizarStatusGeradores(registros) {
+    console.log('🔄 Verificando geradores para atualização automática de status...');
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    let alterados = 0;
+    const alteradosLista = [];
+    
+    registros.forEach(item => {
+        // Só processa se estiver "aguardando" e tiver data de devolução
+        if (item.status !== 'aguardando' || !item.dataDevolucao) return;
+        
+        const dataDevolucao = new Date(item.dataDevolucao + 'T00:00:00');
+        
+        // Se a data de devolução chegou ou já passou
+        if (dataDevolucao <= hoje) {
+            console.log(`✅ Gerador ${item.lote} - Data devolução: ${item.dataDevolucao} → Alterando para "pronto"`);
+            item.status = 'pronto';
+            item.dataAtualizacao = new Date().toISOString();
+            item.statusAlteradoAutomaticamente = true;
+            alterados++;
+            alteradosLista.push(item.lote);
+        }
+    });
+    
+    if (alterados > 0) {
+        console.log(`📊 ${alterados} gerador(es) atualizado(s) para "Pronto para liberação": ${alteradosLista.join(', ')}`);
+    }
+    
+    return alterados;
+}
+
+function obterChaveRegistroGerador(registro) {
+    if (!registro || typeof registro !== 'object') {
+        return `registro:${JSON.stringify(registro)}`;
+    }
+
+    const lote = String(registro.lote || '').trim().toLocaleLowerCase();
+    if (lote) {
+        return `lote:${lote}|recebimento:${registro.dataRecebimento || ''}`;
+    }
+    if (registro.id !== undefined && registro.id !== null) {
+        return `id:${registro.id}`;
+    }
+    return `registro:${JSON.stringify(registro)}`;
+}
+
+function persistirGeradoresConsolidados(registros) {
+    try {
+        localStorage.setItem('radiocalc_geradores_historico', JSON.stringify(registros));
+        localStorage.removeItem('radiocalc_geradores_cache_sincronizado');
+    } catch (error) {
+        console.error('❌ Erro ao salvar geradores consolidados no armazenamento local:', error);
+    }
+}
+
+function invalidarCacheGeradoresNuvem() {
+    if (typeof window.invalidarCacheGeradores === 'function') {
+        window.invalidarCacheGeradores();
+    }
+}
+
+// ============================================================
+// ===== SALVAR GERADORES NA NUVEM (MESCLANDO A ORGANIZAÇÃO) =====
+// ============================================================
+
+async function salvarGeradoresNaNuvem() {
+    console.log('☁️ Salvando geradores na nuvem...');
+    
+    const userData = await obterDadosUsuario();
+    if (!userData) {
+        mostrarFeedbackGerador('⚠️ Faça login para salvar na nuvem!', 'aviso');
+        atualizarIndicadorGeradorNuvem('offline');
+        return;
+    }
+    
+    if (!userData.organizacao) {
+        mostrarFeedbackGerador('⚠️ Usuário não vinculado a uma organização!', 'aviso');
+        atualizarIndicadorGeradorNuvem('offline');
+        return;
+    }
+    
+    if (!registrosGerador || registrosGerador.length === 0) {
+        mostrarFeedbackGerador('⚠️ Não há geradores para salvar na nuvem!', 'aviso');
+        return;
+    }
+    
+    try {
+        atualizarIndicadorGeradorNuvem('salvando');
+        
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            throw new Error('Firestore não está disponível');
+        }
+        
+        const db = firebase.firestore();
+        const orgGeradoresRef = db.collection('organizacoes')
+            .doc(userData.organizacao)
+            .collection('geradores');
+        
+        const docRef = orgGeradoresRef.doc('todos_geradores');
+        const snapshot = await orgGeradoresRef.get();
+        const registrosDocumentos = [];
+        snapshot.forEach(documento => {
+            const registros = documento.data().registros;
+            if (Array.isArray(registros)) {
+                registrosDocumentos.push(...registros);
+            }
+        });
+
+        let registrosUnificados = [];
+        const dataBackup = new Date().toISOString();
+
+        await db.runTransaction(async transaction => {
+            const documentoAtual = await transaction.get(docRef);
+            const registrosDocumentoPrincipal = documentoAtual.exists
+                && Array.isArray(documentoAtual.data().registros)
+                ? documentoAtual.data().registros
+                : [];
+            const registrosPorChave = new Map();
+
+            [...registrosDocumentos, ...registrosDocumentoPrincipal].forEach(registro => {
+                if (registro && typeof registro === 'object') {
+                    registrosPorChave.set(obterChaveRegistroGerador(registro), registro);
+                }
+            });
+            registrosGerador.forEach(registro => {
+                if (registro && typeof registro === 'object') {
+                    registrosPorChave.set(obterChaveRegistroGerador(registro), registro);
+                }
+            });
+            registrosUnificados = Array.from(registrosPorChave.values());
+
+            transaction.set(docRef, {
+                registros: registrosUnificados,
+                organizacao: userData.organizacao,
+                ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp(),
+                total: registrosUnificados.length,
+                atualizadoPor: userData.uid,
+                atualizadoPorEmail: userData.email,
+                dataBackup
+            });
+        });
+
+        registrosGerador = registrosUnificados;
+        geradorIdCounter = Math.max(
+            geradorIdCounter,
+            ...registrosGerador.map(registro => (Number(registro.id) || 0) + 1)
+        );
+        
+        console.log(`✅ ${registrosGerador.length} geradores salvos na nuvem!`);
+
+        persistirGeradoresConsolidados(registrosGerador);
+        const registrosBackup = selecionarHistoricoParaCache(registrosGerador, registro => registro.dataRecebimento);
+        
+        // Salvar backup local
+        localStorage.setItem('radiocalc_geradores_nuvem_backup', JSON.stringify({
+            registros: registrosBackup,
+            dataBackup: new Date().toISOString(),
+            organizacao: userData.organizacao
+        }));
+        
+        mostrarFeedbackGerador(`✅ ${registrosGerador.length} geradores salvos na nuvem!`, 'success');
+        atualizarIndicadorGeradorNuvem('sincronizado');
+        invalidarCacheGeradoresNuvem();
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar geradores na nuvem:', error);
+        mostrarFeedbackGerador('❌ Erro ao salvar na nuvem. Verifique sua conexão.', 'erro');
+        atualizarIndicadorGeradorNuvem('offline');
+    }
+}
+
+// ============================================================
+// ===== CARREGAR TODOS OS DOCUMENTOS DA SUBCOLEÇÃO =====
+// ============================================================
+
+async function carregarGeradoresDaNuvem(forceRefresh = false) {
+    console.log('☁️ Carregando geradores da nuvem...');
+    if (forceRefresh) invalidarCacheGeradoresNuvem();
+    
+    const userData = await obterDadosUsuario();
+    if (!userData) {
+        mostrarFeedbackGerador('⚠️ Faça login para carregar da nuvem!', 'aviso');
+        atualizarIndicadorGeradorNuvem('offline');
+        return false;
+    }
+    
+    if (!userData.organizacao) {
+        mostrarFeedbackGerador('⚠️ Usuário não vinculado a uma organização!', 'aviso');
+        atualizarIndicadorGeradorNuvem('offline');
+        return false;
+    }
+    
+    try {
+        atualizarIndicadorGeradorNuvem('carregando');
+        
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            throw new Error('Firestore não está disponível');
+        }
+        
+        const db = firebase.firestore();
+        const orgGeradoresRef = db.collection('organizacoes')
+            .doc(userData.organizacao)
+            .collection('geradores');
+        
+        console.log(`🔎 Consultando todos os documentos de geradores da organização ${userData.organizacao}, sem filtro por usuário.`);
+        const snapshot = await orgGeradoresRef.get();
+        const documentos = [];
+        const registrosPorChave = new Map();
+
+        snapshot.forEach(documento => {
+            const data = documento.data();
+            const registros = Array.isArray(data.registros) ? data.registros : [];
+            documentos.push({
+                documento,
+                registros,
+                registrosOriginais: JSON.stringify(registros)
+            });
+            registros.forEach(registro => {
+                if (registro && typeof registro === 'object') {
+                    registrosPorChave.set(obterChaveRegistroGerador(registro), registro);
+                }
+            });
+        });
+
+        const registros = Array.from(registrosPorChave.values());
+        const totalRegistrosEncontrados = documentos.reduce(
+            (total, documento) => total + documento.registros.length,
+            0
+        );
+        const documentosComRegistros = documentos.filter(documento => documento.registros.length > 0).length;
+        console.log(
+            `📊 Geradores na organização ${userData.organizacao}: ${snapshot.size} documentos lidos, `
+            + `${documentosComRegistros} com registros, ${totalRegistrosEncontrados} registros encontrados `
+            + `e ${registros.length} registros após consolidação.`
+        );
+
+        if (registros.length > 0) {
+            const alterados = verificarEAtualizarStatusGeradores(registros);
+
+            if (alterados > 0) {
+                const registrosAtualizadosPorChave = new Map(
+                    registros.map(registro => [obterChaveRegistroGerador(registro), registro])
+                );
+                await Promise.all(documentos.map(async ({
+                    documento,
+                    registros: registrosDocumento,
+                    registrosOriginais
+                }) => {
+                    const registrosAtualizados = registrosDocumento.map(registro =>
+                        registrosAtualizadosPorChave.get(obterChaveRegistroGerador(registro)) || registro
+                    );
+                    if (JSON.stringify(registrosAtualizados) !== registrosOriginais) {
+                        await documento.ref.update({
+                            registros: registrosAtualizados,
+                            total: registrosAtualizados.length,
+                            ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                }));
+                console.log(`☁️ ${alterados} geradores atualizados na nuvem!`);
+            }
+
+            registrosGerador = registros;
+            geradorIdCounter = registrosGerador.length > 0
+                ? Math.max(...registrosGerador.map(item => Number(item.id) || 0)) + 1
+                : 0;
+
+            persistirGeradoresConsolidados(registrosGerador);
+            invalidarCacheGeradoresNuvem();
+            atualizarTabelaGeradorHistorico();
+            atualizarContadoresGerador();
+
+            let mensagem = `✅ ${registrosGerador.length} geradores carregados da nuvem!`;
+            if (alterados > 0) {
+                mensagem = `✅ ${registrosGerador.length} geradores carregados! ${alterados} atualizado(s) para "Pronto para liberação"!`;
+            }
+
+            mostrarFeedbackGerador(mensagem, 'success');
+            atualizarIndicadorGeradorNuvem('sincronizado');
+            console.log(`📦 ${registrosGerador.length} registros consolidados de ${snapshot.size} documentos da nuvem`);
+            return true;
+        }
+
+        if (forceRefresh) {
+            registrosGerador = [];
+            geradorIdCounter = 0;
+            persistirGeradoresConsolidados(registrosGerador);
+            invalidarCacheGeradoresNuvem();
+            atualizarTabelaGeradorHistorico();
+            atualizarContadoresGerador();
+            mostrarFeedbackGerador('ℹ️ Nenhum gerador encontrado na nuvem.', 'info');
+            atualizarIndicadorGeradorNuvem('offline');
+            return true;
+        }
+        
+        // Se não encontrou, tentar carregar do backup local
+        const backup = localStorage.getItem('radiocalc_geradores_nuvem_backup');
+        if (backup) {
+            try {
+                const dadosBackup = JSON.parse(backup);
+                if (dadosBackup.registros && dadosBackup.registros.length > 0) {
+                    if (confirm('⚠️ Nenhum dado encontrado na nuvem, mas há um backup local. Deseja carregar o backup?')) {
+                        // 🔥 VERIFICAR TAMBÉM NO BACKUP
+                        const alterados = verificarEAtualizarStatusGeradores(dadosBackup.registros);
+                        
+                        registrosGerador = dadosBackup.registros;
+                        geradorIdCounter = registrosGerador.length > 0 
+                            ? Math.max(...registrosGerador.map(item => item.id || 0)) + 1 
+                            : 0;
+                        persistirGeradoresConsolidados(registrosGerador);
+                        invalidarCacheGeradoresNuvem();
+                        atualizarTabelaGeradorHistorico();
+                        atualizarContadoresGerador();
+                        
+                        let mensagem = `✅ Backup local carregado! (${dadosBackup.registros.length} geradores)`;
+                        if (alterados > 0) {
+                            mensagem = `✅ Backup carregado! ${alterados} atualizado(s) para "Pronto para liberação"!`;
+                        }
+                        
+                        mostrarFeedbackGerador(mensagem, 'success');
+                        atualizarIndicadorGeradorNuvem('sincronizado');
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Erro ao carregar backup local:', e);
+            }
+        } else {
+            mostrarFeedbackGerador('ℹ️ Nenhum gerador encontrado na nuvem.', 'info');
+            atualizarIndicadorGeradorNuvem('offline');
+        }
+        return false;
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar geradores da nuvem:', error);
+        mostrarFeedbackGerador('❌ Erro ao carregar da nuvem. Verifique sua conexão.', 'erro');
+        atualizarIndicadorGeradorNuvem('offline');
+        return false;
+    }
+}
+
+async function carregarTodosGeradoresDaNuvem(forceRefresh = false) {
+    const carregado = await carregarGeradoresDaNuvem(forceRefresh);
+    return carregado && Array.isArray(registrosGerador)
+        ? [...registrosGerador]
+        : null;
+}
+
+// ============================================================
+// ===== REMOVER GERADOR DA NUVEM =====
+// ============================================================
+
+async function removerGeradorDaNuvem(item) {
+    console.log('☁️ Removendo gerador da nuvem...', item);
+    
+    try {
+        const userData = await obterDadosUsuario();
+        if (!userData || !userData.organizacao) {
+            console.warn('⚠️ Usuário não logado ou sem organização. Apenas removido localmente.');
+            return;
+        }
+        
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            throw new Error('Firestore não está disponível');
+        }
+        
+        const db = firebase.firestore();
+        const orgGeradoresRef = db.collection('organizacoes')
+            .doc(userData.organizacao)
+            .collection('geradores');
+        
+        const snapshot = await orgGeradoresRef.get();
+        const chaveRemovida = obterChaveRegistroGerador(item);
+        let removido = false;
+
+        await Promise.all(snapshot.docs.map(async documento => {
+            const data = documento.data();
+            const registros = Array.isArray(data.registros) ? data.registros : [];
+            const novosRegistros = registros.filter(registro =>
+                obterChaveRegistroGerador(registro) !== chaveRemovida
+            );
+
+            if (novosRegistros.length !== registros.length) {
+                removido = true;
+                await documento.ref.update({
+                    registros: novosRegistros,
+                    total: novosRegistros.length,
+                    ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }));
+
+        if (removido) {
+            console.log(`✅ Gerador ${item.id} (${item.lote}) removido da nuvem`);
+        } else {
+            console.warn(`⚠️ Gerador ${item.id} não encontrado na nuvem`);
+        }
+        invalidarCacheGeradoresNuvem();
+        
+    } catch (error) {
+        invalidarCacheGeradoresNuvem();
+        console.error('❌ Erro ao remover gerador da nuvem:', error);
+        throw error;
+    }
+}
+
+// ============================================================
+// ===== LIMPAR GERADORES DA NUVEM =====
+// ============================================================
+
+async function limparGeradoresDaNuvem(registros) {
+    console.log('☁️ Limpando todos os geradores da nuvem...');
+    
+    const userData = await obterDadosUsuario();
+    if (!userData || !userData.organizacao) {
+        console.warn('⚠️ Usuário não logado ou sem organização. Apenas removido localmente.');
+        return;
+    }
+    
+    try {
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            throw new Error('Firestore não está disponível');
+        }
+        
+        const db = firebase.firestore();
+        const orgGeradoresRef = db.collection('organizacoes')
+            .doc(userData.organizacao)
+            .collection('geradores');
+        
+        const snapshot = await orgGeradoresRef.get();
+        for (let inicio = 0; inicio < snapshot.docs.length; inicio += 500) {
+            const batch = db.batch();
+            snapshot.docs.slice(inicio, inicio + 500).forEach(documento => {
+                batch.delete(documento.ref);
+            });
+            await batch.commit();
+        }
+        
+        // Remover o backup local também
+        localStorage.removeItem('radiocalc_geradores_nuvem_backup');
+        persistirGeradoresConsolidados([]);
+        invalidarCacheGeradoresNuvem();
+        
+        console.log('✅ Todos os geradores removidos da nuvem!');
+        mostrarFeedbackGerador('✅ Histórico também limpo na nuvem!', 'success');
+        
+    } catch (error) {
+        invalidarCacheGeradoresNuvem();
+        console.error('❌ Erro ao limpar geradores da nuvem:', error);
+        mostrarFeedbackGerador('⚠️ Removido localmente, mas erro ao limpar na nuvem.', 'aviso');
+    }
+}
+
+// ============================================================
+// ===== ATUALIZAR INDICADOR DE NUVEM =====
+// ============================================================
+
+function atualizarIndicadorGeradorNuvem(status) {
+    const indicador = document.getElementById('indicadorGeradorNuvem');
+    if (!indicador) {
+        console.warn('⚠️ Elemento indicadorGeradorNuvem não encontrado');
+        return;
+    }
+    
+    indicador.classList.remove('sincronizado', 'salvando', 'carregando', 'offline');
+    
+    const statusMap = {
+        'sincronizado': {
+            texto: '☁️ Sincronizado',
+            classe: 'sincronizado'
+        },
+        'salvando': {
+            texto: '⏳ Salvando...',
+            classe: 'salvando'
+        },
+        'carregando': {
+            texto: '⏳ Carregando...',
+            classe: 'carregando'
+        },
+        'offline': {
+            texto: '⚠️ Offline',
+            classe: 'offline'
+        },
+        'verificando': {
+            texto: '☁️ Verificando...',
+            classe: ''
+        }
+    };
+    
+    const estado = statusMap[status] || statusMap['verificando'];
+    
+    indicador.textContent = estado.texto;
+    if (estado.classe) {
+        indicador.classList.add(estado.classe);
+    }
+    
+    console.log(`📌 Indicador atualizado: ${estado.texto}`);
+}
+
+// ============================================================
+// ===== VERIFICAR STATUS DA NUVEM (DOCUMENTO ÚNICO) =====
+// ============================================================
+
+async function verificarStatusNuvemGerador() {
+    console.log('🔍 Verificando status da nuvem para geradores...');
+    
+    const userData = await obterDadosUsuario();
+    if (!userData || !userData.organizacao) {
+        console.warn('⚠️ Usuário não logado ou sem organização');
+        atualizarIndicadorGeradorNuvem('offline');
+        return;
+    }
+    
+    if (typeof firebase === 'undefined' || !firebase.firestore) {
+        console.error('❌ Firestore não está disponível');
+        atualizarIndicadorGeradorNuvem('offline');
+        return;
+    }
+    
+    try {
+        const db = firebase.firestore();
+        const orgGeradoresRef = db.collection('organizacoes')
+            .doc(userData.organizacao)
+            .collection('geradores');
+        
+        // 🔥 VERIFICAR O DOCUMENTO ÚNICO
+        const docRef = orgGeradoresRef.doc('todos_geradores');
+        const doc = await docRef.get();
+        
+        const cloudCount = doc.exists ? (doc.data()?.registros?.length || 0) : 0;
+        const localCount = registrosGerador ? registrosGerador.length : 0;
+        
+        console.log(`📊 Local: ${localCount} registros | Nuvem: ${cloudCount} registros`);
+        
+        if (cloudCount > 0 && localCount > 0 && cloudCount === localCount) {
+            atualizarIndicadorGeradorNuvem('sincronizado');
+        } else if (cloudCount > 0 && localCount === 0) {
+            const indicador = document.getElementById('indicadorGeradorNuvem');
+            if (indicador) {
+                indicador.textContent = `☁️ Dados na nuvem (${cloudCount})`;
+                indicador.className = '';
+                indicador.style.color = '#f1c40f';
+                indicador.style.background = 'rgba(241,196,15,0.15)';
+                indicador.style.borderColor = 'rgba(241,196,15,0.3)';
+            }
+        } else if (cloudCount > 0 && localCount > 0 && cloudCount !== localCount) {
+            const indicador = document.getElementById('indicadorGeradorNuvem');
+            if (indicador) {
+                indicador.textContent = `⚠️ Local: ${localCount} | Nuvem: ${cloudCount}`;
+                indicador.className = '';
+                indicador.style.color = '#ff6b6b';
+                indicador.style.background = 'rgba(255,107,107,0.15)';
+                indicador.style.borderColor = 'rgba(255,107,107,0.3)';
+            }
+        } else {
+            atualizarIndicadorGeradorNuvem('offline');
+        }
+    } catch (error) {
+        console.warn('⚠️ Erro ao verificar status da nuvem:', error.message);
+        atualizarIndicadorGeradorNuvem('offline');
+    }
+}
+// 🛡️ GUARDA CONTRA MÚLTIPLAS EXECUÇÕES E CONTRA LOOP
+if (window._cloudGeradorJaCarregado) {
+    console.warn('⚠️ cloud-gerador.js já estava carregado. Ignorando redefinições.');
+} else {
+    window._cloudGeradorJaCarregado = true;
+    
+    // ============================================================
+    // ===== EXPORTAR FUNÇÕES =====
+    // ============================================================
+    
+    window.salvarGeradoresNaNuvem = salvarGeradoresNaNuvem;
+    window.carregarGeradoresDaNuvem = carregarGeradoresDaNuvem;
+    window.carregarTodosGeradoresDaNuvem = carregarTodosGeradoresDaNuvem;
+    window.removerGeradorDaNuvem = removerGeradorDaNuvem;
+    window.limparGeradoresDaNuvem = limparGeradoresDaNuvem;
+    window.verificarStatusNuvemGerador = verificarStatusNuvemGerador;
+    window.atualizarIndicadorGeradorNuvem = atualizarIndicadorGeradorNuvem;
+    window.obterDadosUsuario = obterDadosUsuario;
+    window.verificarEAtualizarStatusGeradores = verificarEAtualizarStatusGeradores;
+    
+    console.log('☁️ Módulo de nuvem para geradores carregado! (v3 - Com verificação automática de status)');
+    console.log('📦 Funções disponíveis:');
+    console.log('  - salvarGeradoresNaNuvem()');
+    console.log('  - carregarGeradoresDaNuvem()');
+    console.log('  - removerGeradorDaNuvem(item)');
+    console.log('  - limparGeradoresDaNuvem()');
+    console.log('  - verificarStatusNuvemGerador()');
+    console.log('  - atualizarIndicadorGeradorNuvem(status)');
+    console.log('  - obterDadosUsuario()');
+    console.log('  - verificarEAtualizarStatusGeradores(registros)');
+}
