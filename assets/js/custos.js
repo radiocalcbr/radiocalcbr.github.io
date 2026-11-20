@@ -137,6 +137,7 @@ async function carregarPrecosCustosNuvem() {
         localStorage.setItem(STORAGE_HISTORICO_PRECOS, JSON.stringify(historicoAlteracoesPrecos));
         renderizarListaPrecosKits();
         renderizarListaPrecosGeradores();
+        renderizarPrecoTransporteGerador();
         renderizarHistoricoAlteracoes();
         console.log('☁️ Preços de custos carregados da organização.');
         return true;
@@ -416,6 +417,8 @@ async function calcularCustosGeradores(dtIni, dtFim) {
         const precoAplicado = converterNumeroCusto(registro.precoAplicado);
         const precoConfigurado = converterNumeroCusto(precosGeradores[atividade]);
         const preco = precoAplicado > 0 ? precoAplicado : precoConfigurado;
+        const custoTransporte = Math.max(0, converterNumeroCusto(registro.custoTransporte));
+        const custoTotal = preco + custoTransporte;
         if (atividade <= 0) {
             console.warn('⚠️ Gerador incluído sem atividade válida; contribuição de custo igual a zero.', registro);
         }
@@ -427,12 +430,14 @@ async function calcularCustosGeradores(dtIni, dtFim) {
             lote: registro.lote || 'Não informado',
             dataRecebimento: registro.dataRecebimento,
             atividade,
-            preco
+            preco,
+            custoTransporte,
+            custoTotal
         });
-        total += preco;
+        total += custoTotal;
 
         const mes = obterMesCusto(dataRecebimento);
-        porMes[mes] = (porMes[mes] || 0) + preco;
+        porMes[mes] = (porMes[mes] || 0) + custoTotal;
     });
 
     console.log(`💰 Custos de geradores no período: ${detalhes.length} registros, total ${formatarMoeda(total)}.`);
@@ -476,7 +481,7 @@ function renderizarCustosGeradores(resultado) {
     if (!corpo) return;
 
     if (resultado.detalhes.length === 0) {
-        corpo.innerHTML = '<tr><td colspan="4" style="padding: 25px; text-align: center; color: #718579;">📭 Nenhum dado no período</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="6" style="padding: 25px; text-align: center; color: #718579;">📭 Nenhum dado no período</td></tr>';
         return;
     }
 
@@ -485,8 +490,10 @@ function renderizarCustosGeradores(resultado) {
         <td style="padding: 10px; color: #b9c9bd;">${escaparHtmlCusto(item.dataRecebimento)}</td>
         <td style="padding: 10px; text-align: right; color: #b9c9bd;">${escaparHtmlCusto(item.atividade)}</td>
         <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(item.preco)}</td>
+        <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(item.custoTransporte)}</td>
+        <td style="padding: 10px; text-align: right; color: #b9c9bd;">${formatarMoeda(item.custoTotal)}</td>
     </tr>`).join('') + `<tr style="border-top: 2px solid #00d2ff;">
-        <td colspan="3" style="padding: 12px; color: #00d2ff; font-weight: 700;">TOTAL</td>
+        <td colspan="5" style="padding: 12px; color: #00d2ff; font-weight: 700;">TOTAL</td>
         <td style="padding: 12px; text-align: right; color: #00d2ff; font-weight: 700;">${formatarMoeda(resultado.total)}</td>
     </tr>`;
 }
@@ -522,6 +529,11 @@ function renderizarListaPrecosGeradores() {
             ${atividade} mCi (R$)
             <input type="number" id="precoGerador_${atividade}" data-atividade="${atividade}" value="${precosGeradores[atividade] || ''}" placeholder="0,00" min="0" step="0.01" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
         </label>`).join('');
+}
+
+function renderizarPrecoTransporteGerador(valor = precosGeradores.transporte ?? '') {
+    const input = document.getElementById('precoTransporteGerador');
+    if (input) input.value = valor;
 }
 
 function obterUsuarioAtual() {
@@ -602,6 +614,10 @@ async function salvarTodosPrecos() {
         const kitsAnteriores = { ...precosKits };
         const geradoresAnteriores = { ...precosGeradores };
         const novosPrecosKits = {};
+        const inputTransporte = document.getElementById('precoTransporteGerador');
+        const novoPrecoTransporte = inputTransporte
+            ? obterValorPreco(inputTransporte.value)
+            : obterValorPreco(geradoresAnteriores.transporte);
 
         KITS_CUSTOS.forEach(kit => {
             const input = document.getElementById(`precoKit_${kit}`);
@@ -621,11 +637,18 @@ async function salvarTodosPrecos() {
                 novoValor
             );
         });
+        registrarAlteracaoPreco(
+            'Transporte Gerador Tc-99m',
+            geradoresAnteriores.transporte,
+            novoPrecoTransporte
+        );
+        novosPrecosGeradores.transporte = novoPrecoTransporte;
 
         precosKits = novosPrecosKits;
         precosGeradores = novosPrecosGeradores;
         salvarPrecosKitsStorage();
         salvarPrecosGeradoresStorage();
+        renderizarPrecoTransporteGerador();
         const novasAlteracoes = historicoAlteracoesPrecos.slice(quantidadeHistoricoAntes);
         const salvoNaNuvem = await salvarPrecosCustosNuvem(novasAlteracoes);
         renderizarHistoricoAlteracoes();
@@ -643,6 +666,7 @@ async function salvarTodosPrecos() {
 function restaurarPrecosPadrao() {
     if (!confirm('Deseja restaurar os preços padrão?')) return;
 
+    const precoTransporteAtual = precosGeradores.transporte;
     precosKits = {};
     precosGeradores = {};
     KITS_CUSTOS.forEach(kit => {
@@ -651,8 +675,10 @@ function restaurarPrecosPadrao() {
     ATIVIDADES_GERADORES.forEach(atividade => {
         precosGeradores[atividade] = PRECOS_PADRAO_CUSTOS.precoPorAtividade;
     });
+    precosGeradores.transporte = precoTransporteAtual;
     renderizarListaPrecosKits();
     renderizarListaPrecosGeradores();
+    renderizarPrecoTransporteGerador(0);
 }
 
 // ============================================
@@ -1425,7 +1451,7 @@ function renderizarTabelaResumoDashboard(itens) {
             <th style="padding: 11px; text-align: left; color: #9cdeea;">Radiofármaco</th>
             <th style="padding: 11px; text-align: right; color: #9cdeea;">Doses</th>
             <th style="padding: 11px; text-align: right; color: #9cdeea;">Atividade</th>
-            <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Tc-99m</th>
+            <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Geradores Rateado</th>
             <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Kit</th>
             <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo Real</th>
             <th style="padding: 11px; text-align: right; color: #9cdeea;">Custo/Dose</th>`;
@@ -1489,6 +1515,11 @@ async function atualizarDashboardUnificado() {
             const timestamp = new Date(`${dose?.data}T00:00:00`).getTime();
             return dose?.data && !Number.isNaN(timestamp) && timestamp >= dtIni && timestamp <= dtFim;
         });
+        const diasCorridos = Math.floor(
+            (new Date(`${campoFim.value}T00:00:00`).getTime()
+                - new Date(`${campoInicio.value}T00:00:00`).getTime()) / 86400000
+        ) + 1;
+        const diasProdutivos = new Set(dosesPeriodo.map(dose => dose.data)).size;
         const historico = typeof historicoMovimentacoes !== 'undefined' ? historicoMovimentacoes : [];
         const kitsUsados = historico.reduce((total, evento) => {
             const timestamp = obterDataTimestamp(evento?.timestamp || evento?.dataHora)?.getTime();
@@ -1540,6 +1571,8 @@ async function atualizarDashboardUnificado() {
         atualizarIndicador('dashGeradores', KPIs.geradores.toLocaleString('pt-BR'));
         atualizarIndicador('dashCustoMci', atividadeTotal > 0 ? formatarMoeda(precoPorMci) : '—');
         atualizarIndicador('dashCustoDose', KPIs.doses > 0 ? formatarMoeda(total / KPIs.doses) : '—');
+        atualizarIndicador('dashCustoDiaCorrido', diasCorridos > 0 ? formatarMoeda(total / diasCorridos) : '—');
+        atualizarIndicador('dashCustoDiaProdutivo', diasProdutivos > 0 ? formatarMoeda(total / diasProdutivos) : '—');
 
         const totalGeradoresEl = document.getElementById('custoTotalGeradores');
         const totalGeralEl = document.getElementById('custoTotalGeral');
@@ -1587,11 +1620,18 @@ function exportarCustosExcel() {
             });
         dadosKits.push(['TOTAL', '', '', ultimoResultadoCustosKits.total, 1]);
 
-        const dadosGeradores = [['Lote', 'Data', 'Atividade', 'Preço']];
+        const dadosGeradores = [['Lote', 'Data', 'Atividade', 'Preço da Atividade', 'Transporte', 'Total Gerador']];
         ultimoResultadoCustosGeradores.detalhes.forEach(item => {
-            dadosGeradores.push([item.lote, item.dataRecebimento, item.atividade, item.preco]);
+            dadosGeradores.push([
+                item.lote,
+                item.dataRecebimento,
+                item.atividade,
+                item.preco,
+                item.custoTransporte,
+                item.custoTotal
+            ]);
         });
-        dadosGeradores.push(['TOTAL', '', '', ultimoResultadoCustosGeradores.total]);
+        dadosGeradores.push(['TOTAL', '', '', '', '', ultimoResultadoCustosGeradores.total]);
 
         const indicadores = calcularCustoPorMci(
             new Date(`${inicio}T00:00:00`).getTime(),
@@ -1602,12 +1642,12 @@ function exportarCustosExcel() {
         const dadosCustoPorMci = [
             ['Indicador', 'Valor'],
             ['Período', `${inicio || 'N/A'} até ${fim || 'N/A'}`],
-            ['Total pago em Geradores (R$)', ultimoResultadoCustosGeradores.total],
+            ['Total pago em Geradores, incluindo transporte (R$)', ultimoResultadoCustosGeradores.total],
             ['Atividade Administrada (mCi)', indicadores.atividadeTotal],
             ['Total de Doses Registradas', indicadores.totalDoses],
             ['Custo Médio por mCi (R$/mCi)', indicadores.custoPorMci],
             ['Custo Médio por Paciente (R$)', indicadores.custoPorPaciente],
-            ['Observação', 'Numerador = apenas custo dos geradores.']
+            ['Observação', 'Numerador = custo da atividade dos geradores + transporte registrado por gerador.']
         ];
 
         const pasta = XLSX.utils.book_new();
@@ -1771,6 +1811,7 @@ async function abrirModalCustos() {
 
         renderizarListaPrecosKits();
         renderizarListaPrecosGeradores();
+        renderizarPrecoTransporteGerador();
         renderizarHistoricoAlteracoes();
         modal.style.display = 'flex';
         await trocarAbaCustos('dashboard');

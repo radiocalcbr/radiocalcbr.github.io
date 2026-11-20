@@ -2303,8 +2303,10 @@
                                 <th style="padding: 11px; text-align: left; color: #9ee5b4;">Recebimento</th>
                                 <th style="padding: 11px; text-align: right; color: #9ee5b4;">Atividade</th>
                                 <th style="padding: 11px; text-align: right; color: #9ee5b4;">Preço</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Transporte</th>
+                                <th style="padding: 11px; text-align: right; color: #9ee5b4;">Total</th>
                             </tr></thead>
-                            <tbody id="corpoCustosGeradores"><tr><td colspan="4" style="padding: 25px; text-align: center; color: #718579;">Nenhum gerador no período.</td></tr></tbody>
+                            <tbody id="corpoCustosGeradores"><tr><td colspan="6" style="padding: 25px; text-align: center; color: #718579;">Nenhum gerador no período.</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -2336,6 +2338,15 @@
                 <h4 style="color: #2ecc71; margin: 0 0 14px;">⚛️ Preços por Atividade do Gerador</h4>
                 <p style="color: #8fa99a; font-size: 0.8rem; margin: 0 0 14px;">Defina um preço para cada atividade registrada na Gerência de Geradores.</p>
                 <div id="listaPrecosGeradoresEdit" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;"></div>
+            </div>
+
+            <div style="border-top: 1px solid rgba(46,204,113,0.2); margin-top: 26px; padding-top: 22px;">
+                <h4 style="color: #2ecc71; margin: 0 0 14px;">🚚 Transporte de Geradores (Tc-99m)</h4>
+                <p style="color: #8fa99a; font-size: 0.8rem; margin: 0 0 14px;">O valor salvo será aplicado apenas aos novos geradores registrados; registros anteriores não são alterados.</p>
+                <label for="precoTransporteGerador" style="color: #b9c9bd; font-size: 0.85rem;">
+                    Valor do Transporte por Gerador (R$)
+                    <input type="number" step="0.01" min="0" id="precoTransporteGerador" placeholder="0,00" style="display: block; width: 100%; max-width: 360px; box-sizing: border-box; margin-top: 6px; padding: 10px; border: 1px solid #40554a; border-radius: 7px; background: #202d26; color: #fff;">
+                </label>
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 25px;">

@@ -93,6 +93,17 @@ function obterChaveRegistroGerador(registro) {
     return `registro:${JSON.stringify(registro)}`;
 }
 
+function prepararGeradorParaNuvem(registro) {
+    if (!registro || typeof registro !== 'object' || !Object.hasOwn(registro, 'custoTransporte')) {
+        return registro;
+    }
+
+    return {
+        ...registro,
+        custoTransporte: Math.max(0, Number(registro.custoTransporte) || 0)
+    };
+}
+
 function persistirGeradoresConsolidados(registros) {
     try {
         localStorage.setItem('radiocalc_geradores_historico', JSON.stringify(registros));
@@ -173,7 +184,8 @@ async function salvarGeradoresNaNuvem() {
             });
             registrosGerador.forEach(registro => {
                 if (registro && typeof registro === 'object') {
-                    registrosPorChave.set(obterChaveRegistroGerador(registro), registro);
+                    const registroNuvem = prepararGeradorParaNuvem(registro);
+                    registrosPorChave.set(obterChaveRegistroGerador(registroNuvem), registroNuvem);
                 }
             });
             registrosUnificados = Array.from(registrosPorChave.values());
